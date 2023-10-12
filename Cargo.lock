@@ -13,8 +13,8 @@ dependencies = [
 
 [[package]]
 name = "async-scheduler"
-version = "0.2.0"
-source = "git+https://github.com/rblaze/rust-async-scheduler.git#7e1c6a4ea7a5d9542b505a1247b59a87b47fee94"
+version = "0.3.0"
+source = "git+https://github.com/rblaze/rust-async-scheduler.git#d665349822eb4b8f5a442b14f8ac720d51f0f861"
 dependencies = [
  "critical-section",
  "fugit",
@@ -538,4 +538,5 @@ dependencies = [
  "portable-atomic",
  "rtt-target",
  "stm32l0xx-hal",
+ "void",
 ]

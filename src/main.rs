@@ -46,7 +46,7 @@ fn main() -> ! {
             loop {
                 debug_rprintln!("loop {}", i);
                 i += 1;
-                system_time::sleep(200.milliseconds()).await;
+                system_time::sleep(2000.milliseconds()).await;
             }
         }));
 

@@ -1,67 +1,167 @@
 use core::cell::Cell;
-use critical_section::Mutex;
-use embedded_hal::timer::CountDown;
+
+use critical_section::{CriticalSection, Mutex};
 use embedded_time::duration::Milliseconds;
 use embedded_time::fixed_point::FixedPoint;
-use embedded_time::rate::{Extensions, Fraction};
+use embedded_time::rate::{Fraction, Hertz};
 use embedded_time::{Clock, Instant};
-use stm32l0xx_hal::lptim::{Interrupts, LpTimer, Periodic};
-use stm32l0xx_hal::pac::{interrupt, LPTIM};
+use rtt_target::debug_rprintln;
+use stm32l0xx_hal::pac::{self, interrupt, LPTIM, RCC};
+use stm32l0xx_hal::rcc::{Enable, Rcc, Reset};
 
-const HERTZ: u32 = 100;
+pub type TimeUnit = Milliseconds;
 
-static TICKS: Mutex<Cell<u32>> = Mutex::new(Cell::new(0));
-
-#[derive(Clone, Copy, Debug)]
-pub struct Ticker {}
+#[derive(Debug)]
+pub struct Ticker {
+    timer: pac::LPTIM,
+    conversion_factor: Fraction,
+}
 
 impl Ticker {
-    // Setup LpTimer to tick at 100Hz
-    pub fn new(mut timer: LpTimer<Periodic>) -> Self {
-        timer.enable_interrupts(Interrupts {
-            autoreload_match: true,
-            ..Default::default()
-        });
-        timer.start(HERTZ.Hz());
+    const MAX_COUNTER: u16 = 0xffff;
+    const CYCLE_LENGTH: u32 = (Self::MAX_COUNTER as u32) + 1;
 
-        Ticker {}
+    pub fn new(timer: pac::LPTIM, rcc: &mut Rcc, lsi_freq: Hertz) -> Self {
+        // Use LSI as LPTIM clock source.
+        unsafe {
+            (*RCC::ptr()).ccipr.modify(|_, w| w.lptim1sel().lsi());
+        }
+        pac::LPTIM::enable(rcc);
+        pac::LPTIM::reset(rcc);
+
+        // Enable largest prescaler and longest reload cycle.
+        // With LSI running at ~40KHz, this gives ~300 ticks per second and
+        // a cycle every 210 seconds.
+
+        // Copied from HAL LpTimer::configure()
+        // Disable the timer. The prescaler can only be changed while it's disabled.
+        timer.cr.write(|w| w.enable().clear_bit());
+        timer.cfgr.write(|w| w.presc().div128());
+        // Enable autoreload and compare-match interrupts.
+        timer.ier.write(|w| w.arrmie().enabled().cmpmie().enabled());
+
+        timer.cr.write(|w| w.enable().enabled());
+
+        // "After setting the ENABLE bit, a delay of two counter clock is needed before the LPTIM is
+        // actually enabled."
+        // The slowest LPTIM clock source is LSE at 32768 Hz, the fastest CPU clock is ~80 MHz. At
+        // these conditions, one cycle of the LPTIM clock takes 2500 CPU cycles, so sleep for 5000.
+        cortex_m::asm::delay(5000);
+
+        // ARR can only be changed while the timer is *en*abled
+        timer.arr.write(|w| w.arr().bits(Self::MAX_COUNTER));
+        // When no wakeup needed, set CMP equal to ARR so interrupt will merge with Update interrupt.
+        timer.cmp.write(|w| w.cmp().bits(Self::MAX_COUNTER));
+
+        // Start counting
+        timer.cr.write(|w| w.cntstrt().start().enable().enabled());
+
+        // Minimize fraction by rounding lsi_freq to the multiple of 128 (prescaler)
+        let conversion_factor =
+            (Self::SCALING_FACTOR * Fraction::new((lsi_freq / 128).integer(), 1)).recip();
+
+        debug_rprintln!(
+            "Conversion factor from LPTIM ticks to API ticks (ms): {:?}",
+            conversion_factor
+        );
+
+        Ticker {
+            timer,
+            conversion_factor,
+        }
     }
 
-    // Get current tick count.
+    /// Gets current tick count in LPTIM ticks.
+    /// Public API is in 1KHz timer so this function is private.
+    fn lptim_ticks(&self) -> u32 {
+        critical_section::with(|cs| {
+            // FIXME: it is possible to read cycles when CNT is 0xffff and then
+            // read CNT as 0/1/2/..., missing the cycle count update. Check for
+            // pending interrupt or do cycle read before and after CNT. If results differ,
+            // retry.
+            let cycles = TICKS.borrow(cs).get().num_full_cycles;
+            let current_cycle_ticks: u32 = self.timer.cnt.read().cnt().bits().into();
+            debug_rprintln!("LPTIM ticks: {} {}", cycles, current_cycle_ticks);
+            (cycles * Self::CYCLE_LENGTH) + current_cycle_ticks
+        })
+    }
+
+    /// Gets current tick count in API ticks.
     pub fn ticks(&self) -> u32 {
-        critical_section::with(|cs| TICKS.borrow(cs).get())
+        let ticks = Fraction::new(self.lptim_ticks(), 1) * self.conversion_factor;
+        debug_rprintln!("API ticks: {:?} {}", ticks, ticks.to_integer());
+        ticks.to_integer()
     }
 
-    // Wait for the next tick.
-    // Makes sure the ticker is enabled.
-    pub fn wait_for_tick(&self) {
+    /// Waits for the specified tick or next interrupt.
+    pub fn sleep_until(&self, cs: CriticalSection, tick: Option<u32>) {
+        let mut target_counter = Self::MAX_COUNTER;
+
+        if let Some(tick) = tick {
+            // This method is called from critical section, with interrupts disabled.
+            // Therefore, missing cycles value update is irrelevant: update interrupt
+            // will wakeup CPU anyway and we will redo the calculation.
+            let lptim_tick = (Fraction::new(tick, 1) / self.conversion_factor).to_integer();
+            let target_cycle = lptim_tick / Self::CYCLE_LENGTH;
+            let current_cycle = TICKS.borrow(cs).get().num_full_cycles;
+            if target_cycle == current_cycle {
+                // Set CMP to wakeup at the right moment.
+                target_counter = (lptim_tick % Self::CYCLE_LENGTH) as u16;
+            }
+        }
+        self.timer.cmp.write(|w| w.cmp().bits(target_counter));
         cortex_m::asm::wfi();
     }
 }
 
+// Since clock rate is expected to be known at compile time, set it to 1KHz
+// and convert to/from LPTIM ticks.
 impl Clock for Ticker {
     type T = u32;
 
-    const SCALING_FACTOR: Fraction = Fraction::new(1, HERTZ);
+    const SCALING_FACTOR: Fraction = TimeUnit::SCALING_FACTOR;
 
     fn try_now(&self) -> Result<Instant<Self>, embedded_time::clock::Error> {
         Ok(Instant::new(self.ticks()))
     }
 }
 
-pub async fn sleep(duration: Milliseconds) {
-    // Tick is 10 ms
-    let ticks = duration.integer() / 10;
-    async_scheduler::executor::sleep(ticks).await;
+pub async fn sleep(duration: TimeUnit) {
+    async_scheduler::executor::sleep(duration.integer()).await;
 }
+
+#[derive(Clone, Copy, Debug)]
+struct TickerState {
+    /// Number of times counter wrapped.
+    num_full_cycles: u32,
+}
+
+static TICKS: Mutex<Cell<TickerState>> = Mutex::new(Cell::new(TickerState { num_full_cycles: 0 }));
 
 #[interrupt]
 unsafe fn LPTIM1() {
-    critical_section::with(|cs| {
-        let ticks = TICKS.borrow(cs).get();
-        TICKS.borrow(cs).set(ticks + 1);
-    });
+    let lptim = &(*LPTIM::ptr());
+    let flags = lptim.isr.read();
 
-    // Clear the interrupt
-    (*LPTIM::ptr()).icr.write(|w| w.arrmcf().clear());
+    if flags.arrm().is_set() {
+        debug_rprintln!("update event");
+
+        critical_section::with(|cs| {
+            let state = TICKS.borrow(cs).get();
+            TICKS.borrow(cs).set(TickerState {
+                num_full_cycles: state.num_full_cycles + 1,
+            });
+        });
+
+        // Clear both interrupts: this one will wake up the CPU anyway.
+        lptim.icr.write(|w| w.arrmcf().clear().cmpmcf().clear());
+    } else if flags.cmpm().is_set() {
+        debug_rprintln!("compare event");
+
+        // Set CMP to 0xFFFF so interrupt will merge with Update interrupt.
+        lptim.cmp.write(|w| w.cmp().bits(Ticker::MAX_COUNTER));
+
+        // Clear compare interrupt only so we don't lose update event.
+        lptim.icr.write(|w| w.cmpmcf().clear());
+    }
 }

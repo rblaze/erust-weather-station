@@ -4,6 +4,7 @@ use portable_atomic::{AtomicU32, Ordering};
 use async_scheduler::executor::{set_environment, Environment, Executor};
 use cortex_m::peripheral::{scb::VectActive, SCB};
 use once_cell::sync::OnceCell;
+use rtt_target::debug_rprintln;
 
 use crate::error::Error;
 use crate::system_time::Ticker;
@@ -31,17 +32,18 @@ impl Env {
 }
 
 impl Environment for Env {
-    fn sleep_if_zero(&self, mask: &AtomicU32) {
+    fn wait_for_event_with_timeout(&self, mask: &AtomicU32, tick: Option<u32>) {
+        debug_rprintln!("waiting for event, timeout {:?}", tick);
         assert!(
             in_thread_mode(),
             "calling sleep_if_zero() in interrupt handler"
         );
 
-        critical_section::with(|_| {
+        critical_section::with(|cs| {
             if mask.load(Ordering::Acquire) == 0 {
                 // Critical section prevents interrupt handler from updating 'mask' here.
                 // Pending interrupt will wake up CPU and exit critical section.
-                self.ticker.wait_for_tick();
+                self.ticker.sleep_until(cs, tick);
             }
         });
     }

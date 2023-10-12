@@ -10,3 +10,9 @@ impl From<async_scheduler::executor::EnvError> for Error {
         Error::Environment(error)
     }
 }
+
+impl From<void::Void> for Error {
+    fn from(_error: void::Void) -> Self {
+        unreachable!()
+    }
+}

@@ -1,13 +1,14 @@
 use core::cmp;
 use core::iter::from_fn;
 
+use embedded_time::rate::Hertz;
 use rtt_target::debug_rprintln;
-use stm32l0xx_hal::exti::{DirectLine, Exti};
-use stm32l0xx_hal::lptim::{ClockSrc, LpTimer};
-use stm32l0xx_hal::pac::{self, RCC, TIM21};
-use stm32l0xx_hal::pwr::PWR;
+use stm32l0xx_hal::exti::{DirectLine, Exti, ExtiLine, GpioLine};
+use stm32l0xx_hal::gpio::{GpioExt, Port};
+use stm32l0xx_hal::pac::{self, interrupt, EXTI, RCC, TIM21};
 use stm32l0xx_hal::rcc::RccExt;
 use stm32l0xx_hal::rcc::{self, Enable};
+use stm32l0xx_hal::syscfg::SYSCFG;
 
 use crate::error::Error;
 use crate::system_time::Ticker;
@@ -31,20 +32,30 @@ impl Board {
         debug_rprintln!("LSI freq: {}", lsi_freq);
 
         let mut rcc = dp.RCC.freeze(rcc::Config::msi(rcc::MSIRange::Range5));
-        let mut pwr = PWR::new(dp.PWR, &mut rcc);
-        let mut exti = Exti::new(dp.EXTI);
+        let mut syscfg = SYSCFG::new(dp.SYSCFG, &mut rcc);
+        let gpioc = dp.GPIOC.split(&mut rcc);
+        let _button = gpioc.pc13.into_floating_input();
 
-        let lptimer = LpTimer::init_periodic(dp.LPTIM, &mut pwr, &mut rcc, ClockSrc::Lsi);
+        let ticker = Ticker::new(dp.LPTIM, &mut rcc, Hertz(lsi_freq));
+
+        let mut exti = Exti::new(dp.EXTI);
         let exti_line = DirectLine::Lptim1;
         exti.listen_direct(exti_line);
 
+        // Enable button interrupt to force-wakeup the board.
+        exti.listen_gpio(
+            &mut syscfg,
+            Port::PC,
+            GpioLine::from_raw_line(13).unwrap(),
+            stm32l0xx_hal::exti::TriggerEdge::Falling,
+        );
+
         unsafe {
             pac::NVIC::unmask(pac::Interrupt::LPTIM1);
+            pac::NVIC::unmask(pac::Interrupt::EXTI4_15);
         }
 
-        Ok(Self {
-            ticker: Ticker::new(lptimer),
-        })
+        Ok(Self { ticker })
     }
 
     /// Measure LSI clock frequency against HSI16 clock.
@@ -167,4 +178,11 @@ impl Board {
 
         tim21.ccr1.read().ccr().bits()
     }
+}
+
+#[interrupt]
+unsafe fn EXTI4_15() {
+    debug_rprintln!("button interrupt");
+    // Clear interrupts.
+    (*EXTI::ptr()).pr.write(|w| w.pif13().clear());
 }
