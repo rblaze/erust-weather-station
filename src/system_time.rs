@@ -6,7 +6,7 @@ use embedded_time::fixed_point::FixedPoint;
 use embedded_time::rate::{Fraction, Hertz};
 use embedded_time::{Clock, Instant};
 use rtt_target::debug_rprintln;
-use stm32l0xx_hal::pac::{self, interrupt, LPTIM, RCC};
+use stm32l0xx_hal::pac::{self, interrupt, LPTIM};
 use stm32l0xx_hal::rcc::{Enable, Rcc, Reset};
 
 pub type TimeUnit = Milliseconds;
@@ -23,9 +23,7 @@ impl Ticker {
 
     pub fn new(timer: pac::LPTIM, rcc: &mut Rcc, lsi_freq: Hertz) -> Self {
         // Use LSI as LPTIM clock source.
-        unsafe {
-            (*RCC::ptr()).ccipr.modify(|_, w| w.lptim1sel().lsi());
-        }
+        rcc.ccipr.modify(|_, w| w.lptim1sel().lsi());
         pac::LPTIM::enable(rcc);
         pac::LPTIM::reset(rcc);
 
