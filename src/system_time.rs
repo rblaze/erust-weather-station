@@ -54,7 +54,7 @@ impl Ticker {
         // Start counting
         timer.cr.write(|w| w.cntstrt().start().enable().enabled());
 
-        // Minimize fraction by rounding lsi_freq to the multiple of 128 (prescaler)
+        // Minimize fraction by rounding lsi_freq to the multiple of 128 (prescaler).
         let conversion_factor =
             (Self::SCALING_FACTOR * Fraction::new((lsi_freq / 128).integer(), 1)).recip();
 
@@ -72,22 +72,30 @@ impl Ticker {
     /// Gets current tick count in LPTIM ticks.
     /// Public API is in 1KHz timer so this function is private.
     fn lptim_ticks(&self) -> u32 {
-        critical_section::with(|cs| {
-            // FIXME: it is possible to read cycles when CNT is 0xffff and then
-            // read CNT as 0/1/2/..., missing the cycle count update. Check for
-            // pending interrupt or do cycle read before and after CNT. If results differ,
-            // retry.
-            let cycles = TICKS.borrow(cs).get().num_full_cycles;
+        // It is possible to for `num_full_cycles` to increment and counter
+        // wrap to zero between their reads. So we try reading the cycles before
+        // and after the counter. If cycles number don't change, the result is valid.
+        loop {
+            let cycles = critical_section::with(|cs| TICKS.borrow(cs).get().num_full_cycles);
             let current_cycle_ticks: u32 = self.timer.cnt.read().cnt().bits().into();
-            debug_rprintln!("LPTIM ticks: {} {}", cycles, current_cycle_ticks);
-            (cycles * Self::CYCLE_LENGTH) + current_cycle_ticks
-        })
+            let control_cycles =
+                critical_section::with(|cs| TICKS.borrow(cs).get().num_full_cycles);
+
+            if cycles == control_cycles {
+                // At 300Hz, 32-bit clock will wrap at ~165 days.
+                // TODO: support clock wraping or switch to 64-bit ticks.
+                return (cycles * Self::CYCLE_LENGTH) + current_cycle_ticks;
+            } else {
+                debug_rprintln!("LPTIM read retry, {} != {}", cycles, control_cycles);
+            }
+        }
     }
 
     /// Gets current tick count in API ticks.
     pub fn ticks(&self) -> u32 {
+        // FIXME: with conversion factor like 1000/293, u32 will overflow at ~2^22 ticks
+        // or in 4 hours.
         let ticks = Fraction::new(self.lptim_ticks(), 1) * self.conversion_factor;
-        debug_rprintln!("API ticks: {:?} {}", ticks, ticks.to_integer());
         ticks.to_integer()
     }
 
@@ -108,7 +116,14 @@ impl Ticker {
             }
         }
         self.timer.cmp.write(|w| w.cmp().bits(target_counter));
-        cortex_m::asm::wfi();
+
+        // Check if the counter didn't run over our target already.
+        if self.timer.cnt.read().cnt().bits() < target_counter {
+            cortex_m::asm::wfi();
+        } else {
+            // It did run over, disable CMP and don't wait for interrupt.
+            self.timer.cmp.write(|w| w.cmp().bits(Self::MAX_COUNTER));
+        }
     }
 }
 
