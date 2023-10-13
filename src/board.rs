@@ -4,17 +4,23 @@ use core::iter::from_fn;
 use embedded_time::rate::Hertz;
 use rtt_target::debug_rprintln;
 use stm32l0xx_hal::exti::{DirectLine, Exti, ExtiLine, GpioLine};
-use stm32l0xx_hal::gpio::{GpioExt, Port};
-use stm32l0xx_hal::pac::{self, interrupt, EXTI, RCC, TIM21};
-use stm32l0xx_hal::rcc::RccExt;
-use stm32l0xx_hal::rcc::{self, Enable};
+use stm32l0xx_hal::gpio::gpioc::{PC0, PC1};
+use stm32l0xx_hal::gpio::{GpioExt, OpenDrain, Output, Port};
+use stm32l0xx_hal::i2c::I2c;
+use stm32l0xx_hal::pac::{self, interrupt, EXTI, I2C3, RCC, TIM21};
+use stm32l0xx_hal::rcc::{self, Enable, RccExt};
 use stm32l0xx_hal::syscfg::SYSCFG;
 
 use crate::error::Error;
 use crate::system_time::Ticker;
 
+pub type I2cSda = PC1<Output<OpenDrain>>;
+pub type I2cScl = PC0<Output<OpenDrain>>;
+pub type I2cBus = I2c<I2C3, I2cSda, I2cScl>;
+
 pub struct Board {
     pub ticker: Ticker,
+    pub i2c: I2cBus,
 }
 
 impl Board {
@@ -36,6 +42,10 @@ impl Board {
         let gpioc = dp.GPIOC.split(&mut rcc);
         let _button = gpioc.pc13.into_floating_input();
 
+        let i2c_sda = gpioc.pc1.into_open_drain_output();
+        let i2c_scl = gpioc.pc0.into_open_drain_output();
+        let i2c = I2c::new(dp.I2C3, i2c_sda, i2c_scl, Hertz(100_000), &mut rcc);
+
         let ticker = Ticker::new(dp.LPTIM, &mut rcc, Hertz(lsi_freq));
 
         let mut exti = Exti::new(dp.EXTI);
@@ -55,7 +65,7 @@ impl Board {
             pac::NVIC::unmask(pac::Interrupt::EXTI4_15);
         }
 
-        Ok(Self { ticker })
+        Ok(Self { ticker, i2c })
     }
 
     /// Measure LSI clock frequency against HSI16 clock.

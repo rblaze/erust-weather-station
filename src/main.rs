@@ -4,8 +4,10 @@
 mod board;
 mod env;
 mod error;
+mod screen;
 mod system_time;
 
+use core::fmt::Write;
 use core::pin::pin;
 
 use async_scheduler::executor::LocalExecutor;
@@ -18,6 +20,7 @@ use rtt_target::rtt_init_print;
 use stm32l0xx_hal::pac;
 
 use crate::error::Error;
+use crate::screen::Screen;
 
 use panic_probe as _;
 // use panic_halt as _;
@@ -42,8 +45,16 @@ fn main() -> ! {
         env::init_env(board.ticker)?;
 
         let task = pin!(panic_if_exited(async {
+            // LCD initialization wait
+            system_time::sleep(100.milliseconds()).await;
+
+            let mut display = Screen::new(board.i2c)?;
+
             let mut i = 0u32;
             loop {
+                display.cls()?;
+                display.write_fmt(format_args!("loop {}", i))?;
+
                 debug_rprintln!("loop {}", i);
                 i += 1;
                 system_time::sleep(2000.milliseconds()).await;
