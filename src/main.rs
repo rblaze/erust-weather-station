@@ -4,7 +4,9 @@
 mod board;
 mod env;
 mod error;
+mod hd44780;
 mod screen;
+mod st7036;
 mod system_time;
 
 use core::fmt::Write;
