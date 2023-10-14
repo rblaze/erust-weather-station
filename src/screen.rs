@@ -5,8 +5,8 @@ use embedded_hal::blocking::i2c::Write;
 
 use crate::board::I2cBus;
 use crate::error::Error;
-use crate::hd44780::{self, *};
-use crate::st7036::*;
+use crate::hd44780::*;
+use crate::st7036;
 
 pub struct Screen {
     i2c: I2cBus,
@@ -29,43 +29,14 @@ impl Screen {
     }
 
     fn init(&mut self) -> Result<(), Error> {
-        let command = Self::function_set(
-            BusWidth::EightBits,
-            DisplayHeight::TwoLines,
-            FontHeight::Normal,
-            0,
-        );
-        debug_assert_eq!(command, 0x38);
-        self.send_command(command)?;
+        self.send_command(st7036::INIT_SEQUENCE[0][0])?;
         cortex_m::asm::delay(1000);
 
-        let command = Self::function_set(
-            BusWidth::EightBits,
-            DisplayHeight::TwoLines,
-            FontHeight::Normal,
-            1,
-        );
-        debug_assert_eq!(command, 0x39);
-        self.send_command(command)?;
+        self.send_command(st7036::INIT_SEQUENCE[1][0])?;
         cortex_m::asm::delay(1000);
 
-        let contrast = 40; // Taked from initialization example, 0b00101000
-        let v0_amplified_ratio = 5;
-
-        let commands = [
-            0x00, // write commands
-            bias_set(Bias::Set1_5, BiasFixedBit::OtherDisplay),
-            contrast_set(contrast),
-            power_icon_contrast_set(IconState::On, BoosterState::On, contrast),
-            follower_control(FollowerState::On, v0_amplified_ratio),
-            display_on_off(DisplayState::On, CursorState::Off, BlinkState::Off),
-            cls(),
-            entry_mode_set(TextDirection::LeftToRight, ShiftMode::CursorShift),
-        ];
-        debug_assert_eq!(
-            commands,
-            [0x00_u8, 0x14, 0x78, 0x5e, 0x6d, 0x0c, 0x01, 0x06]
-        );
+        let mut commands = [0; 8];
+        commands[1..].copy_from_slice(st7036::INIT_SEQUENCE[2]);
         self.i2c.write(Self::ADDR, &commands)?;
 
         Ok(())
@@ -74,16 +45,6 @@ impl Screen {
     fn send_command(&mut self, command: u8) -> Result<(), Error> {
         self.i2c.write(Self::ADDR, &[0x00, command])?;
         Ok(())
-    }
-
-    /// This display has extended functions.
-    fn function_set(
-        data_width: BusWidth,
-        display_height: DisplayHeight,
-        font_height: FontHeight,
-        instruction_set: u8,
-    ) -> u8 {
-        hd44780::function_set(data_width, display_height, font_height) | (instruction_set & 0b0011)
     }
 
     pub fn cls(&mut self) -> Result<(), Error> {

@@ -14,14 +14,14 @@ enum Command {
 }
 
 /// Clears all display and returns the cursor to the home position (Address 0)
-pub fn cls() -> u8 {
+pub const fn cls() -> u8 {
     Command::ClearScreen as u8
 }
 
 /// Returns the cursor to the home position (Address 0).
 /// Returns display to its original state if it was shifted.
 #[allow(unused)]
-pub fn return_home() -> u8 {
+pub const fn return_home() -> u8 {
     Command::ReturnHome as u8
 }
 
@@ -47,7 +47,7 @@ pub enum ShiftMode {
 /// Sets the effect of subsequent DD RAM read or write operations.
 /// Sets the cursor move direction and specifies or not to shift the display.
 /// These operations are performed during data read and write.
-pub fn entry_mode_set(text_direction: TextDirection, shift_mode: ShiftMode) -> u8 {
+pub const fn entry_mode_set(text_direction: TextDirection, shift_mode: ShiftMode) -> u8 {
     Command::EntryModeSet as u8 | text_direction as u8 | shift_mode as u8
 }
 
@@ -72,7 +72,7 @@ pub enum BlinkState {
     Off = 0,
 }
 
-pub fn display_on_off(
+pub const fn display_on_off(
     display_state: DisplayState,
     cursor_state: CursorState,
     blink_state: BlinkState,
@@ -89,7 +89,7 @@ pub enum ShiftDirection {
 
 /// Moves the cursor and shifts the display without changing DD RAM contents
 #[allow(unused)]
-pub fn cursor_display_shift(shift_mode: ShiftMode, shift_direction: ShiftDirection) -> u8 {
+pub const fn cursor_display_shift(shift_mode: ShiftMode, shift_direction: ShiftDirection) -> u8 {
     Command::CursorDisplayShift as u8 | ((shift_mode as u8) << 1) | shift_direction as u8
 }
 
@@ -114,7 +114,7 @@ pub enum FontHeight {
     High = 0b0000_0100,
 }
 
-pub fn function_set(
+pub const fn function_set(
     data_width: BusWidth,
     display_height: DisplayHeight,
     font_height: FontHeight,
@@ -123,11 +123,11 @@ pub fn function_set(
 }
 
 #[allow(unused)]
-pub fn set_gcram_address(address: u8) -> u8 {
+pub const fn set_gcram_address(address: u8) -> u8 {
     Command::SetCgramAddress as u8 | (address & 0b0011_1111)
 }
 
 #[allow(unused)]
-pub fn set_ddram_address(address: u8) -> u8 {
+pub const fn set_ddram_address(address: u8) -> u8 {
     Command::SetDdramAddress as u8 | (address & 0b0111_1111)
 }
