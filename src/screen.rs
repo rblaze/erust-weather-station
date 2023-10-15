@@ -2,25 +2,19 @@
 
 use bitflags::bitflags;
 use embedded_hal::blocking::i2c::Write;
+use lcd::hd44780::*;
+use lcd::screen::Screen;
+use lcd::st7036::*;
 
 use crate::board::I2cBus;
 use crate::error::Error;
-use crate::hd44780::*;
-use crate::st7036;
 
-pub struct Screen {
+pub struct Lcd {
     i2c: I2cBus,
 }
 
-#[allow(unused)]
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum State {
-    Off,
-    On,
-}
-
-impl Screen {
-    const ADDR: u8 = 0x3C;
+impl Lcd {
+    const I2C_ADDR: u8 = 0x3C;
 
     pub fn new(i2c: I2cBus) -> Result<Self, Error> {
         let mut screen = Self { i2c };
@@ -29,49 +23,37 @@ impl Screen {
     }
 
     fn init(&mut self) -> Result<(), Error> {
-        self.send_command(st7036::INIT_SEQUENCE[0][0])?;
+        self.send_command(lcd::st7036::function_set(
+            BusWidth::EightBits,
+            DisplayHeight::TwoLines,
+            FontHeight::Normal,
+            1,
+        ))?;
         cortex_m::asm::delay(1000);
 
-        self.send_command(st7036::INIT_SEQUENCE[1][0])?;
-        cortex_m::asm::delay(1000);
-
-        let mut commands = [0; 8];
-        commands[1..].copy_from_slice(st7036::INIT_SEQUENCE[2]);
-        self.i2c.write(Self::ADDR, &commands)?;
-
-        Ok(())
-    }
-
-    fn send_command(&mut self, command: u8) -> Result<(), Error> {
-        self.i2c.write(Self::ADDR, &[0x00, command])?;
-        Ok(())
-    }
-
-    pub fn cls(&mut self) -> Result<(), Error> {
-        self.send_command(cls())
-    }
-
-    pub fn write(&mut self, s: &str) -> Result<(), Error> {
-        const SCREEN_WIDTH: usize = 20;
-        let mut string_buf = [0; SCREEN_WIDTH + 1];
-        string_buf[0] = Control::DATA.bits();
-
-        // Copy `s` to string buffer, replacing non-ASCII characters with '?'
-        let len = s
-            .chars()
-            .take(SCREEN_WIDTH)
-            .map(|c| if c.is_ascii() { c } else { '?' })
-            .fold(1, |i, c| {
-                string_buf[i] = c as u8;
-                i + 1
-            });
-
-        self.i2c.write(Self::ADDR, &string_buf[..len])?;
+        self.send_commands(&[
+            power_icon_contrast_set(IconState::Off, BoosterState::On, 32),
+            follower_control(FollowerState::On, 5),
+            display_on_off(DisplayState::On, CursorState::Off, BlinkState::Off),
+        ])?;
         Ok(())
     }
 }
 
-impl core::fmt::Write for Screen {
+impl Screen<20, 2, crate::error::Error> for Lcd {
+    fn send_command(&mut self, command: u8) -> Result<(), Error> {
+        self.i2c.write(Self::I2C_ADDR, &[0x00, command])?;
+        Ok(())
+    }
+
+    fn send_data(&mut self, data: u8) -> Result<(), crate::error::Error> {
+        self.i2c
+            .write(Self::I2C_ADDR, &[Control::DATA.bits(), data])?;
+        Ok(())
+    }
+}
+
+impl core::fmt::Write for Lcd {
     fn write_str(&mut self, s: &str) -> core::fmt::Result {
         self.write(s).map_err(|_| core::fmt::Error)
     }

@@ -4,9 +4,7 @@
 mod board;
 mod env;
 mod error;
-mod hd44780;
 mod screen;
-mod st7036;
 mod system_time;
 
 use core::fmt::Write;
@@ -16,13 +14,14 @@ use async_scheduler::executor::LocalExecutor;
 use cortex_m_rt::entry;
 use embedded_time::duration::Extensions;
 use futures::task::LocalFutureObj;
+use lcd::screen::Screen;
 use rtt_target::debug_rprintln;
 #[cfg(debug_assertions)]
 use rtt_target::rtt_init_print;
 use stm32l0xx_hal::pac;
 
 use crate::error::Error;
-use crate::screen::Screen;
+use crate::screen::Lcd;
 
 use panic_probe as _;
 // use panic_halt as _;
@@ -50,7 +49,7 @@ fn main() -> ! {
             // LCD initialization wait
             system_time::sleep(100.milliseconds()).await;
 
-            let mut display = Screen::new(board.i2c)?;
+            let mut display = Lcd::new(board.i2c)?;
 
             let mut i = 0u32;
             loop {
