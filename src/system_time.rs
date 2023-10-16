@@ -33,12 +33,12 @@ impl Ticker {
 
         // Copied from HAL LpTimer::configure()
         // Disable the timer. The prescaler can only be changed while it's disabled.
-        timer.cr.write(|w| w.enable().clear_bit());
-        timer.cfgr.write(|w| w.presc().div128());
+        timer.cr.modify(|_, w| w.enable().clear_bit());
+        timer.cfgr.modify(|_, w| w.presc().div128());
         // Enable autoreload and compare-match interrupts.
         timer.ier.write(|w| w.arrmie().enabled().cmpmie().enabled());
 
-        timer.cr.write(|w| w.enable().enabled());
+        timer.cr.modify(|_, w| w.enable().enabled());
 
         // "After setting the ENABLE bit, a delay of two counter clock is needed before the LPTIM is
         // actually enabled."
@@ -51,8 +51,11 @@ impl Ticker {
         // When no wakeup needed, set CMP equal to ARR so interrupt will merge with Update interrupt.
         timer.cmp.write(|w| w.cmp().bits(Self::MAX_COUNTER));
 
+        // Wait for register update operation to complete
+        while timer.isr.read().cmpok().bit_is_clear() {}
+
         // Start counting
-        timer.cr.write(|w| w.cntstrt().start().enable().enabled());
+        timer.cr.modify(|_, w| w.cntstrt().start());
 
         // Minimize fraction by rounding lsi_freq to the multiple of 128 (prescaler).
         let conversion_factor =
@@ -115,7 +118,11 @@ impl Ticker {
                 target_counter = (lptim_tick % Self::CYCLE_LENGTH) as u16;
             }
         }
+        // Clear CMPOK bit, write to CMP and wait for CMPOK to be set again
+        // to make sure there is no races later.
+        self.timer.icr.write(|w| w.cmpokcf().set_bit());
         self.timer.cmp.write(|w| w.cmp().bits(target_counter));
+        while self.timer.isr.read().cmpok().bit_is_clear() {}
 
         // Check if the counter didn't run over our target already.
         if self.timer.cnt.read().cnt().bits() < target_counter {
