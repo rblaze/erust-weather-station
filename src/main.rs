@@ -50,11 +50,14 @@ fn main() -> ! {
             system_time::sleep(100.milliseconds()).await;
 
             let mut display = Lcd::new(board.i2c)?;
+            display.cls()?;
 
             let mut i = 0u32;
             loop {
-                display.cls()?;
+                display.set_output_line(0)?;
                 display.write_fmt(format_args!("loop {}", i))?;
+                display.set_output_line(1)?;
+                display.write("demo mode")?;
 
                 debug_rprintln!("loop {}", i);
                 i += 1;

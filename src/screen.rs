@@ -23,19 +23,19 @@ impl Lcd {
     }
 
     fn init(&mut self) -> Result<(), Error> {
-        self.send_command(lcd::st7036::function_set(
-            BusWidth::EightBits,
-            DisplayHeight::TwoLines,
-            FontHeight::Normal,
-            1,
-        ))?;
+        self.send_commands(INIT_SEQUENCE[0])?;
         cortex_m::asm::delay(1000);
+        self.send_commands(INIT_SEQUENCE[1])?;
+        cortex_m::asm::delay(1000);
+        self.send_commands(INIT_SEQUENCE[2])?;
+        Ok(())
+    }
 
-        self.send_commands(&[
-            power_icon_contrast_set(IconState::Off, BoosterState::On, 32),
-            follower_control(FollowerState::On, 5),
-            display_on_off(DisplayState::On, CursorState::Off, BlinkState::Off),
-        ])?;
+    pub fn set_output_line(&mut self, line: usize) -> Result<(), Error> {
+        if line > 1 {
+            return Err(Error::InvalidLcdLine);
+        }
+        self.send_command(set_ddram_address(line as u8 * 0x40))?;
         Ok(())
     }
 }

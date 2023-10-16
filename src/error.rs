@@ -6,6 +6,7 @@ pub enum Error {
     CoreFmt,
     Environment(async_scheduler::executor::EnvError),
     I2c(stm32l0xx_hal::i2c::Error),
+    InvalidLcdLine,
 }
 
 impl From<core::fmt::Error> for Error {
