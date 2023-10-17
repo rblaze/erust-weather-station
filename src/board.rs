@@ -46,7 +46,7 @@ impl Board {
 
         let i2c_sda = gpioc.pc1.into_open_drain_output();
         let i2c_scl = gpioc.pc0.into_open_drain_output();
-        let i2c = I2c::new(dp.I2C3, i2c_sda, i2c_scl, Hertz(100_000), &mut rcc);
+        let i2c = I2c::new(dp.I2C3, i2c_sda, i2c_scl, Hertz(50_000), &mut rcc);
 
         let ticker = Ticker::new(dp.LPTIM, rcc, pwr, cp.SCB, Hertz(lsi_freq));
 
