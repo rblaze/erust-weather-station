@@ -8,6 +8,7 @@ use stm32l0xx_hal::gpio::gpioc::{PC0, PC1};
 use stm32l0xx_hal::gpio::{GpioExt, OpenDrain, Output, Port};
 use stm32l0xx_hal::i2c::I2c;
 use stm32l0xx_hal::pac::{self, interrupt, EXTI, I2C3, RCC, TIM21};
+use stm32l0xx_hal::pwr::PWR;
 use stm32l0xx_hal::rcc::{self, Enable, RccExt};
 use stm32l0xx_hal::syscfg::SYSCFG;
 
@@ -24,7 +25,7 @@ pub struct Board {
 }
 
 impl Board {
-    pub fn new(_cp: pac::CorePeripherals, mut dp: pac::Peripherals) -> Result<Self, Error> {
+    pub fn new(cp: pac::CorePeripherals, mut dp: pac::Peripherals) -> Result<Self, Error> {
         // Enable debug while sleeping to keep probe-rs happy while WFI
         #[cfg(debug_assertions)]
         #[rustfmt::skip]
@@ -38,6 +39,7 @@ impl Board {
         debug_rprintln!("LSI freq: {}", lsi_freq);
 
         let mut rcc = dp.RCC.freeze(rcc::Config::msi(rcc::MSIRange::Range5));
+        let pwr = PWR::new(dp.PWR, &mut rcc);
         let mut syscfg = SYSCFG::new(dp.SYSCFG, &mut rcc);
         let gpioc = dp.GPIOC.split(&mut rcc);
         let _button = gpioc.pc13.into_floating_input();
@@ -46,7 +48,7 @@ impl Board {
         let i2c_scl = gpioc.pc0.into_open_drain_output();
         let i2c = I2c::new(dp.I2C3, i2c_sda, i2c_scl, Hertz(100_000), &mut rcc);
 
-        let ticker = Ticker::new(dp.LPTIM, &mut rcc, Hertz(lsi_freq));
+        let ticker = Ticker::new(dp.LPTIM, rcc, pwr, cp.SCB, Hertz(lsi_freq));
 
         let mut exti = Exti::new(dp.EXTI);
         let exti_line = DirectLine::Lptim1;

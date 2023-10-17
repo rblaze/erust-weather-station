@@ -1,4 +1,4 @@
-use core::cell::Cell;
+use core::cell::{Cell, RefCell};
 
 use critical_section::{CriticalSection, Mutex};
 use embedded_time::duration::Milliseconds;
@@ -7,25 +7,36 @@ use embedded_time::rate::{Fraction, Hertz};
 use embedded_time::{Clock, Instant};
 use rtt_target::debug_rprintln;
 use stm32l0xx_hal::pac::{self, interrupt, LPTIM};
+use stm32l0xx_hal::pwr::PWR;
+#[cfg(not(debug_assertions))]
+use stm32l0xx_hal::pwr::{PowerMode, StopModeConfig};
 use stm32l0xx_hal::rcc::{Enable, Rcc, Reset};
 
 pub type TimeUnit = Milliseconds;
 
-#[derive(Debug)]
+#[cfg_attr(debug_assertions, allow(unused))]
+pub struct Sleeper {
+    pwr: PWR,
+    scb: pac::SCB,
+    rcc: Rcc,
+}
+
 pub struct Ticker {
     timer: pac::LPTIM,
     conversion_factor: Fraction,
+    #[cfg_attr(debug_assertions, allow(unused))]
+    sleeper: RefCell<Sleeper>,
 }
 
 impl Ticker {
     const MAX_COUNTER: u16 = 0xffff;
     const CYCLE_LENGTH: u32 = (Self::MAX_COUNTER as u32) + 1;
 
-    pub fn new(timer: pac::LPTIM, rcc: &mut Rcc, lsi_freq: Hertz) -> Self {
+    pub fn new(timer: pac::LPTIM, mut rcc: Rcc, pwr: PWR, scb: pac::SCB, lsi_freq: Hertz) -> Self {
         // Use LSI as LPTIM clock source.
         rcc.ccipr.modify(|_, w| w.lptim1sel().lsi());
-        pac::LPTIM::enable(rcc);
-        pac::LPTIM::reset(rcc);
+        pac::LPTIM::enable(&mut rcc);
+        pac::LPTIM::reset(&mut rcc);
 
         // Enable largest prescaler and longest reload cycle.
         // With LSI running at ~40KHz, this gives ~300 ticks per second and
@@ -69,6 +80,7 @@ impl Ticker {
         Ticker {
             timer,
             conversion_factor,
+            sleeper: RefCell::new(Sleeper { pwr, scb, rcc }),
         }
     }
 
@@ -126,7 +138,24 @@ impl Ticker {
 
         // Check if the counter didn't run over our target already.
         if self.timer.cnt.read().cnt().bits() < target_counter {
+            // Probe disconnects when entering STOP mode so limit
+            // to SLEEP for debug builds.
+            #[cfg(debug_assertions)]
             cortex_m::asm::wfi();
+            #[cfg(not(debug_assertions))]
+            {
+                let sleeper = &mut *self.sleeper.borrow_mut();
+                sleeper
+                    .pwr
+                    .stop_mode(
+                        &mut sleeper.scb,
+                        &mut sleeper.rcc,
+                        StopModeConfig {
+                            ultra_low_power: true,
+                        },
+                    )
+                    .enter();
+            }
         } else {
             // It did run over, disable CMP and don't wait for interrupt.
             self.timer.cmp.write(|w| w.cmp().bits(Self::MAX_COUNTER));
