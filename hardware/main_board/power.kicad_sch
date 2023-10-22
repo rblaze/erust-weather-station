@@ -1,0 +1,14 @@
+(kicad_sch (version 20230121) (generator eeschema)
+
+  (uuid b757aa36-ead3-4de9-b19a-92ed8605b157)
+
+  (paper "A4")
+
+  (title_block
+    (title "Power components")
+  )
+
+  (lib_symbols
+  )
+
+)

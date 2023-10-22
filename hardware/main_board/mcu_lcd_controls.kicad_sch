@@ -1,0 +1,14 @@
+(kicad_sch (version 20230121) (generator eeschema)
+
+  (uuid 579295bd-a892-4301-afcf-e4c03719645c)
+
+  (paper "A4")
+
+  (title_block
+    (title "MCU, LCD and Control components")
+  )
+
+  (lib_symbols
+  )
+
+)

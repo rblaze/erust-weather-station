@@ -1,0 +1,52 @@
+(kicad_sch (version 20230121) (generator eeschema)
+
+  (uuid e7586151-38a0-41a9-9cce-542cfb7665db)
+
+  (paper "A4")
+
+  (title_block
+    (title "Multipurpose main board")
+  )
+
+  (lib_symbols
+  )
+
+
+  (sheet (at 87.63 95.25) (size 33.02 26.67) (fields_autoplaced)
+    (stroke (width 0.1524) (type solid))
+    (fill (color 0 0 0 0.0000))
+    (uuid 250dd9be-072f-4499-bde0-07971863324f)
+    (property "Sheetname" "control" (at 87.63 94.5384 0)
+      (effects (font (size 1.27 1.27)) (justify left bottom))
+    )
+    (property "Sheetfile" "mcu_lcd_controls.kicad_sch" (at 87.63 122.5046 0)
+      (effects (font (size 1.27 1.27)) (justify left top))
+    )
+    (instances
+      (project "main_board"
+        (path "/e7586151-38a0-41a9-9cce-542cfb7665db" (page "3"))
+      )
+    )
+  )
+
+  (sheet (at 29.21 93.98) (size 34.29 29.21) (fields_autoplaced)
+    (stroke (width 0.1524) (type solid))
+    (fill (color 0 0 0 0.0000))
+    (uuid 36d2f76b-6786-406f-96a1-52265f303dbc)
+    (property "Sheetname" "power" (at 29.21 93.2684 0)
+      (effects (font (size 1.27 1.27)) (justify left bottom))
+    )
+    (property "Sheetfile" "power.kicad_sch" (at 29.21 123.7746 0)
+      (effects (font (size 1.27 1.27)) (justify left top))
+    )
+    (instances
+      (project "main_board"
+        (path "/e7586151-38a0-41a9-9cce-542cfb7665db" (page "2"))
+      )
+    )
+  )
+
+  (sheet_instances
+    (path "/" (page "1"))
+  )
+)

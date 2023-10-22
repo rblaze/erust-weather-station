@@ -1,2 +1,6 @@
 /target
 /.vscode
+/hardware/main_board/fp-info-cache
+/hardware/main_board/~*.lck
+/hardware/main_board/main_board-backups/
+/hardware/shared/Project_Components.bak
