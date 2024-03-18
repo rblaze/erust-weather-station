@@ -6,6 +6,9 @@ use lcd::hd44780::*;
 use lcd::screen::Screen;
 use lcd::st7036::*;
 
+const WIDTH: usize = 20;
+const HEIGHT: usize = 2;
+
 pub struct Lcd<I2C> {
     i2c: I2C,
 }
@@ -40,7 +43,7 @@ where
     }
 }
 
-impl<I2C: i2c::I2c> Screen<20, 2, crate::error::Error> for Lcd<I2C>
+impl<I2C: i2c::I2c> Screen<WIDTH, HEIGHT, crate::error::Error> for Lcd<I2C>
 where
     Error: From<I2C::Error>,
 {
@@ -51,6 +54,24 @@ where
 
     fn send_data(&mut self, data: u8) -> Result<(), crate::error::Error> {
         self.i2c.write(Self::I2C_ADDR, &[0b0100_0000, data])?;
+        Ok(())
+    }
+
+    fn send_data_bytes(&mut self, data: &[u8]) -> Result<(), Error> {
+        if data.len() > 1 && data.len() <= WIDTH {
+            // Fast path. Copying a few bytes in the memory is faster
+            // than repeating I2C transactions.
+            // TODO: consider using uninit after maybe_uninit_write_slice stabilized.
+            let mut buf = [0; WIDTH + 1];
+            buf[0] = 0b0100_0000; // Following bytes are data.
+            buf[1..data.len()].clone_from_slice(&data);
+            self.i2c.write(Self::I2C_ADDR, &buf)?;
+        } else {
+            // Slow path.
+            for byte in data {
+                self.send_data(*byte)?;
+            }
+        }
         Ok(())
     }
 }
