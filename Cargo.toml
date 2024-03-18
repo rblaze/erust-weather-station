@@ -28,7 +28,7 @@ void = { version = "1", default-features = false }
 
 # panic-halt = "0.2.0"
 panic-probe = { version = "0.3", features = ["print-rtt"] }
-rtt-target = "0.4"
+rtt-target = "0.5"
 
 [[bin]]
 name = "weather-station"
