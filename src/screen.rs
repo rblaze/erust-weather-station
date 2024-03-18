@@ -9,6 +9,11 @@ use lcd::st7036::*;
 const WIDTH: usize = 20;
 const HEIGHT: usize = 2;
 
+enum TransactionMode {
+    Command = 0b0000_0000,
+    Data = 0b0100_0000,
+}
+
 pub struct Lcd<I2C> {
     i2c: I2C,
 }
@@ -48,12 +53,14 @@ where
     Error: From<I2C::Error>,
 {
     fn send_command(&mut self, command: u8) -> Result<(), Error> {
-        self.i2c.write(Self::I2C_ADDR, &[0x00, command])?;
+        self.i2c
+            .write(Self::I2C_ADDR, &[TransactionMode::Command as u8, command])?;
         Ok(())
     }
 
     fn send_data(&mut self, data: u8) -> Result<(), crate::error::Error> {
-        self.i2c.write(Self::I2C_ADDR, &[0b0100_0000, data])?;
+        self.i2c
+            .write(Self::I2C_ADDR, &[TransactionMode::Data as u8, data])?;
         Ok(())
     }
 
@@ -63,9 +70,9 @@ where
             // than repeating I2C transactions.
             // TODO: consider using uninit after maybe_uninit_write_slice stabilized.
             let mut buf = [0; WIDTH + 1];
-            buf[0] = 0b0100_0000; // Following bytes are data.
+            buf[0] = TransactionMode::Data as u8;
             buf[1..data.len() + 1].copy_from_slice(data);
-            self.i2c.write(Self::I2C_ADDR, &buf)?;
+            self.i2c.write(Self::I2C_ADDR, &buf[..data.len() + 1])?;
         } else {
             // Slow path.
             for byte in data {
