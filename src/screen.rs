@@ -1,7 +1,7 @@
 #![deny(unsafe_code)]
 
-use crate::error::{Error, I2cError};
-use embedded_hal::i2c::I2c;
+use crate::error::Error;
+use embedded_hal::i2c::{self};
 use lcd::hd44780::*;
 use lcd::screen::Screen;
 use lcd::st7036::*;
@@ -10,7 +10,10 @@ pub struct Lcd<I2C> {
     i2c: I2C,
 }
 
-impl<I2C: I2c<Error = I2cError>> Lcd<I2C> {
+impl<I2C: i2c::I2c> Lcd<I2C>
+where
+    Error: From<I2C::Error>,
+{
     const I2C_ADDR: u8 = 0x3C;
 
     pub fn new(i2c: I2C) -> Result<Self, Error> {
@@ -37,7 +40,10 @@ impl<I2C: I2c<Error = I2cError>> Lcd<I2C> {
     }
 }
 
-impl<I2C: I2c<Error = I2cError>> Screen<20, 2, crate::error::Error> for Lcd<I2C> {
+impl<I2C: i2c::I2c> Screen<20, 2, crate::error::Error> for Lcd<I2C>
+where
+    Error: From<I2C::Error>,
+{
     fn send_command(&mut self, command: u8) -> Result<(), Error> {
         self.i2c.write(Self::I2C_ADDR, &[0x00, command])?;
         Ok(())
@@ -49,7 +55,10 @@ impl<I2C: I2c<Error = I2cError>> Screen<20, 2, crate::error::Error> for Lcd<I2C>
     }
 }
 
-impl<I2C: I2c<Error = I2cError>> core::fmt::Write for Lcd<I2C> {
+impl<I2C: i2c::I2c> core::fmt::Write for Lcd<I2C>
+where
+    Error: From<I2C::Error>,
+{
     fn write_str(&mut self, s: &str) -> core::fmt::Result {
         self.write(s).map_err(|_| core::fmt::Error)
     }
