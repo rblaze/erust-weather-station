@@ -64,7 +64,7 @@ where
             // TODO: consider using uninit after maybe_uninit_write_slice stabilized.
             let mut buf = [0; WIDTH + 1];
             buf[0] = 0b0100_0000; // Following bytes are data.
-            buf[1..data.len()].clone_from_slice(&data);
+            buf[1..data.len() + 1].copy_from_slice(data);
             self.i2c.write(Self::I2C_ADDR, &buf)?;
         } else {
             // Slow path.
