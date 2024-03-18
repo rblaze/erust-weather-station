@@ -4,6 +4,7 @@
 mod board;
 mod env;
 mod error;
+mod hal_i2c;
 mod screen;
 mod system_time;
 

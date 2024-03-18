@@ -13,15 +13,16 @@ use stm32l0xx_hal::rcc::{self, Enable, RccExt};
 use stm32l0xx_hal::syscfg::SYSCFG;
 
 use crate::error::Error;
+use crate::hal_i2c::I2cBus;
 use crate::system_time::Ticker;
 
 pub type I2cSda = PC1<Output<OpenDrain>>;
 pub type I2cScl = PC0<Output<OpenDrain>>;
-pub type I2cBus = I2c<I2C3, I2cSda, I2cScl>;
+type I2cBus3 = I2c<I2C3, I2cSda, I2cScl>;
 
 pub struct Board {
     pub ticker: Ticker,
-    pub i2c: I2cBus,
+    pub i2c: I2cBus<I2cBus3>,
 }
 
 impl Board {
@@ -67,7 +68,10 @@ impl Board {
             pac::NVIC::unmask(pac::Interrupt::EXTI4_15);
         }
 
-        Ok(Self { ticker, i2c })
+        Ok(Self {
+            ticker,
+            i2c: I2cBus::new(i2c),
+        })
     }
 
     /// Measure LSI clock frequency against HSI16 clock.
