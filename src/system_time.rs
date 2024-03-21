@@ -174,8 +174,7 @@ impl Clock for Ticker {
 }
 
 pub async fn sleep(duration: TimeUnit) {
-    async_scheduler::executor::sleep(async_scheduler::time::Ticks::new(duration.integer().into()))
-        .await;
+    async_scheduler::executor::sleep(async_scheduler::time::Ticks::new(duration.integer())).await;
 }
 
 #[derive(Clone, Copy, Debug)]
