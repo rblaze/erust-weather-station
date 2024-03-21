@@ -20,9 +20,13 @@ pub type I2cSda = PC1<Output<OpenDrain>>;
 pub type I2cScl = PC0<Output<OpenDrain>>;
 type I2cBus3 = I2c<I2C3, I2cSda, I2cScl>;
 
+pub struct Peripherals {
+    pub i2c: I2cBus<I2cBus3>,
+}
+
 pub struct Board {
     pub ticker: Ticker,
-    pub i2c: I2cBus<I2cBus3>,
+    pub peripherals: Peripherals,
 }
 
 impl Board {
@@ -70,7 +74,9 @@ impl Board {
 
         Ok(Self {
             ticker,
-            i2c: I2cBus::new(i2c),
+            peripherals: Peripherals {
+                i2c: I2cBus::new(i2c),
+            },
         })
     }
 

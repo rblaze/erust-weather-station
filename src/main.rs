@@ -27,6 +27,26 @@ use crate::screen::Lcd;
 use panic_probe as _;
 // use panic_halt as _;
 
+async fn async_main(board: board::Peripherals) -> Result<(), Error> {
+    // LCD initialization wait
+    system_time::sleep(100.milliseconds().into()).await;
+
+    let mut display = Lcd::new(board.i2c)?;
+    display.cls()?;
+
+    let mut i = 0u32;
+    loop {
+        display.set_output_line(0)?;
+        display.write_fmt(format_args!("loop {}", i))?;
+        display.set_output_line(1)?;
+        display.write("demo mode")?;
+
+        debug_rprintln!("loop {}", i);
+        i += 1;
+        system_time::sleep(2000.milliseconds().into()).await;
+    }
+}
+
 async fn panic_if_exited<F: core::future::Future<Output = Result<(), Error>>>(f: F) {
     f.await.expect("error in task");
     unreachable!()
@@ -46,25 +66,7 @@ fn main() -> ! {
 
         env::init_env(board.ticker)?;
 
-        let task = pin!(panic_if_exited(async {
-            // LCD initialization wait
-            system_time::sleep(100.milliseconds().into()).await;
-
-            let mut display = Lcd::new(board.i2c)?;
-            display.cls()?;
-
-            let mut i = 0u32;
-            loop {
-                display.set_output_line(0)?;
-                display.write_fmt(format_args!("loop {}", i))?;
-                display.set_output_line(1)?;
-                display.write("demo mode")?;
-
-                debug_rprintln!("loop {}", i);
-                i += 1;
-                system_time::sleep(2000.milliseconds().into()).await;
-            }
-        }));
+        let task = pin!(panic_if_exited(async_main(board.peripherals)));
 
         LocalExecutor::new().run([LocalFutureObj::new(task)]);
         unreachable!();
