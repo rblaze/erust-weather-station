@@ -2,6 +2,7 @@ use core::cell::Cell;
 use portable_atomic::{AtomicU32, Ordering};
 
 use async_scheduler::executor::{set_environment, Environment, Executor};
+use async_scheduler::time::Ticks;
 use cortex_m::peripheral::{scb::VectActive, SCB};
 use once_cell::sync::OnceCell;
 use rtt_target::debug_rprintln;
@@ -32,7 +33,7 @@ impl Env {
 }
 
 impl Environment for Env {
-    fn wait_for_event_with_timeout(&self, mask: &AtomicU32, tick: Option<u32>) {
+    fn wait_for_event_with_timeout(&self, mask: &AtomicU32, tick: Option<Ticks>) {
         debug_rprintln!("waiting for event, timeout {:?}", tick);
         assert!(
             in_thread_mode(),
@@ -48,7 +49,7 @@ impl Environment for Env {
         });
     }
 
-    fn ticks(&self) -> u32 {
+    fn ticks(&self) -> Ticks {
         self.ticker.ticks()
     }
 

@@ -13,8 +13,8 @@ dependencies = [
 
 [[package]]
 name = "async-scheduler"
-version = "0.3.0"
-source = "git+https://github.com/rblaze/rust-async-scheduler.git#d665349822eb4b8f5a442b14f8ac720d51f0f861"
+version = "0.4.0"
+source = "git+https://github.com/rblaze/rust-async-scheduler.git#3dea79197418d936e952175e3c5bfac092d6b2f7"
 dependencies = [
  "critical-section",
  "fugit",

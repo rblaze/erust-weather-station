@@ -48,7 +48,7 @@ fn main() -> ! {
 
         let task = pin!(panic_if_exited(async {
             // LCD initialization wait
-            system_time::sleep(100.milliseconds()).await;
+            system_time::sleep(100.milliseconds().into()).await;
 
             let mut display = Lcd::new(board.i2c)?;
             display.cls()?;
@@ -62,7 +62,7 @@ fn main() -> ! {
 
                 debug_rprintln!("loop {}", i);
                 i += 1;
-                system_time::sleep(2000.milliseconds()).await;
+                system_time::sleep(2000.milliseconds().into()).await;
             }
         }));
 

@@ -1,5 +1,6 @@
 use core::cell::{Cell, RefCell};
 
+use async_scheduler::time::Ticks;
 use critical_section::{CriticalSection, Mutex};
 use embedded_time::duration::Milliseconds;
 use embedded_time::fixed_point::FixedPoint;
@@ -12,7 +13,8 @@ use stm32l0xx_hal::pwr::PWR;
 use stm32l0xx_hal::pwr::{PowerMode, StopModeConfig};
 use stm32l0xx_hal::rcc::{Enable, Rcc, Reset};
 
-pub type TimeUnit = Milliseconds;
+type TimerTicks = u64;
+pub type TimeUnit = Milliseconds<u64>;
 
 #[cfg_attr(debug_assertions, allow(unused))]
 pub struct Sleeper {
@@ -30,7 +32,7 @@ pub struct Ticker {
 
 impl Ticker {
     const MAX_COUNTER: u16 = 0xffff;
-    const CYCLE_LENGTH: u32 = (Self::MAX_COUNTER as u32) + 1;
+    const CYCLE_LENGTH: TimerTicks = (Self::MAX_COUNTER as TimerTicks) + 1;
 
     pub fn new(timer: pac::LPTIM, mut rcc: Rcc, pwr: PWR, scb: pac::SCB, lsi_freq: Hertz) -> Self {
         // Use LSI as LPTIM clock source.
@@ -86,20 +88,18 @@ impl Ticker {
 
     /// Gets current tick count in LPTIM ticks.
     /// Public API is in 1KHz timer so this function is private.
-    fn lptim_ticks(&self) -> u32 {
+    fn lptim_ticks(&self) -> TimerTicks {
         // It is possible to for `num_full_cycles` to increment and counter
         // wrap to zero between their reads. So we try reading the cycles before
-        // and after the counter. If cycles number don't change, the result is valid.
+        // and after the counter. If number of cycles doesn't change, the result is valid.
         loop {
             let cycles = critical_section::with(|cs| TICKS.borrow(cs).get().num_full_cycles);
-            let current_cycle_ticks: u32 = self.timer.cnt.read().cnt().bits().into();
+            let current_cycle_ticks: TimerTicks = self.timer.cnt.read().cnt().bits().into();
             let control_cycles =
                 critical_section::with(|cs| TICKS.borrow(cs).get().num_full_cycles);
 
             if cycles == control_cycles {
-                // At 300Hz, 32-bit clock will wrap at ~165 days.
-                // TODO: support clock wraping or switch to 64-bit ticks.
-                return (cycles * Self::CYCLE_LENGTH) + current_cycle_ticks;
+                return (cycles as TimerTicks * Self::CYCLE_LENGTH) + current_cycle_ticks;
             } else {
                 debug_rprintln!("LPTIM read retry, {} != {}", cycles, control_cycles);
             }
@@ -107,25 +107,23 @@ impl Ticker {
     }
 
     /// Gets current tick count in API ticks.
-    pub fn ticks(&self) -> u32 {
-        // FIXME: with conversion factor like 1000/293, u32 will overflow at ~2^22 ticks
-        // or in 4 hours.
-        let ticks = Fraction::new(self.lptim_ticks(), 1) * self.conversion_factor;
-        ticks.to_integer()
+    pub fn ticks(&self) -> Ticks {
+        let ticks = self.lptim_ticks() * self.conversion_factor;
+        Ticks::new(ticks)
     }
 
     /// Waits for the specified tick or next interrupt.
-    pub fn sleep_until(&self, cs: CriticalSection, tick: Option<u32>) {
+    pub fn sleep_until(&self, cs: CriticalSection, tick: Option<Ticks>) {
         let mut target_counter = Self::MAX_COUNTER;
 
         if let Some(tick) = tick {
             // This method is called from critical section, with interrupts disabled.
             // Therefore, missing cycles value update is irrelevant: update interrupt
             // will wakeup CPU anyway and we will redo the calculation.
-            let lptim_tick = (Fraction::new(tick, 1) / self.conversion_factor).to_integer();
+            let lptim_tick = tick.ticks() / self.conversion_factor;
             let target_cycle = lptim_tick / Self::CYCLE_LENGTH;
             let current_cycle = TICKS.borrow(cs).get().num_full_cycles;
-            if target_cycle == current_cycle {
+            if target_cycle == current_cycle.into() {
                 // Set CMP to wakeup at the right moment.
                 target_counter = (lptim_tick % Self::CYCLE_LENGTH) as u16;
             }
@@ -166,17 +164,18 @@ impl Ticker {
 // Since clock rate is expected to be known at compile time, set it to 1KHz
 // and convert to/from LPTIM ticks.
 impl Clock for Ticker {
-    type T = u32;
+    type T = u64;
 
     const SCALING_FACTOR: Fraction = TimeUnit::SCALING_FACTOR;
 
     fn try_now(&self) -> Result<Instant<Self>, embedded_time::clock::Error> {
-        Ok(Instant::new(self.ticks()))
+        Ok(Instant::new(self.ticks().ticks()))
     }
 }
 
 pub async fn sleep(duration: TimeUnit) {
-    async_scheduler::executor::sleep(duration.integer()).await;
+    async_scheduler::executor::sleep(async_scheduler::time::Ticks::new(duration.integer().into()))
+        .await;
 }
 
 #[derive(Clone, Copy, Debug)]
