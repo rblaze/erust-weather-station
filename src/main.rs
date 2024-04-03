@@ -13,13 +13,12 @@ use core::pin::pin;
 
 use async_scheduler::executor::LocalExecutor;
 use cortex_m_rt::entry;
-use embedded_time::duration::Extensions;
 use futures::task::LocalFutureObj;
 use lcd::screen::Screen;
 use rtt_target::debug_rprintln;
 #[cfg(debug_assertions)]
 use rtt_target::rtt_init_print;
-use stm32l0xx_hal::pac;
+use system_time::Duration;
 
 use crate::error::Error;
 use crate::screen::Lcd;
@@ -29,7 +28,7 @@ use panic_probe as _;
 
 async fn async_main(board: board::Peripherals) -> Result<(), Error> {
     // LCD initialization wait
-    system_time::sleep(100.milliseconds().into()).await;
+    system_time::sleep(Duration::millis(100)).await;
 
     let mut display = Lcd::new(board.i2c)?;
     display.cls()?;
@@ -43,7 +42,7 @@ async fn async_main(board: board::Peripherals) -> Result<(), Error> {
 
         debug_rprintln!("loop {}", i);
         i += 1;
-        system_time::sleep(2000.milliseconds().into()).await;
+        system_time::sleep(Duration::secs(2)).await;
     }
 }
 
@@ -60,9 +59,7 @@ fn main() -> ! {
 
         debug_rprintln!("starting");
 
-        let cp = pac::CorePeripherals::take().ok_or(Error::AlreadyTaken)?;
-        let dp = pac::Peripherals::take().ok_or(Error::AlreadyTaken)?;
-        let board = board::Board::new(cp, dp)?;
+        let board = board::Board::new()?;
 
         env::init_env(board.ticker)?;
 

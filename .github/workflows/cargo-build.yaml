@@ -7,7 +7,7 @@ jobs:
     name: "Run rustfmt and clippy"
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: "Install toolchain"
         run: rustup toolchain install stable --profile minimal -c rustfmt,clippy -t thumbv6m-none-eabi
       - name: "Install libraries and gcc-arm"
@@ -21,28 +21,18 @@ jobs:
       - name: "Run clippy for release build"
         run: cargo clippy --release --no-deps -- -D warnings
 
-  test:
-    name: "Run unittests"
+  stm32g071:
+    name: "Build for STM32G071"
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - name: "Install toolchain"
-        run: rustup toolchain install stable
-      - name: "Run tests in root"
-        run: cargo test
-
-  stm32l073:
-    name: "Build for STM32L073RZ"
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: "Install toolchain"
         run: rustup toolchain install stable -t thumbv6m-none-eabi
       - name: "Install libraries and gcc-arm"
         run: |
           sudo apt-get update
           sudo apt-get install libclang-dev llvm-dev gcc-arm-none-eabi
-      - name: "Build for debug"
+      - name: "Debug build"
         run: cargo build
-      - name: "Build release"
+      - name: "Release build"
         run: cargo build --release

@@ -1,13 +1,13 @@
 #![deny(unsafe_code)]
 
 use embedded_hal::i2c::{self};
-use stm32l0xx_hal::i2c as stmhal_i2c;
-use stm32l0xx_hal::prelude::{
+use stm32g0xx_hal::i2c as stmhal_i2c;
+use stm32g0xx_hal::prelude::{
     _embedded_hal_blocking_i2c_Read, _embedded_hal_blocking_i2c_Write,
     _embedded_hal_blocking_i2c_WriteRead,
 };
 
-type HalError = stm32l0xx_hal::i2c::Error;
+type HalError = stm32g0xx_hal::i2c::Error;
 
 #[derive(Debug)]
 pub struct I2cError(HalError);
@@ -20,6 +20,7 @@ impl i2c::Error for I2cError {
             HalError::PECError => i2c::ErrorKind::Other,
             HalError::BusError => i2c::ErrorKind::Bus,
             HalError::ArbitrationLost => i2c::ErrorKind::ArbitrationLoss,
+            HalError::IncorrectFrameSize(_) => i2c::ErrorKind::Other,
         }
     }
 }

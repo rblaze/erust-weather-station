@@ -2,13 +2,12 @@ use core::cell::Cell;
 use portable_atomic::{AtomicU32, Ordering};
 
 use async_scheduler::executor::{set_environment, Environment, Executor};
-use async_scheduler::time::Ticks;
 use cortex_m::peripheral::{scb::VectActive, SCB};
 use once_cell::sync::OnceCell;
 use rtt_target::debug_rprintln;
 
 use crate::error::Error;
-use crate::system_time::Ticker;
+use crate::system_time::{Instant, Ticker};
 
 fn in_thread_mode() -> bool {
     match SCB::vect_active() {
@@ -33,24 +32,38 @@ impl Env {
 }
 
 impl Environment for Env {
-    fn wait_for_event_with_timeout(&self, mask: &AtomicU32, tick: Option<Ticks>) {
+    fn wait_for_event_with_deadline(
+        &self,
+        mask: &AtomicU32,
+        tick: Option<async_scheduler::time::Instant>,
+    ) {
         debug_rprintln!("waiting for event, timeout {:?}", tick);
         assert!(
             in_thread_mode(),
-            "calling sleep_if_zero() in interrupt handler"
+            "calling wait_for_event_with_timeout() in interrupt handler"
         );
 
         critical_section::with(|cs| {
             if mask.load(Ordering::Acquire) == 0 {
                 // Critical section prevents interrupt handler from updating 'mask' here.
                 // Pending interrupt will wake up CPU and exit critical section.
-                self.ticker.sleep_until(cs, tick);
+                self.ticker.sleep_until(
+                    cs,
+                    tick.map(|t| {
+                        Instant::from_ticks(
+                            t.ticks()
+                                .try_into()
+                                .expect("asked to sleep until negative tick"),
+                        )
+                    }),
+                );
             }
         });
     }
 
-    fn ticks(&self) -> Ticks {
-        self.ticker.ticks()
+    fn ticks(&self) -> async_scheduler::time::Instant {
+        // It is highly unlikely tick count will reach 2^63.
+        async_scheduler::time::Instant::new(self.ticker.now().ticks() as i64)
     }
 
     fn enter_executor(&self, executor: &dyn Executor) {

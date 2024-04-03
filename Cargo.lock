@@ -3,18 +3,9 @@
 version = 3
 
 [[package]]
-name = "as-slice"
-version = "0.2.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "516b6b4f0e40d50dcda9365d53964ec74560ad4284da2e7fc97122cd83174516"
-dependencies = [
- "stable_deref_trait",
-]
-
-[[package]]
 name = "async-scheduler"
-version = "0.4.0"
-source = "git+https://github.com/rblaze/rust-async-scheduler.git#3dea79197418d936e952175e3c5bfac092d6b2f7"
+version = "0.5.0"
+source = "git+https://github.com/rblaze/rust-async-scheduler.git#a023aa0b5d9aee1d23876ecabb08c27f14badc87"
 dependencies = [
  "critical-section",
  "fugit",
@@ -24,9 +15,9 @@ dependencies = [
 
 [[package]]
 name = "autocfg"
-version = "1.1.0"
+version = "1.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d468802bab17cbc0cc575e9b053f41e72aa36bfa6b7f55e3529ffa43161b97fa"
+checksum = "f1fdabc7756949593fe60f30ec81974b613357de856987752631dea1e3394c80"
 
 [[package]]
 name = "bare-metal"
@@ -48,21 +39,6 @@ name = "bitfield"
 version = "0.13.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "46afbd2983a5d5a7bd740ccb198caf5b82f45c40c09c0eed36052d91cb92e719"
-
-[[package]]
-name = "cast"
-version = "0.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "37b2a672a2cb129a2e41c10b1224bb368f9f37a2b16b612598138befd7b37eb5"
-
-[[package]]
-name = "chrono"
-version = "0.4.35"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8eaf5903dcbc0a39312feb77df2ff4c76387d591b9fc7b04a238dcf8bb62639a"
-dependencies = [
- "num-traits",
-]
 
 [[package]]
 name = "cortex-m"
@@ -130,15 +106,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "embedded-time"
-version = "0.12.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d7a4b4d10ac48d08bfe3db7688c402baadb244721f30a77ce360bd24c3dffe58"
-dependencies = [
- "num 0.3.1",
-]
-
-[[package]]
 name = "fugit"
 version = "0.3.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -191,7 +158,7 @@ checksum = "87750cf4b7a4c0625b1529e4c543c2182106e4dedc60a2a6455e00d212c489ac"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.53",
+ "syn 2.0.57",
 ]
 
 [[package]]
@@ -248,36 +215,14 @@ checksum = "8d5439c4ad607c3c23abf66de8c8bf57ba8adcd1f129e699851a6e43935d339d"
 
 [[package]]
 name = "num"
-version = "0.3.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8b7a8e9be5e039e2ff869df49155f1c06bd01ade2117ec783e56ab0932b67a8f"
-dependencies = [
- "num-complex 0.3.1",
- "num-integer",
- "num-iter",
- "num-rational 0.3.2",
- "num-traits",
-]
-
-[[package]]
-name = "num"
 version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b05180d69e3da0e530ba2a1dae5110317e49e3b7f3d41be227dc5f92e49ee7af"
 dependencies = [
- "num-complex 0.4.5",
+ "num-complex",
  "num-integer",
  "num-iter",
- "num-rational 0.4.1",
- "num-traits",
-]
-
-[[package]]
-name = "num-complex"
-version = "0.3.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "747d632c0c558b87dbabbe6a82f3b4ae03720d0646ac5b7b4dae89394be5f2c5"
-dependencies = [
+ "num-rational",
  "num-traits",
 ]
 
@@ -304,17 +249,6 @@ name = "num-iter"
 version = "0.1.44"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d869c01cc0c455284163fd0092f1f93835385ccab5a98a0dcc497b2f8bf055a9"
-dependencies = [
- "autocfg",
- "num-integer",
- "num-traits",
-]
-
-[[package]]
-name = "num-rational"
-version = "0.3.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "12ac428b1cb17fce6f731001d307d351ec70a6d202fc2e60f7d4c5e42d8f4f07"
 dependencies = [
  "autocfg",
  "num-integer",
@@ -363,9 +297,9 @@ dependencies = [
 
 [[package]]
 name = "pin-project-lite"
-version = "0.2.13"
+version = "0.2.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8afb450f006bf6385ca15ef45d71d2288452bc3683ce2e2cacc0d18e4be60b58"
+checksum = "bda66fc9667c18cb2758a2ac84d1167245054bcf85d5d1aaa6923f45801bdd02"
 
 [[package]]
 name = "pin-utils"
@@ -395,15 +329,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "291ec9ab5efd934aaf503a6466c5d5251535d108ee747472c3977cc5acc868ef"
 dependencies = [
  "proc-macro2",
-]
-
-[[package]]
-name = "rtcc"
-version = "0.3.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f4fbd0d5bed2b76e27a7ef872568b34072c1af94c277cd52c17a89d54673b3fe"
-dependencies = [
- "chrono",
 ]
 
 [[package]]
@@ -451,16 +376,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "388a1df253eca08550bef6c72392cfe7c30914bf41df5269b68cbd6ff8f570a3"
 
 [[package]]
-name = "stable_deref_trait"
-version = "1.2.0"
+name = "stm32g0"
+version = "0.14.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a8f112729512f8e442d81f95a8a7ddf2b7c6b8a1a6f509a95864142b30cab2d3"
-
-[[package]]
-name = "stm32l0"
-version = "0.15.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "37c35ac5e2c330137c257b7254eb4593e3e8312104dedc1880447654cb8dd50f"
+checksum = "dfc2ac544cea741c92a501bfd027d197354cd22ee92b439aea26d2ee0b55bcd7"
 dependencies = [
  "bare-metal 1.0.0",
  "cortex-m",
@@ -469,20 +388,17 @@ dependencies = [
 ]
 
 [[package]]
-name = "stm32l0xx-hal"
-version = "0.10.0"
+name = "stm32g0xx-hal"
+version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e481a2554bbcbb7da494fe3adfc901bbf106f9880c898b22728b3709bf6f22d1"
+checksum = "fae457e81f9601121c5b92dca20e3612c80ea957898f8e0e68efcaab6b242067"
 dependencies = [
- "as-slice",
- "cast",
+ "bare-metal 1.0.0",
  "cortex-m",
- "cortex-m-rt",
  "embedded-hal 0.2.7",
- "embedded-time",
+ "fugit",
  "nb 1.1.0",
- "rtcc",
- "stm32l0",
+ "stm32g0",
  "void",
 ]
 
@@ -499,9 +415,9 @@ dependencies = [
 
 [[package]]
 name = "syn"
-version = "2.0.53"
+version = "2.0.57"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7383cd0e49fff4b6b90ca5670bfd3e9d6a733b3f90c686605aa7eec8c4996032"
+checksum = "11a6ae1e52eb25aab8f3fb9fca13be982a373b8f1157ca14b897a825ba4a2d35"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -551,15 +467,15 @@ dependencies = [
  "critical-section",
  "embedded-hal 1.0.0",
  "embedded-hal-bus",
- "embedded-time",
+ "fugit",
  "futures",
  "lcd",
  "nb 1.1.0",
- "num 0.4.1",
+ "num",
  "once_cell",
  "panic-probe",
  "portable-atomic",
  "rtt-target 0.5.0",
- "stm32l0xx-hal",
+ "stm32g0xx-hal",
  "void",
 ]

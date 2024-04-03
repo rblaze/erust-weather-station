@@ -12,18 +12,18 @@ cortex-m-rt = "0.7"
 critical-section = { version = "1.1" }
 embedded-hal = "1.0"
 embedded-hal-bus = "0.1"
-embedded-time = "0.12"
+fugit = "0.3"
 futures = { version = "0.3", default-features = false }
 lcd = { git = "https://github.com/rblaze/erust-lcd.git" }
-nb = "1.0"
+nb = "1.1"
 num = { version = "0.4", default-features = false }
-once_cell = { version = "1.18", default-features = false, features = [
+once_cell = { version = "1.19", default-features = false, features = [
     "critical-section",
 ] }
 portable-atomic = { version = "1", default-features = false, features = [
     "unsafe-assume-single-core",
 ] }
-stm32l0xx-hal = { version = "0.10", features = ["mcu-STM32L073RZTx", "rt"] }
+stm32g0xx-hal = { version = "0.2", features = ["stm32g071", "rt"] }
 void = { version = "1", default-features = false }
 
 # panic-halt = "0.2.0"
