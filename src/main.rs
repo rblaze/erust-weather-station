@@ -12,6 +12,7 @@ use core::fmt::Write;
 use core::pin::pin;
 
 use async_scheduler::executor::LocalExecutor;
+use bq24259::BQ24259;
 use cortex_m_rt::entry;
 use embedded_hal_bus::i2c::RefCellDevice;
 use futures::task::LocalFutureObj;
@@ -32,16 +33,25 @@ async fn async_main(mut board: board::Peripherals) -> Result<(), Error> {
     system_time::sleep(Duration::millis(100)).await;
 
     let mut display = Lcd::new(RefCellDevice::new(&board.i2c))?;
-    display.cls()?;
+    let mut charger = BQ24259::new(RefCellDevice::new(&board.i2c));
 
     let mut i = 0u32;
     loop {
+        let status = charger.status()?;
+        let faults = charger.new_fault()?;
+
+        let _ = display.cls();
         let _ = display.set_output_line(0);
-        let _ = display.write_fmt(format_args!("loop {}", i));
+        let _ = display.write_fmt(format_args!("loop {} {:?}", i, status.chrg()));
         let _ = display.set_output_line(1);
-        let _ = display.write_fmt(format_args!("vbat {:.2}", board.vbat.read_battery_volts()));
+        let _ = display.write_fmt(format_args!(
+            "vbat {:.2} - {:08b}",
+            board.vbat.read_battery_volts(),
+            u8::from(faults)
+        ));
 
         i += 1;
+        charger.reset_watchdog()?;
         system_time::sleep(Duration::secs(2)).await;
     }
 }
