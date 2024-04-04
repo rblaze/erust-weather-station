@@ -42,13 +42,14 @@ async fn async_main(mut board: board::Peripherals) -> Result<(), Error> {
 
         let _ = display.cls();
         let _ = display.set_output_line(0);
-        let _ = display.write_fmt(format_args!("loop {} {:?}", i, status.chrg()));
+        let _ = write!(&mut display, "loop {} {:?}", i, status.chrg());
         let _ = display.set_output_line(1);
-        let _ = display.write_fmt(format_args!(
+        let _ = write!(
+            &mut display,
             "vbat {:.2} - {:08b}",
             board.vbat.read_battery_volts(),
             u8::from(faults)
-        ));
+        );
 
         i += 1;
         charger.reset_watchdog()?;
