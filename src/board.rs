@@ -1,7 +1,10 @@
+use core::cell::RefCell;
+
 use rtt_target::debug_rprintln;
+use stm32g0xx_hal::analog::adc::{Adc, AdcExt, OversamplingRatio, Precision, SampleTime};
 use stm32g0xx_hal::exti::{Event, ExtiExt};
-use stm32g0xx_hal::gpio::gpioa::{PA10, PA11, PA12, PA4, PA5, PA6, PA7, PA9};
-use stm32g0xx_hal::gpio::{GpioExt, Input, OpenDrain, Output, PullUp, SignalEdge};
+use stm32g0xx_hal::gpio::gpioa::{PA0, PA10, PA11, PA12, PA4, PA5, PA6, PA7, PA9};
+use stm32g0xx_hal::gpio::{Analog, GpioExt, Input, OpenDrain, Output, PullUp, SignalEdge};
 use stm32g0xx_hal::i2c::{self, I2c};
 use stm32g0xx_hal::pac::{self, interrupt, EXTI};
 use stm32g0xx_hal::power::{self, PowerExt};
@@ -25,9 +28,23 @@ pub struct Joystick {
     pub button: PA4<Input<PullUp>>,
 }
 
+pub struct VBat {
+    adc: Adc,
+    vbat: PA0<Analog>,
+}
+
+impl VBat {
+    const VBAT_MULTIPLIER: f32 = 1.343;
+    pub fn read_battery_volts(&mut self) -> f32 {
+        let battery_mv = self.adc.read_voltage(&mut self.vbat).unwrap();
+        battery_mv as f32 / 1000.0 * Self::VBAT_MULTIPLIER
+    }
+}
+
 pub struct Peripherals {
-    pub i2c: I2cBus<HalI2c1>,
+    pub i2c: RefCell<I2cBus<HalI2c1>>,
     pub joystick: Joystick,
+    pub vbat: VBat,
 }
 
 pub struct Board {
@@ -41,7 +58,8 @@ impl Board {
         let dp = pac::Peripherals::take().ok_or(Error::AlreadyTaken)?;
 
         // Enable debug while stopped to keep probe-rs happy while WFI
-        // Enabling DMA resolves another instability issue: https://github.com/probe-rs/probe-rs/issues/350
+        // Enabling DMA resolves another instability issue:
+        // https://github.com/probe-rs/probe-rs/issues/350
         #[cfg(debug_assertions)]
         {
             dp.DBG.cr.modify(|_, w| w.dbg_stop().set_bit());
@@ -54,6 +72,21 @@ impl Board {
         let mut rcc = dp.RCC.freeze(rcc::Config::hsi(rcc::Prescaler::Div4));
         let mut pwr = dp.PWR.constrain(&mut rcc);
         let gpioa = dp.GPIOA.split(&mut rcc);
+        let mut adc = dp.ADC.constrain(&mut rcc);
+
+        adc.set_sample_time(SampleTime::T_160);
+        adc.set_precision(Precision::B_12);
+        adc.set_oversampling_ratio(OversamplingRatio::X_16);
+        adc.set_oversampling_shift(16);
+        adc.oversampling_enable(true);
+
+        // RM0444 15.3.3 Calibration can only be initiated when the ADC voltage regulator is
+        // enabled (ADVREGEN = 1 and tADCVREG_SETUP has elapsed) and the ADC is disabled
+        // (when ADEN = 0).
+        // tADCVREG_SETUP = 20us, at 80MHz it's 80*20 = 1600 cycles. Round up for  a safety
+        // margin.
+        cortex_m::asm::delay(2000);
+        adc.calibrate();
 
         let joystick = Joystick {
             up: gpioa.pa12.into_pull_up_input(),
@@ -95,8 +128,12 @@ impl Board {
         Ok(Self {
             ticker,
             peripherals: Peripherals {
-                i2c: I2cBus::new(i2c),
+                i2c: RefCell::new(I2cBus::new(i2c)),
                 joystick,
+                vbat: VBat {
+                    adc,
+                    vbat: gpioa.pa0.into_analog(),
+                },
             },
         })
     }

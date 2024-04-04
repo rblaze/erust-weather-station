@@ -13,6 +13,7 @@ use core::pin::pin;
 
 use async_scheduler::executor::LocalExecutor;
 use cortex_m_rt::entry;
+use embedded_hal_bus::i2c::RefCellDevice;
 use futures::task::LocalFutureObj;
 use lcd::screen::Screen;
 use rtt_target::debug_rprintln;
@@ -26,21 +27,20 @@ use crate::screen::Lcd;
 use panic_probe as _;
 // use panic_halt as _;
 
-async fn async_main(board: board::Peripherals) -> Result<(), Error> {
+async fn async_main(mut board: board::Peripherals) -> Result<(), Error> {
     // LCD initialization wait
     system_time::sleep(Duration::millis(100)).await;
 
-    let mut display = Lcd::new(board.i2c)?;
+    let mut display = Lcd::new(RefCellDevice::new(&board.i2c))?;
     display.cls()?;
 
     let mut i = 0u32;
     loop {
-        display.set_output_line(0)?;
-        display.write_fmt(format_args!("loop {}", i))?;
-        display.set_output_line(1)?;
-        display.write("demo mode")?;
+        let _ = display.set_output_line(0);
+        let _ = display.write_fmt(format_args!("loop {}", i));
+        let _ = display.set_output_line(1);
+        let _ = display.write_fmt(format_args!("vbat {:.2}", board.vbat.read_battery_volts()));
 
-        debug_rprintln!("loop {}", i);
         i += 1;
         system_time::sleep(Duration::secs(2)).await;
     }
