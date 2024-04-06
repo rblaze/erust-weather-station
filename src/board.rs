@@ -18,6 +18,7 @@ use crate::system_time::Ticker;
 type I2cSda = PA10<Output<OpenDrain>>;
 type I2cScl = PA9<Output<OpenDrain>>;
 type HalI2c1 = I2c<pac::I2C1, I2cSda, I2cScl>;
+pub type BoardI2c = I2cBus<HalI2c1>;
 
 pub struct Joystick {
     pub up: PA12<Input<PullUp>>,
@@ -42,13 +43,13 @@ impl VBat {
 }
 
 pub struct Peripherals {
-    pub i2c: RefCell<I2cBus<HalI2c1>>,
     pub joystick: Joystick,
     pub vbat: VBat,
 }
 
 pub struct Board {
     pub ticker: Ticker,
+    pub i2c: RefCell<BoardI2c>,
     pub peripherals: Peripherals,
 }
 
@@ -127,8 +128,8 @@ impl Board {
 
         Ok(Self {
             ticker,
+            i2c: RefCell::new(I2cBus::new(i2c)),
             peripherals: Peripherals {
-                i2c: RefCell::new(I2cBus::new(i2c)),
                 joystick,
                 vbat: VBat {
                     adc,
