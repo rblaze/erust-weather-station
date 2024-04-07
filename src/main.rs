@@ -13,15 +13,18 @@ use core::fmt::Write;
 use core::pin::pin;
 
 use async_scheduler::executor::LocalExecutor;
-use board::Peripherals;
+use async_scheduler::mailbox::Mailbox;
+use board::{Peripherals, JOYSTICK_EVENT};
 use bq24259::BQ24259;
 use cortex_m_rt::entry;
 use embedded_hal_bus::i2c::RefCellDevice;
+use futures::future::try_select;
 use futures::task::LocalFutureObj;
 use lcd::screen::Screen;
 use rtt_target::debug_rprintln;
 #[cfg(debug_assertions)]
 use rtt_target::rtt_init_print;
+use stm32g0xx_hal::hal::digital::v2::InputPin;
 use system_time::Duration;
 
 use crate::error::Error;
@@ -42,9 +45,10 @@ enum DisplayPage {
 }
 
 async fn display_handler<Bus>(
+    mut display: Lcd<Bus>,
+    event: &Mailbox<()>,
     page: &Cell<DisplayPage>,
     charger: &RefCell<BQ24259<Bus>>,
-    mut display: Lcd<Bus>,
     board: &RefCell<Peripherals>,
 ) -> Result<(), Error>
 where
@@ -75,8 +79,38 @@ where
                 write!(&mut display, "faults {:08b}", u8::from(faults))?;
             }
         }
-        // TODO: wait for event or timeout
-        system_time::sleep(Duration::secs(2)).await;
+
+        // Wait for either sleep or read() to complete and propagate error.
+        try_select(
+            pin!(async {
+                system_time::sleep(Duration::secs(2)).await;
+                Ok(())
+            }),
+            pin!(event.read()),
+        )
+        .await
+        .map_err(|e| e.factor_first().0)?;
+    }
+}
+
+async fn navigation(
+    event: &Mailbox<()>,
+    page: &Cell<DisplayPage>,
+    board: &RefCell<Peripherals>,
+) -> Result<(), Error> {
+    loop {
+        // Wait for button press
+        JOYSTICK_EVENT.read().await?;
+
+        let p = board.borrow_mut();
+        let joystick = &p.joystick;
+        if joystick.up.is_high()? {
+            page.set(DisplayPage::BatteryStatus);
+        } else if joystick.down.is_high()? {
+            page.set(DisplayPage::ChargerRegisters);
+        }
+
+        event.post(());
     }
 }
 
@@ -92,7 +126,11 @@ fn main() -> ! {
 
         env::init_env(board.ticker)?;
 
+        // Wait 100ms for the LCD to power up.
+        cortex_m::asm::delay(600000);
+
         let peripherals = RefCell::new(board.peripherals);
+        let display_refresh_event = Mailbox::<()>::new();
         let display_page = Cell::new(DisplayPage::BatteryStatus);
         let display = Lcd::new(RefCellDevice::new(&board.i2c))?;
         let charger = RefCell::new(BQ24259::new(RefCellDevice::new(&board.i2c)));
@@ -106,15 +144,22 @@ fn main() -> ! {
             }
         }));
         let display_handler = pin!(panic_if_exited(display_handler(
+            display,
+            &display_refresh_event,
             &display_page,
             &charger,
-            display,
             &peripherals,
+        )));
+        let navigation = pin!(panic_if_exited(navigation(
+            &display_refresh_event,
+            &display_page,
+            &peripherals
         )));
 
         LocalExecutor::new().run([
             LocalFutureObj::new(charger_watchdog),
             LocalFutureObj::new(display_handler),
+            LocalFutureObj::new(navigation),
         ]);
         unreachable!();
     }()

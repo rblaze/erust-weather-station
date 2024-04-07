@@ -140,6 +140,9 @@ impl Board {
     }
 }
 
+pub static JOYSTICK_EVENT: async_scheduler::sync::mailbox::Mailbox<()> =
+    async_scheduler::sync::mailbox::Mailbox::new();
+
 #[interrupt]
 unsafe fn EXTI4_15() {
     let exti = &(*EXTI::ptr());

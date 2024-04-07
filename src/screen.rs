@@ -25,9 +25,6 @@ where
     const I2C_ADDR: u8 = 0x3C;
 
     pub fn new(i2c: I2C) -> Result<Self, Error> {
-        // Wait 100ms for the LCD to power up.
-        // system_time::sleep(Duration::millis(100)).await;
-
         let mut screen = Self { i2c };
         screen.init()?;
         Ok(screen)
