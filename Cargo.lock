@@ -72,7 +72,7 @@ checksum = "46afbd2983a5d5a7bd740ccb198caf5b82f45c40c09c0eed36052d91cb92e719"
 [[package]]
 name = "bq24259"
 version = "0.1.0"
-source = "git+https://github.com/rblaze/erust-bq24259.git#b54a33d259c4cc98fef4d395f2090f0823f661d9"
+source = "git+https://github.com/rblaze/erust-bq24259.git#c39230f8c5b1cf2a7bd918487fecbc1399e97046"
 dependencies = [
  "bilge",
  "embedded-hal 1.0.0",
