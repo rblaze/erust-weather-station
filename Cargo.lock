@@ -11,10 +11,9 @@ checksum = "c84fc003e338a6f69fbd4f7fe9f92b535ff13e9af8997f3b14b6ddff8b1df46d"
 [[package]]
 name = "async-scheduler"
 version = "0.5.0"
-source = "git+https://github.com/rblaze/rust-async-scheduler.git#a023aa0b5d9aee1d23876ecabb08c27f14badc87"
+source = "git+https://github.com/rblaze/rust-async-scheduler.git#846dd7c3036b3ef6cb415f7b311f93c73e0efb4e"
 dependencies = [
  "critical-section",
- "fugit",
  "futures",
  "portable-atomic",
 ]
