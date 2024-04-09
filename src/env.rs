@@ -49,13 +49,7 @@ impl Environment for Env {
                 // Pending interrupt will wake up CPU and exit critical section.
                 self.ticker.sleep_until(
                     cs,
-                    tick.map(|t| {
-                        Instant::from_ticks(
-                            t.ticks()
-                                .try_into()
-                                .expect("asked to sleep until negative tick"),
-                        )
-                    }),
+                    tick.map(|t| Instant::from_ticks(t.ticks().clamp(0, i64::MAX) as u64)),
                 );
             }
         });
@@ -63,7 +57,7 @@ impl Environment for Env {
 
     fn ticks(&self) -> async_scheduler::time::Instant {
         // It is highly unlikely tick count will reach 2^63.
-        async_scheduler::time::Instant::new(self.ticker.now().ticks() as i64)
+        async_scheduler::time::Instant::new(self.ticker.ticks_now() as i64)
     }
 
     fn enter_executor(&self, executor: &dyn Executor) {

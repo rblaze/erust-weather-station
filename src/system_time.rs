@@ -3,6 +3,7 @@ use core::cell::Cell;
 use critical_section::{CriticalSection, Mutex};
 use fugit::{TimerDuration, TimerInstant};
 use rtt_target::debug_rprintln;
+use stm32g0xx_hal::pac::lptim1::RegisterBlock;
 use stm32g0xx_hal::pac::{interrupt, LPTIM2};
 use stm32g0xx_hal::rcc::{Enable, Rcc, Reset};
 
@@ -38,8 +39,8 @@ impl Ticker {
         // Disable the timer. The prescaler can only be changed while it's disabled.
         timer.cr.modify(|_, w| w.enable().clear_bit());
         timer.cfgr.modify(|_, w| unsafe { w.presc().bits(0b111) });
-        // Enable autoreload and compare-match interrupts.
-        timer.ier.write(|w| w.arrmie().set_bit().cmpmie().set_bit());
+        // Enable compare-match interrupt.
+        timer.ier.write(|w| w.cmpmie().set_bit());
 
         timer.cr.modify(|_, w| w.enable().set_bit());
 
@@ -49,17 +50,13 @@ impl Ticker {
         // these conditions, one cycle of the LPTIM clock takes 2500 CPU cycles, so sleep for 5000.
         cortex_m::asm::delay(5000);
 
-        // ARR can only be changed while the timer is *en*abled
+        // CMP is set to 0 by reset.
+        // ARR can only be changed while the timer is *en*abled.
         timer
             .arr
             .write(|w| unsafe { w.arr().bits(Self::MAX_COUNTER) });
-        // When no wakeup needed, set CMP equal to ARR so interrupt will merge with Update interrupt.
-        timer
-            .cmp
-            .write(|w| unsafe { w.cmp().bits(Self::MAX_COUNTER) });
-
-        // Wait for register update operation to complete
-        while timer.isr.read().cmpok().bit_is_clear() {}
+        while timer.isr.read().arrok().bit_is_clear() {}
+        timer.icr.write(|w| w.arrokcf().set_bit());
 
         // Start counting
         timer.cr.modify(|_, w| w.cntstrt().set_bit());
@@ -67,62 +64,96 @@ impl Ticker {
         Ticker { timer }
     }
 
+    fn unreliable_ticks_now(&self) -> (u32, u16) {
+        let current_cycle_ticks = self.timer.cnt.read().cnt().bits();
+        let cycles = critical_section::with(|cs| TICKS.borrow(cs).get().num_full_cycles);
+
+        (cycles, current_cycle_ticks)
+    }
+
     /// Gets current tick count in LPTIM ticks.
-    fn lptim_ticks(&self) -> TimerTicks {
+    pub fn ticks_now(&self) -> TimerTicks {
         // It is possible to for `num_full_cycles` to increment and counter
         // wrap to zero between their reads. So we try reading the cycles before
         // and after the counter. If number of cycles doesn't change, the result is valid.
-        loop {
-            let cycles = critical_section::with(|cs| TICKS.borrow(cs).get().num_full_cycles);
-            let current_cycle_ticks: TimerTicks = self.timer.cnt.read().cnt().bits().into();
-            let control_cycles =
-                critical_section::with(|cs| TICKS.borrow(cs).get().num_full_cycles);
+        // Reading CNT is also unreliable unless two reads in the row return the same result.
+        // See RM0444 26.7.8
+        let (cycles, ticks) = loop {
+            let (first_cycles, first_ticks) = self.unreliable_ticks_now();
+            let (second_cycles, second_ticks) = self.unreliable_ticks_now();
 
-            if cycles == control_cycles {
-                return (cycles as TimerTicks * Self::CYCLE_LENGTH) + current_cycle_ticks;
-            } else {
-                debug_rprintln!("LPTIM read retry, {} != {}", cycles, control_cycles);
+            if first_cycles == second_cycles && first_ticks == second_ticks {
+                break (first_cycles, first_ticks);
             }
-        }
-    }
+            debug_rprintln!(
+                "LPTIM CNT read retry, {}:{} != {}:{}",
+                first_cycles,
+                first_ticks,
+                second_cycles,
+                second_ticks
+            );
+        };
 
-    /// Gets current time.
-    pub fn now(&self) -> Instant {
-        Instant::from_ticks(self.lptim_ticks())
+        cycles as u64 * Self::CYCLE_LENGTH + ticks as u64
     }
 
     /// Waits for the specified tick or next interrupt.
     pub fn sleep_until(&self, cs: CriticalSection, tick: Option<Instant>) {
-        let mut target_counter = Self::MAX_COUNTER;
+        // Precondition: timer is enabled and CMP is set to the beginning of the next cycle.
+        debug_assert_eq!(self.timer.cmp.read().bits(), 0);
+        debug_assert!(self.timer.isr.read().cmpok().bit_is_clear());
+        debug_assert!(self.timer.cfgr.read().preload().bit_is_clear());
 
-        if let Some(tick) = tick {
-            // This method is called from critical section, with interrupts disabled.
-            // Therefore, missing cycles value update is irrelevant: update interrupt
-            // will wakeup CPU, end current wait and we will redo the calculation.
-            let lptim_tick = tick.ticks();
-            let target_cycle = lptim_tick / Self::CYCLE_LENGTH;
+        let target_counter = if let Some(tick) = tick {
+            // This function is called from critical section, with interrupts disabled.
+            // If timer rolls over while in this function, interrupt is pending and will wakeup
+            // CPU immediatelly upon entering WFI. Next call to sleep_until() will calculate
+            // correct tick.
+            let target_tick = tick.ticks();
+            let target_cycle = target_tick / Self::CYCLE_LENGTH;
             let current_cycle = TICKS.borrow(cs).get().num_full_cycles;
-            if target_cycle == current_cycle.into() {
-                // Set CMP to wakeup at the right moment.
-                target_counter = (lptim_tick % Self::CYCLE_LENGTH) as u16;
+            match target_cycle.cmp(&current_cycle.into()) {
+                core::cmp::Ordering::Less => {
+                    // Sleep requested to the moment in the past.
+                    debug_rprintln!("Wakeup time already passed");
+                    return;
+                }
+                core::cmp::Ordering::Equal => {
+                    // Wakeup during current cycle.
+                    // Set CMP to wakeup at the right moment.
+                    (target_tick % Self::CYCLE_LENGTH) as u16
+                }
+                core::cmp::Ordering::Greater => {
+                    // Wait until end of cycle, wakeup and retry.
+                    Self::MAX_COUNTER
+                }
             }
+        } else {
+            // Sleep until event.
+            Self::MAX_COUNTER
+        };
+
+        // If target counter is MAX_COUNTER, we can't set it because CMP must
+        // be less than ARR, so add one and get 0.
+        // If target counter is 0, it's already set properly.
+        if target_counter != 0 && target_counter != Self::MAX_COUNTER {
+            set_cmp(&self.timer, target_counter);
         }
-        // Clear CMPOK bit, write to CMP and wait for CMPOK to be set again
-        // to make sure there is no races later.
-        self.timer.icr.write(|w| w.cmpokcf().set_bit());
-        self.timer
-            .cmp
-            .write(|w| unsafe { w.cmp().bits(target_counter) });
-        while self.timer.isr.read().cmpok().bit_is_clear() {}
 
         // Check if the counter didn't run over our target already.
         if self.timer.cnt.read().cnt().bits() < target_counter {
             cortex_m::asm::wfi();
         } else {
-            // It did run over, disable CMP and don't wait for interrupt.
-            self.timer
-                .cmp
-                .write(|w| unsafe { w.cmp().bits(Self::MAX_COUNTER) });
+            // It did run over, don't wait for interrupt.
+            debug_rprintln!("overrun");
+        }
+
+        // Either we have interrupt pending or never called WFI.
+        // If there is an LPTIM event, it will be processed right
+        // after exiting critical section.
+        // Otherwise, reset CMP to zero.
+        if self.timer.isr.read().cmpm().bit_is_clear() && self.timer.cmp.read().bits() != 0 {
+            set_cmp(&self.timer, 0);
         }
     }
 }
@@ -137,6 +168,38 @@ pub async fn sleep(duration: Duration) {
     .await;
 }
 
+/// Returns current time.
+pub fn now() -> Instant {
+    Instant::from_ticks(async_scheduler::executor::now().ticks().clamp(0, i64::MAX) as u64)
+}
+
+/// Writes to CMP and waits for CMPOK to be set again to make sure there is
+/// no races later.
+fn set_cmp(lptim: &RegisterBlock, value: u16) {
+    debug_assert!(lptim.isr.read().cmpok().bit_is_clear());
+
+    lptim.cmp.write(|w| unsafe { w.cmp().bits(value) });
+    while lptim.isr.read().cmpok().bit_is_clear() {}
+    lptim.icr.write(|w| w.cmpokcf().set_bit());
+    while lptim.isr.read().cmpok().bit_is_set() {}
+}
+
+fn handle_arr_event(lptim: &RegisterBlock) {
+    if lptim.isr.read().arrm().bit_is_set() {
+        debug_rprintln!("update event");
+
+        critical_section::with(|cs| {
+            let state = TICKS.borrow(cs).get();
+            TICKS.borrow(cs).set(TickerState {
+                num_full_cycles: state.num_full_cycles + 1,
+            });
+        });
+
+        // Clear update event
+        lptim.icr.write(|w| w.arrmcf().set_bit());
+    }
+}
+
 #[derive(Clone, Copy, Debug)]
 struct TickerState {
     /// Number of times counter wrapped.
@@ -148,27 +211,26 @@ static TICKS: Mutex<Cell<TickerState>> = Mutex::new(Cell::new(TickerState { num_
 #[interrupt]
 unsafe fn TIM7_LPTIM2() {
     let lptim = &(*LPTIM2::ptr());
-    let flags = lptim.isr.read();
 
-    if flags.arrm().bit_is_set() {
-        debug_rprintln!("update event");
+    if lptim.isr.read().cmpm().bit_is_set() {
+        debug_assert!(lptim.isr.read().cmpok().bit_is_clear());
 
-        critical_section::with(|cs| {
-            let state = TICKS.borrow(cs).get();
-            TICKS.borrow(cs).set(TickerState {
-                num_full_cycles: state.num_full_cycles + 1,
-            });
-        });
-
-        // Clear both interrupts: this one will wake up the CPU anyway.
-        lptim.icr.write(|w| w.arrmcf().set_bit().cmpmcf().set_bit());
-    } else if flags.cmpm().bit_is_set() {
-        debug_rprintln!("compare event");
-
-        // Set CMP to 0xFFFF so interrupt will merge with Update interrupt.
-        lptim.cmp.write(|w| w.cmp().bits(Ticker::MAX_COUNTER));
-
-        // Clear compare interrupt only so we don't lose update event.
+        // Clear compare interrupt.
         lptim.icr.write(|w| w.cmpmcf().set_bit());
+        while lptim.isr.read().cmpm().bit_is_set() {}
+
+        // Set next cmp event to the start of the loop.
+        // sleep_until() will set it to the correct value.
+        let cmp = lptim.cmp.read().bits();
+        if cmp != 0 {
+            set_cmp(lptim, 0);
+        }
+
+        // Check ARR last in the handler. Either it is happened and will be
+        // processed now, or next interrupt will be generated when cnt
+        // reaches 0, even it happens right now in the handler.
+        handle_arr_event(lptim);
+    } else {
+        debug_rprintln!("LPTIM interrupt without compare event");
     }
 }

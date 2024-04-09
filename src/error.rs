@@ -38,12 +38,6 @@ impl From<I2cError> for Error {
     }
 }
 
-impl From<void::Void> for Error {
-    fn from(_error: void::Void) -> Self {
-        unreachable!()
-    }
-}
-
 impl From<Infallible> for Error {
     fn from(_error: Infallible) -> Self {
         unreachable!()

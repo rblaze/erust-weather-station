@@ -146,7 +146,10 @@ pub static JOYSTICK_EVENT: async_scheduler::sync::mailbox::Mailbox<()> =
 #[interrupt]
 unsafe fn EXTI4_15() {
     let exti = &(*EXTI::ptr());
+
     debug_rprintln!("button interrupt {:b}", exti.fpr1.read().bits());
+    JOYSTICK_EVENT.post(());
+
     // Clear interrupt for joystick GPIO lines
     exti.fpr1.write(|w| {
         w.fpif4()

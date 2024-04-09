@@ -10,6 +10,7 @@ mod system_time;
 
 use core::cell::{Cell, RefCell};
 use core::fmt::Write;
+use core::panic::PanicInfo;
 use core::pin::pin;
 
 use async_scheduler::executor::LocalExecutor;
@@ -18,6 +19,7 @@ use board::{Peripherals, JOYSTICK_EVENT};
 use bq24259::BQ24259;
 use cortex_m_rt::entry;
 use embedded_hal_bus::i2c::RefCellDevice;
+use fugit::SecsDurationU64;
 use futures::future::try_select;
 use futures::task::LocalFutureObj;
 use lcd::screen::Screen;
@@ -30,18 +32,43 @@ use system_time::Duration;
 use crate::error::Error;
 use crate::screen::Lcd;
 
-use panic_probe as _;
-// use panic_halt as _;
+#[panic_handler]
+fn panic(info: &PanicInfo) -> ! {
+    debug_rprintln!("{}", info);
+
+    cortex_m::asm::bkpt();
+    cortex_m::asm::udf();
+}
 
 async fn panic_if_exited<F: core::future::Future<Output = Result<(), Error>>>(f: F) {
-    f.await.expect("error in task");
-    unreachable!()
+    panic!("future exited with {:?}", f.await)
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 enum DisplayPage {
     BatteryStatus,
     ChargerRegisters,
+    SystemStatus,
+}
+
+impl DisplayPage {
+    fn next(self) -> Self {
+        use DisplayPage::*;
+        match self {
+            BatteryStatus => ChargerRegisters,
+            ChargerRegisters => SystemStatus,
+            SystemStatus => BatteryStatus,
+        }
+    }
+
+    fn prev(self) -> Self {
+        use DisplayPage::*;
+        match self {
+            BatteryStatus => SystemStatus,
+            ChargerRegisters => BatteryStatus,
+            SystemStatus => ChargerRegisters,
+        }
+    }
 }
 
 async fn display_handler<Bus>(
@@ -55,7 +82,9 @@ where
     Bus: embedded_hal::i2c::I2c,
     Error: From<Bus::Error>,
 {
+    let start_time = system_time::now();
     loop {
+        debug_rprintln!("display loop");
         match page.get() {
             DisplayPage::BatteryStatus => {
                 let status = charger.borrow_mut().status()?;
@@ -72,11 +101,21 @@ where
                 let status = ch.status()?;
                 let faults = ch.new_fault()?;
 
+                debug_rprintln!("status {:?}", status);
+                debug_rprintln!("faults {:?}", faults);
+
                 display.cls()?;
                 display.set_output_line(0)?;
                 write!(&mut display, "status {:08b}", u8::from(status))?;
                 display.set_output_line(1)?;
                 write!(&mut display, "faults {:08b}", u8::from(faults))?;
+            }
+            DisplayPage::SystemStatus => {
+                let uptime: SecsDurationU64 = (system_time::now() - start_time).convert();
+
+                display.cls()?;
+                display.set_output_line(0)?;
+                write!(&mut display, "uptime {}", uptime)?;
             }
         }
 
@@ -102,12 +141,12 @@ async fn navigation(
         // Wait for button press
         JOYSTICK_EVENT.read().await?;
 
-        let p = board.borrow_mut();
-        let joystick = &p.joystick;
-        if joystick.up.is_high()? {
-            page.set(DisplayPage::BatteryStatus);
-        } else if joystick.down.is_high()? {
-            page.set(DisplayPage::ChargerRegisters);
+        let current_page = page.get();
+        let joystick = &board.borrow_mut().joystick;
+        if joystick.up.is_low()? {
+            page.set(current_page.prev());
+        } else if joystick.down.is_low()? {
+            page.set(current_page.next());
         }
 
         event.post(());
@@ -137,6 +176,7 @@ fn main() -> ! {
 
         let charger_watchdog = pin!(panic_if_exited(async {
             loop {
+                debug_rprintln!("watchdog");
                 // Application is single-threaded and charger can't be borrowed
                 // by another coroutine.
                 charger.borrow_mut().reset_watchdog()?;
@@ -158,8 +198,8 @@ fn main() -> ! {
 
         LocalExecutor::new().run([
             LocalFutureObj::new(charger_watchdog),
-            LocalFutureObj::new(display_handler),
             LocalFutureObj::new(navigation),
+            LocalFutureObj::new(display_handler),
         ]);
         unreachable!();
     }()
