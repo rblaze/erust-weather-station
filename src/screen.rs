@@ -14,17 +14,17 @@ enum TransactionMode {
     Data = 0b0100_0000,
 }
 
-pub struct Lcd<I2C> {
-    i2c: I2C,
+pub struct Lcd<'a, I2C> {
+    i2c: &'a mut I2C,
 }
 
-impl<I2C: i2c::I2c> Lcd<I2C>
+impl<'a, I2C: i2c::I2c> Lcd<'a, I2C>
 where
     Error: From<I2C::Error>,
 {
     const I2C_ADDR: u8 = 0x3C;
 
-    pub fn new(i2c: I2C) -> Result<Self, Error> {
+    pub fn new(i2c: &'a mut I2C) -> Result<Self, Error> {
         let mut screen = Self { i2c };
         screen.init()?;
         Ok(screen)
@@ -46,9 +46,27 @@ where
         self.send_command(set_ddram_address(line as u8 * 0x40))?;
         Ok(())
     }
+
+    pub fn turn_off(&mut self) -> Result<(), Error> {
+        self.send_command(display_on_off(
+            DisplayState::Off,
+            CursorState::Off,
+            BlinkState::Off,
+        ))?;
+        self.send_command(follower_control(
+            FollowerState::Off,
+            DEFAULT_V0_AMPLIFIED_RATIO,
+        ))?;
+        self.send_command(power_icon_contrast_set(
+            IconState::Off,
+            BoosterState::Off,
+            DEFAULT_CONTRAST,
+        ))?;
+        Ok(())
+    }
 }
 
-impl<I2C: i2c::I2c> Screen<WIDTH, HEIGHT, crate::error::Error> for Lcd<I2C>
+impl<I2C: i2c::I2c> Screen<WIDTH, HEIGHT, crate::error::Error> for Lcd<'_, I2C>
 where
     Error: From<I2C::Error>,
 {
@@ -83,7 +101,7 @@ where
     }
 }
 
-impl<I2C: i2c::I2c> core::fmt::Write for Lcd<I2C>
+impl<I2C: i2c::I2c> core::fmt::Write for Lcd<'_, I2C>
 where
     Error: From<I2C::Error>,
 {

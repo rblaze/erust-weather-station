@@ -27,7 +27,7 @@ use rtt_target::debug_rprintln;
 #[cfg(debug_assertions)]
 use rtt_target::rtt_init_print;
 use stm32g0xx_hal::hal::digital::v2::InputPin;
-use system_time::Duration;
+use system_time::{Duration, Instant};
 
 use crate::error::Error;
 use crate::screen::Lcd;
@@ -49,6 +49,7 @@ enum DisplayPage {
     BatteryStatus,
     ChargerRegisters,
     SystemStatus,
+    Off,
 }
 
 impl DisplayPage {
@@ -58,6 +59,7 @@ impl DisplayPage {
             BatteryStatus => ChargerRegisters,
             ChargerRegisters => SystemStatus,
             SystemStatus => BatteryStatus,
+            Off => Off,
         }
     }
 
@@ -67,12 +69,65 @@ impl DisplayPage {
             BatteryStatus => SystemStatus,
             ChargerRegisters => BatteryStatus,
             SystemStatus => ChargerRegisters,
+            Off => Off,
         }
     }
 }
 
+async fn show_page<Bus>(
+    page: DisplayPage,
+    start_time: Instant,
+    display: &mut Lcd<'_, Bus>,
+    charger: &RefCell<BQ24259<Bus>>,
+    board: &RefCell<Peripherals>,
+) -> Result<(), Error>
+where
+    Bus: embedded_hal::i2c::I2c,
+    Error: From<Bus::Error>,
+{
+    debug_rprintln!("display loop");
+    match page {
+        DisplayPage::BatteryStatus => {
+            let status = charger.borrow_mut().status()?;
+            let battery_volts = board.borrow_mut().vbat.read_battery_volts();
+
+            display.cls()?;
+            display.set_output_line(0)?;
+            write!(display, "{:?}", status.chrg())?;
+            display.set_output_line(1)?;
+            write!(display, "vbat {:.2}", battery_volts)?;
+        }
+        DisplayPage::ChargerRegisters => {
+            let mut ch = charger.borrow_mut();
+            let status = ch.status()?;
+            let faults = ch.new_fault()?;
+
+            debug_rprintln!("status {:?}", status);
+            debug_rprintln!("faults {:?}", faults);
+
+            display.cls()?;
+            display.set_output_line(0)?;
+            write!(display, "status {:08b}", u8::from(status))?;
+            display.set_output_line(1)?;
+            write!(display, "faults {:08b}", u8::from(faults))?;
+        }
+        DisplayPage::SystemStatus => {
+            let uptime: SecsDurationU64 = (system_time::now() - start_time).convert();
+
+            display.cls()?;
+            display.set_output_line(0)?;
+            write!(display, "uptime {}", uptime)?;
+        }
+        DisplayPage::Off => {
+            unimplemented!();
+        }
+    }
+
+    Ok(())
+}
+
 async fn display_handler<Bus>(
-    mut display: Lcd<Bus>,
+    mut display_bus: Bus,
     event: &Mailbox<()>,
     page: &Cell<DisplayPage>,
     charger: &RefCell<BQ24259<Bus>>,
@@ -83,52 +138,31 @@ where
     Error: From<Bus::Error>,
 {
     let start_time = system_time::now();
+
     loop {
-        debug_rprintln!("display loop");
-        match page.get() {
-            DisplayPage::BatteryStatus => {
-                let status = charger.borrow_mut().status()?;
-                let battery_volts = board.borrow_mut().vbat.read_battery_volts();
+        {
+            let mut display = Lcd::new(&mut display_bus)?;
+            while page.get() != DisplayPage::Off {
+                show_page(page.get(), start_time, &mut display, charger, board).await?;
 
-                display.cls()?;
-                display.set_output_line(0)?;
-                write!(&mut display, "{:?}", status.chrg())?;
-                display.set_output_line(1)?;
-                write!(&mut display, "vbat {:.2}", battery_volts)?;
+                // Wait for either sleep or read() to complete and propagate error.
+                try_select(
+                    pin!(async {
+                        system_time::sleep(Duration::secs(2)).await;
+                        Ok(())
+                    }),
+                    pin!(event.read()),
+                )
+                .await
+                .map_err(|e| e.factor_first().0)?;
             }
-            DisplayPage::ChargerRegisters => {
-                let mut ch = charger.borrow_mut();
-                let status = ch.status()?;
-                let faults = ch.new_fault()?;
-
-                debug_rprintln!("status {:?}", status);
-                debug_rprintln!("faults {:?}", faults);
-
-                display.cls()?;
-                display.set_output_line(0)?;
-                write!(&mut display, "status {:08b}", u8::from(status))?;
-                display.set_output_line(1)?;
-                write!(&mut display, "faults {:08b}", u8::from(faults))?;
-            }
-            DisplayPage::SystemStatus => {
-                let uptime: SecsDurationU64 = (system_time::now() - start_time).convert();
-
-                display.cls()?;
-                display.set_output_line(0)?;
-                write!(&mut display, "uptime {}", uptime)?;
-            }
+            // If we fell out of previous loop, it means LCD was turned off.
+            display.turn_off()?;
         }
 
-        // Wait for either sleep or read() to complete and propagate error.
-        try_select(
-            pin!(async {
-                system_time::sleep(Duration::secs(2)).await;
-                Ok(())
-            }),
-            pin!(event.read()),
-        )
-        .await
-        .map_err(|e| e.factor_first().0)?;
+        while page.get() == DisplayPage::Off {
+            event.read().await?;
+        }
     }
 }
 
@@ -137,6 +171,8 @@ async fn navigation(
     page: &Cell<DisplayPage>,
     board: &RefCell<Peripherals>,
 ) -> Result<(), Error> {
+    let mut last_visible_page = None;
+
     loop {
         // Wait for button press
         JOYSTICK_EVENT.read().await?;
@@ -147,6 +183,17 @@ async fn navigation(
             page.set(current_page.prev());
         } else if joystick.down.is_low()? {
             page.set(current_page.next());
+        } else if joystick.button.is_low()? {
+            match last_visible_page {
+                Some(last_page) => {
+                    last_visible_page = None;
+                    page.set(last_page);
+                }
+                None => {
+                    last_visible_page = Some(current_page);
+                    page.set(DisplayPage::Off);
+                }
+            }
         }
 
         event.post(());
@@ -171,7 +218,7 @@ fn main() -> ! {
         let peripherals = RefCell::new(board.peripherals);
         let display_refresh_event = Mailbox::<()>::new();
         let display_page = Cell::new(DisplayPage::BatteryStatus);
-        let display = Lcd::new(RefCellDevice::new(&board.i2c))?;
+        let display_bus = RefCellDevice::new(&board.i2c);
         let charger = RefCell::new(BQ24259::new(RefCellDevice::new(&board.i2c)));
 
         let charger_watchdog = pin!(panic_if_exited(async {
@@ -184,7 +231,7 @@ fn main() -> ! {
             }
         }));
         let display_handler = pin!(panic_if_exited(display_handler(
-            display,
+            display_bus,
             &display_refresh_event,
             &display_page,
             &charger,

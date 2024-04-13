@@ -112,9 +112,9 @@ checksum = "7059fff8937831a9ae6f0fe4d658ffabf58f2ca96aa9dec1c889f936f705f216"
 
 [[package]]
 name = "either"
-version = "1.10.0"
+version = "1.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "11157ac094ffbdde99aa67b23417ebdd801842852b500e395a45a9c0aac03e4a"
+checksum = "a47c1c47d2f5964e29c61246e81db715514cd532db6b5116a25ea3c03d6780a2"
 
 [[package]]
 name = "embedded-hal"
@@ -230,7 +230,7 @@ dependencies = [
 [[package]]
 name = "lcd"
 version = "0.1.0"
-source = "git+https://github.com/rblaze/erust-lcd.git#b0539a147297182331201c2402d2e62363b75485"
+source = "git+https://github.com/rblaze/erust-lcd.git#acf31f12fa99afe0da07ec47c3fa8035435c2784"
 
 [[package]]
 name = "nb"
@@ -309,9 +309,9 @@ dependencies = [
 
 [[package]]
 name = "quote"
-version = "1.0.35"
+version = "1.0.36"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "291ec9ab5efd934aaf503a6466c5d5251535d108ee747472c3977cc5acc868ef"
+checksum = "0fa76aaf39101c457836aec0ce2316dbdc3ab723cdda1c6bd4e6ad4208acaca7"
 dependencies = [
  "proc-macro2",
 ]
