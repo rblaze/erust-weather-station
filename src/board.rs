@@ -17,7 +17,7 @@ use stm32g0xx_hal::timer::pwm::{PwmExt, PwmPin};
 use stm32g0xx_hal::timer::{Channel1, Channel2, Channel3};
 
 use crate::error::Error;
-use crate::hal_i2c::I2cBus;
+use crate::hal_compat::{HalInputPin, HalOutputPin, I2cBus};
 use crate::system_time::Ticker;
 
 type I2cSda = PA10<Output<OpenDrain>>;
@@ -26,12 +26,12 @@ type HalI2c1 = I2c<pac::I2C1, I2cSda, I2cScl>;
 pub type BoardI2c = I2cBus<HalI2c1>;
 
 pub struct Joystick {
-    pub up: PA12<Input<PullUp>>,
-    pub down: PA7<Input<PullUp>>,
-    pub left: PA6<Input<PullUp>>,
-    pub right: PA11<Input<PullUp>>,
-    pub select: PA5<Input<PullUp>>,
-    pub button: PA4<Input<PullUp>>,
+    pub up: HalInputPin<PA12<Input<PullUp>>>,
+    pub down: HalInputPin<PA7<Input<PullUp>>>,
+    pub left: HalInputPin<PA6<Input<PullUp>>>,
+    pub right: HalInputPin<PA11<Input<PullUp>>>,
+    pub select: HalInputPin<PA5<Input<PullUp>>>,
+    pub button: HalInputPin<PA4<Input<PullUp>>>,
 }
 
 pub struct Backlight {
@@ -79,7 +79,7 @@ pub struct Peripherals {
     pub joystick: Joystick,
     pub vbat: VBat,
     pub backlight: Backlight,
-    pub display_power: PA1<Output<PushPull>>,
+    pub display_power: HalOutputPin<PA1<Output<PushPull>>>,
 }
 
 pub struct Board {
@@ -133,12 +133,12 @@ impl Board {
         adc.calibrate();
 
         let joystick = Joystick {
-            up: gpioa.pa12.into_pull_up_input(),
-            down: gpioa.pa7.into_pull_up_input(),
-            left: gpioa.pa6.into_pull_up_input(),
-            right: gpioa.pa11.into_pull_up_input(),
-            select: gpioa.pa5.into_pull_up_input(),
-            button: gpioa.pa4.into_pull_up_input(),
+            up: HalInputPin::new(gpioa.pa12.into_pull_up_input()),
+            down: HalInputPin::new(gpioa.pa7.into_pull_up_input()),
+            left: HalInputPin::new(gpioa.pa6.into_pull_up_input()),
+            right: HalInputPin::new(gpioa.pa11.into_pull_up_input()),
+            select: HalInputPin::new(gpioa.pa5.into_pull_up_input()),
+            button: HalInputPin::new(gpioa.pa4.into_pull_up_input()),
         };
 
         let i2c_sda = gpioa.pa10.into_open_drain_output();
@@ -183,7 +183,7 @@ impl Board {
                     green: backlight_green,
                     blue: backlight_blue,
                 },
-                display_power: gpioa.pa1.into_push_pull_output(),
+                display_power: HalOutputPin::new(gpioa.pa1.into_push_pull_output()),
             },
         })
     }

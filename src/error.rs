@@ -2,7 +2,7 @@
 
 use core::convert::Infallible;
 
-use crate::hal_i2c::I2cError;
+use crate::hal_compat::I2cError;
 
 #[derive(Debug)]
 pub enum Error {

@@ -4,7 +4,7 @@
 mod board;
 mod env;
 mod error;
-mod hal_i2c;
+mod hal_compat;
 mod screen;
 mod system_time;
 
@@ -18,6 +18,7 @@ use async_scheduler::mailbox::Mailbox;
 use board::{Peripherals, JOYSTICK_EVENT};
 use bq24259::BQ24259;
 use cortex_m_rt::entry;
+use embedded_hal::digital::{InputPin, OutputPin};
 use embedded_hal_bus::i2c::RefCellDevice;
 use fugit::SecsDurationU64;
 use futures::future::try_select;
@@ -26,7 +27,6 @@ use lcd::screen::Screen;
 use rtt_target::debug_rprintln;
 #[cfg(debug_assertions)]
 use rtt_target::rtt_init_print;
-use stm32g0xx_hal::hal::digital::v2::{InputPin, OutputPin};
 use system_time::{Duration, Instant};
 
 use crate::error::Error;
@@ -203,7 +203,7 @@ async fn navigation(
         JOYSTICK_EVENT.read().await?;
 
         let current_page = page.get();
-        let joystick = &board.borrow_mut().joystick;
+        let joystick = &mut board.borrow_mut().joystick;
         if joystick.up.is_low()? {
             page.set(current_page.prev());
         } else if joystick.down.is_low()? {
