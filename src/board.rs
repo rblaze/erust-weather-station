@@ -3,8 +3,10 @@ use core::cell::RefCell;
 use rtt_target::debug_rprintln;
 use stm32g0xx_hal::analog::adc::{Adc, AdcExt, OversamplingRatio, Precision, SampleTime};
 use stm32g0xx_hal::exti::{Event, ExtiExt};
-use stm32g0xx_hal::gpio::gpioa::{PA0, PA10, PA11, PA12, PA4, PA5, PA6, PA7, PA9};
-use stm32g0xx_hal::gpio::{Analog, GpioExt, Input, OpenDrain, Output, PullUp, SignalEdge};
+use stm32g0xx_hal::gpio::gpioa::{PA0, PA1, PA10, PA11, PA12, PA4, PA5, PA6, PA7, PA9};
+use stm32g0xx_hal::gpio::{
+    Analog, GpioExt, Input, OpenDrain, Output, PullUp, PushPull, SignalEdge,
+};
 use stm32g0xx_hal::i2c::{self, I2c};
 use stm32g0xx_hal::pac::{self, interrupt, EXTI, TIM3};
 use stm32g0xx_hal::power::{self, PowerExt};
@@ -77,6 +79,7 @@ pub struct Peripherals {
     pub joystick: Joystick,
     pub vbat: VBat,
     pub backlight: Backlight,
+    pub display_power: PA1<Output<PushPull>>,
 }
 
 pub struct Board {
@@ -180,6 +183,7 @@ impl Board {
                     green: backlight_green,
                     blue: backlight_blue,
                 },
+                display_power: gpioa.pa1.into_push_pull_output(),
             },
         })
     }

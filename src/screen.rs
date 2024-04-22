@@ -46,24 +46,6 @@ where
         self.send_command(set_ddram_address(line as u8 * 0x40))?;
         Ok(())
     }
-
-    pub fn turn_off(&mut self) -> Result<(), Error> {
-        self.send_command(display_on_off(
-            DisplayState::Off,
-            CursorState::Off,
-            BlinkState::Off,
-        ))?;
-        self.send_command(follower_control(
-            FollowerState::Off,
-            DEFAULT_V0_AMPLIFIED_RATIO,
-        ))?;
-        self.send_command(power_icon_contrast_set(
-            IconState::Off,
-            BoosterState::Off,
-            DEFAULT_CONTRAST,
-        ))?;
-        Ok(())
-    }
 }
 
 impl<I2C: i2c::I2c> Screen<WIDTH, HEIGHT, crate::error::Error> for Lcd<'_, I2C>

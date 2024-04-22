@@ -26,7 +26,7 @@ use lcd::screen::Screen;
 use rtt_target::debug_rprintln;
 #[cfg(debug_assertions)]
 use rtt_target::rtt_init_print;
-use stm32g0xx_hal::hal::digital::v2::InputPin;
+use stm32g0xx_hal::hal::digital::v2::{InputPin, OutputPin};
 use system_time::{Duration, Instant};
 
 use crate::error::Error;
@@ -159,6 +159,10 @@ where
 
     loop {
         {
+            board.borrow_mut().display_power.set_low()?;
+            // Give display time to initialize.
+            system_time::sleep(Duration::millis(200)).await;
+
             let mut display = Lcd::new(&mut display_bus)?;
             while page.get() != DisplayPage::Off {
                 show_page(page.get(), start_time, &mut display, charger, board).await?;
@@ -174,9 +178,10 @@ where
                 .await
                 .map_err(|e| e.factor_first().0)?;
             }
-            // If we fell out of previous loop, it means LCD was turned off.
-            display.turn_off()?;
         }
+
+        // If we fell out of previous loop, it means LCD was turned off.
+        board.borrow_mut().display_power.set_high()?;
 
         while page.get() == DisplayPage::Off {
             event.read().await?;
@@ -236,9 +241,6 @@ fn main() -> ! {
         let board = board::Board::new()?;
 
         env::init_env(board.ticker)?;
-
-        // Wait 100ms for the LCD to power up.
-        cortex_m::asm::delay(600000);
 
         let peripherals = RefCell::new(board.peripherals);
         let backlight_event = Mailbox::<()>::new();
