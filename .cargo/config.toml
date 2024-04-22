@@ -5,7 +5,7 @@ rustflags = [
 ]
 
 [target.thumbv6m-none-eabi]
-runner = "probe-rs run --chip STM32G071KBUx"
+runner = "probe-rs run --chip STM32G071CBTx"
 
 [build]
 # Pick ONE of these compilation targets
