@@ -45,6 +45,24 @@ async fn panic_if_exited<F: core::future::Future<Output = Result<(), Error>>>(f:
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+enum DisplayBacklight {
+    Off,
+    Half,
+    Full,
+}
+
+impl DisplayBacklight {
+    fn next(self) -> Self {
+        use DisplayBacklight::*;
+        match self {
+            Off => Half,
+            Half => Full,
+            Full => Off,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 enum DisplayPage {
     BatteryStatus,
     ChargerRegisters,
@@ -167,8 +185,10 @@ where
 }
 
 async fn navigation(
-    event: &Mailbox<()>,
+    display_event: &Mailbox<()>,
     page: &Cell<DisplayPage>,
+    backlight_event: &Mailbox<()>,
+    backlight: &Cell<DisplayBacklight>,
     board: &RefCell<Peripherals>,
 ) -> Result<(), Error> {
     let mut last_visible_page = None;
@@ -191,12 +211,17 @@ async fn navigation(
                 }
                 None => {
                     last_visible_page = Some(current_page);
+                    backlight.set(DisplayBacklight::Off);
+                    backlight_event.post(());
                     page.set(DisplayPage::Off);
                 }
             }
+        } else if page.get() != DisplayPage::Off && joystick.select.is_low()? {
+            backlight.set(backlight.get().next());
+            backlight_event.post(());
         }
 
-        event.post(());
+        display_event.post(());
     }
 }
 
@@ -216,6 +241,8 @@ fn main() -> ! {
         cortex_m::asm::delay(600000);
 
         let peripherals = RefCell::new(board.peripherals);
+        let backlight_event = Mailbox::<()>::new();
+        let backlight = Cell::new(DisplayBacklight::Off);
         let display_refresh_event = Mailbox::<()>::new();
         let display_page = Cell::new(DisplayPage::BatteryStatus);
         let display_bus = RefCellDevice::new(&board.i2c);
@@ -230,6 +257,18 @@ fn main() -> ! {
                 system_time::sleep(Duration::secs(11)).await;
             }
         }));
+        let backlight_handler = pin!(panic_if_exited(async {
+            loop {
+                debug_rprintln!("backlight {:?}", backlight.get());
+                match backlight.get() {
+                    DisplayBacklight::Off => peripherals.borrow_mut().backlight.set(0, 0, 0),
+                    DisplayBacklight::Half => peripherals.borrow_mut().backlight.set(50, 50, 50),
+                    DisplayBacklight::Full => peripherals.borrow_mut().backlight.set(100, 100, 100),
+                };
+
+                backlight_event.read().await?;
+            }
+        }));
         let display_handler = pin!(panic_if_exited(display_handler(
             display_bus,
             &display_refresh_event,
@@ -240,6 +279,8 @@ fn main() -> ! {
         let navigation = pin!(panic_if_exited(navigation(
             &display_refresh_event,
             &display_page,
+            &backlight_event,
+            &backlight,
             &peripherals
         )));
 
@@ -247,6 +288,7 @@ fn main() -> ! {
             LocalFutureObj::new(charger_watchdog),
             LocalFutureObj::new(navigation),
             LocalFutureObj::new(display_handler),
+            LocalFutureObj::new(backlight_handler),
         ]);
         unreachable!();
     }()

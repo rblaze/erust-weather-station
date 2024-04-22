@@ -6,10 +6,13 @@ use stm32g0xx_hal::exti::{Event, ExtiExt};
 use stm32g0xx_hal::gpio::gpioa::{PA0, PA10, PA11, PA12, PA4, PA5, PA6, PA7, PA9};
 use stm32g0xx_hal::gpio::{Analog, GpioExt, Input, OpenDrain, Output, PullUp, SignalEdge};
 use stm32g0xx_hal::i2c::{self, I2c};
-use stm32g0xx_hal::pac::{self, interrupt, EXTI};
+use stm32g0xx_hal::pac::{self, interrupt, EXTI, TIM3};
 use stm32g0xx_hal::power::{self, PowerExt};
+use stm32g0xx_hal::prelude::_embedded_hal_PwmPin;
 use stm32g0xx_hal::rcc::{self, RccExt};
 use stm32g0xx_hal::time::RateExtU32;
+use stm32g0xx_hal::timer::pwm::{PwmExt, PwmPin};
+use stm32g0xx_hal::timer::{Channel1, Channel2, Channel3};
 
 use crate::error::Error;
 use crate::hal_i2c::I2cBus;
@@ -29,6 +32,34 @@ pub struct Joystick {
     pub button: PA4<Input<PullUp>>,
 }
 
+pub struct Backlight {
+    red: PwmPin<TIM3, Channel1>,
+    green: PwmPin<TIM3, Channel2>,
+    blue: PwmPin<TIM3, Channel3>,
+}
+
+impl Backlight {
+    // TIM3 is 16-bit timer but HAL provides u32 as duty type.
+    fn set_duty(pin: &mut impl _embedded_hal_PwmPin<Duty = u32>, duty: u8) {
+        debug_assert!(duty <= 100);
+        if duty == 0 {
+            pin.set_duty(0);
+            pin.disable();
+        } else {
+            let scaled_duty = pin.get_max_duty() * duty as u32 / 100;
+            pin.enable();
+            pin.set_duty(scaled_duty);
+            debug_rprintln!("duty {}", scaled_duty);
+        }
+    }
+
+    pub fn set(&mut self, red: u8, green: u8, blue: u8) {
+        Self::set_duty(&mut self.red, red);
+        Self::set_duty(&mut self.green, green);
+        Self::set_duty(&mut self.blue, blue);
+    }
+}
+
 pub struct VBat {
     adc: Adc,
     vbat: PA0<Analog>,
@@ -45,6 +76,7 @@ impl VBat {
 pub struct Peripherals {
     pub joystick: Joystick,
     pub vbat: VBat,
+    pub backlight: Backlight,
 }
 
 pub struct Board {
@@ -73,7 +105,15 @@ impl Board {
         let mut rcc = dp.RCC.freeze(rcc::Config::hsi(rcc::Prescaler::Div4));
         let mut pwr = dp.PWR.constrain(&mut rcc);
         let gpioa = dp.GPIOA.split(&mut rcc);
+        let gpiob = dp.GPIOB.split(&mut rcc);
         let mut adc = dp.ADC.constrain(&mut rcc);
+
+        let backlight_pwm = dp.TIM3.pwm(10.kHz(), &mut rcc);
+        let backlight_red = backlight_pwm.bind_pin(gpiob.pb4);
+        let backlight_green = backlight_pwm.bind_pin(gpiob.pb5);
+        let backlight_blue = backlight_pwm.bind_pin(gpiob.pb0);
+        debug_rprintln!("backlight pwm freq {}", backlight_pwm.freq());
+        debug_rprintln!("backlight max_duty {}", backlight_red.get_max_duty());
 
         adc.set_sample_time(SampleTime::T_160);
         adc.set_precision(Precision::B_12);
@@ -134,6 +174,11 @@ impl Board {
                 vbat: VBat {
                     adc,
                     vbat: gpioa.pa0.into_analog(),
+                },
+                backlight: Backlight {
+                    red: backlight_red,
+                    green: backlight_green,
+                    blue: backlight_blue,
                 },
             },
         })
