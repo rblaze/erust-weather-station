@@ -100,7 +100,7 @@ impl Ticker {
     /// Waits for the specified tick or next interrupt.
     pub fn sleep_until(&self, cs: CriticalSection, tick: Option<Instant>) {
         // Precondition: timer is enabled and CMP is set to the beginning of the next cycle.
-        debug_assert_eq!(self.timer.cmp.read().bits(), 0);
+        debug_assert_eq!(self.timer.cmp.read().cmp().bits(), 0);
         debug_assert!(self.timer.isr.read().cmpok().bit_is_clear());
         debug_assert!(self.timer.cfgr.read().preload().bit_is_clear());
 
@@ -152,7 +152,7 @@ impl Ticker {
         // If there is an LPTIM event, it will be processed right
         // after exiting critical section.
         // Otherwise, reset CMP to zero.
-        if self.timer.isr.read().cmpm().bit_is_clear() && self.timer.cmp.read().bits() != 0 {
+        if self.timer.isr.read().cmpm().bit_is_clear() && self.timer.cmp.read().cmp().bits() != 0 {
             set_cmp(&self.timer, 0);
         }
     }
@@ -221,7 +221,7 @@ unsafe fn TIM7_LPTIM2() {
 
         // Set next cmp event to the start of the loop.
         // sleep_until() will set it to the correct value.
-        let cmp = lptim.cmp.read().bits();
+        let cmp = lptim.cmp.read().cmp().bits();
         if cmp != 0 {
             set_cmp(lptim, 0);
         }
