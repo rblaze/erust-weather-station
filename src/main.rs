@@ -2,6 +2,7 @@
 #![no_main]
 
 mod board;
+mod display;
 mod env;
 mod error;
 mod hal_compat;
@@ -9,7 +10,6 @@ mod screen;
 mod system_time;
 
 use core::cell::{Cell, RefCell};
-use core::fmt::Write;
 use core::panic::PanicInfo;
 use core::pin::pin;
 
@@ -18,19 +18,16 @@ use async_scheduler::mailbox::Mailbox;
 use board::{Peripherals, JOYSTICK_EVENT};
 use bq24259::BQ24259;
 use cortex_m_rt::entry;
-use embedded_hal::digital::{InputPin, OutputPin};
+use embedded_hal::digital::InputPin;
 use embedded_hal_bus::i2c::RefCellDevice;
-use fugit::SecsDurationU64;
-use futures::future::try_select;
 use futures::task::LocalFutureObj;
-use lcd::screen::Screen;
 use rtt_target::debug_rprintln;
 #[cfg(debug_assertions)]
 use rtt_target::rtt_init_print;
-use system_time::{Duration, Instant};
+use system_time::Duration;
 
+use crate::display::DisplayPage;
 use crate::error::Error;
-use crate::screen::Lcd;
 
 #[panic_handler]
 fn panic(info: &PanicInfo) -> ! {
@@ -58,133 +55,6 @@ impl DisplayBacklight {
             Off => Half,
             Half => Full,
             Full => Off,
-        }
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-enum DisplayPage {
-    BatteryStatus,
-    ChargerRegisters,
-    SystemStatus,
-    Off,
-}
-
-impl DisplayPage {
-    fn next(self) -> Self {
-        use DisplayPage::*;
-        match self {
-            BatteryStatus => ChargerRegisters,
-            ChargerRegisters => SystemStatus,
-            SystemStatus => BatteryStatus,
-            Off => Off,
-        }
-    }
-
-    fn prev(self) -> Self {
-        use DisplayPage::*;
-        match self {
-            BatteryStatus => SystemStatus,
-            ChargerRegisters => BatteryStatus,
-            SystemStatus => ChargerRegisters,
-            Off => Off,
-        }
-    }
-}
-
-async fn show_page<Bus>(
-    page: DisplayPage,
-    start_time: Instant,
-    display: &mut Lcd<'_, Bus>,
-    charger: &RefCell<BQ24259<Bus>>,
-    board: &RefCell<Peripherals>,
-) -> Result<(), Error>
-where
-    Bus: embedded_hal::i2c::I2c,
-    Error: From<Bus::Error>,
-{
-    debug_rprintln!("display loop");
-    match page {
-        DisplayPage::BatteryStatus => {
-            let status = charger.borrow_mut().status()?;
-            let battery_volts = board.borrow_mut().vbat.read_battery_volts();
-
-            display.cls()?;
-            display.set_output_line(0)?;
-            write!(display, "{:?}", status.chrg())?;
-            display.set_output_line(1)?;
-            write!(display, "vbat {:.2}", battery_volts)?;
-        }
-        DisplayPage::ChargerRegisters => {
-            let mut ch = charger.borrow_mut();
-            let status = ch.status()?;
-            let faults = ch.new_fault()?;
-
-            debug_rprintln!("status {:?}", status);
-            debug_rprintln!("faults {:?}", faults);
-
-            display.cls()?;
-            display.set_output_line(0)?;
-            write!(display, "status {:08b}", u8::from(status))?;
-            display.set_output_line(1)?;
-            write!(display, "faults {:08b}", u8::from(faults))?;
-        }
-        DisplayPage::SystemStatus => {
-            let uptime: SecsDurationU64 = (system_time::now() - start_time).convert();
-
-            display.cls()?;
-            display.set_output_line(0)?;
-            write!(display, "uptime {}", uptime)?;
-        }
-        DisplayPage::Off => {
-            unimplemented!();
-        }
-    }
-
-    Ok(())
-}
-
-async fn display_handler<Bus>(
-    mut display_bus: Bus,
-    event: &Mailbox<()>,
-    page: &Cell<DisplayPage>,
-    charger: &RefCell<BQ24259<Bus>>,
-    board: &RefCell<Peripherals>,
-) -> Result<(), Error>
-where
-    Bus: embedded_hal::i2c::I2c,
-    Error: From<Bus::Error>,
-{
-    let start_time = system_time::now();
-
-    loop {
-        {
-            board.borrow_mut().display_power.set_low()?;
-            // Give display time to initialize.
-            system_time::sleep(Duration::millis(200)).await;
-
-            let mut display = Lcd::new(&mut display_bus)?;
-            while page.get() != DisplayPage::Off {
-                show_page(page.get(), start_time, &mut display, charger, board).await?;
-
-                // Wait for either sleep or read() to complete and propagate error.
-                try_select(
-                    pin!(async {
-                        system_time::sleep(Duration::secs(2)).await;
-                        Ok(())
-                    }),
-                    pin!(event.read()),
-                )
-                .await
-                .map_err(|e| e.factor_first().0)?;
-            }
-        }
-
-        // If we fell out of previous loop, it means LCD was turned off.
-        board.borrow_mut().display_power.set_high()?;
-
-        while page.get() == DisplayPage::Off {
-            event.read().await?;
         }
     }
 }
@@ -271,7 +141,7 @@ fn main() -> ! {
                 backlight_event.read().await?;
             }
         }));
-        let display_handler = pin!(panic_if_exited(display_handler(
+        let display_handler = pin!(panic_if_exited(display::task(
             display_bus,
             &display_refresh_event,
             &display_page,
