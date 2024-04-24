@@ -1,0 +1,5 @@
+LCD: 0.15 mA when on
+backlight: up to 50 mA
+MCU, StopMode22, HSI/4:
+  release: 0.72 mA, 0.82 mA in interrupt storm
+  debug: 0.74 mA, 0.94 mA in interrupt storm
