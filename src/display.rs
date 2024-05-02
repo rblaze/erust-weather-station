@@ -2,13 +2,11 @@
 
 use core::cell::{Cell, RefCell};
 use core::fmt::Write;
-use core::pin::pin;
 
 use async_scheduler::mailbox::Mailbox;
 use bq24259::BQ24259;
 use embedded_hal::digital::OutputPin;
 use fugit::SecsDurationU64;
-use futures::future::try_select;
 use lcd::screen::Screen;
 use rtt_target::debug_rprintln;
 
@@ -121,16 +119,7 @@ where
     while page.get() != DisplayPage::Off {
         show_page(page.get(), start_time, &mut display, charger, board).await?;
 
-        // Wait for either sleep or read() to complete and propagate error.
-        try_select(
-            pin!(async {
-                system_time::sleep(Duration::secs(2)).await;
-                Ok(())
-            }),
-            pin!(event.read()),
-        )
-        .await
-        .map_err(|e| e.factor_first().0)?;
+        system_time::timeout(Duration::secs(2), event.read()).await?;
     }
 
     Ok(())

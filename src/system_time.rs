@@ -1,7 +1,11 @@
 use core::cell::Cell;
+use core::pin::pin;
 
 use critical_section::{CriticalSection, Mutex};
 use fugit::{TimerDuration, TimerInstant};
+use futures::future::try_select;
+use futures::future::Either::{Left, Right};
+use futures::Future;
 use rtt_target::debug_rprintln;
 use stm32g0xx_hal::pac::lptim1::RegisterBlock;
 use stm32g0xx_hal::pac::{interrupt, LPTIM2};
@@ -156,6 +160,30 @@ impl Ticker {
             set_cmp(&self.timer, 0);
         }
     }
+}
+
+/// Runs provided future with timeout.
+/// Returns `Ok(x)` if future completes, None if timeout occurs.
+pub async fn timeout<T, E, F>(duration: Duration, f: F) -> Result<Option<T>, E>
+where
+    F: Future<Output = Result<T, E>>,
+{
+    // Wait for either sleep or read() to complete and propagate error.
+    let result = try_select(
+        pin!(f),
+        pin!(async {
+            sleep(duration).await;
+            Ok(())
+        }),
+    )
+    .await
+    .map(|x| match x {
+        Left((v, _)) => Some(v),
+        Right(((), _)) => None,
+    })
+    .map_err(|e| e.factor_first().0)?;
+
+    Ok(result)
 }
 
 /// Sleeps for the specified duration.
