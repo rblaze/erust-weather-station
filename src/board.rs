@@ -3,7 +3,8 @@ use core::cell::RefCell;
 use rtt_target::debug_rprintln;
 use stm32g0xx_hal::analog::adc::{Adc, AdcExt, OversamplingRatio, Precision, SampleTime};
 use stm32g0xx_hal::exti::{Event, ExtiExt};
-use stm32g0xx_hal::gpio::gpioa::{PA0, PA1, PA10, PA11, PA12, PA4, PA5, PA6, PA7, PA9};
+use stm32g0xx_hal::gpio::gpioa::{PA10, PA9};
+use stm32g0xx_hal::gpio::gpiob::{PB10, PB11, PB12, PB13, PB14, PB15, PB2, PB6};
 use stm32g0xx_hal::gpio::{
     Analog, GpioExt, Input, OpenDrain, Output, PullUp, PushPull, SignalEdge,
 };
@@ -20,24 +21,24 @@ use crate::error::Error;
 use crate::hal_compat::{HalInputPin, HalOutputPin, I2cBus};
 use crate::system_time::Ticker;
 
-type I2cSda = PA10<Output<OpenDrain>>;
-type I2cScl = PA9<Output<OpenDrain>>;
+type I2cSda = PA10<Output<OpenDrain>>; // TODO: PB4
+type I2cScl = PA9<Output<OpenDrain>>; // TODO: PB3
 type HalI2c1 = I2c<pac::I2C1, I2cSda, I2cScl>;
 pub type BoardI2c = I2cBus<HalI2c1>;
 
 pub struct Joystick {
-    pub up: HalInputPin<PA12<Input<PullUp>>>,
-    pub down: HalInputPin<PA7<Input<PullUp>>>,
-    pub left: HalInputPin<PA6<Input<PullUp>>>,
-    pub right: HalInputPin<PA11<Input<PullUp>>>,
-    pub select: HalInputPin<PA5<Input<PullUp>>>,
-    pub button: HalInputPin<PA4<Input<PullUp>>>,
+    pub up: HalInputPin<PB15<Input<PullUp>>>,
+    pub down: HalInputPin<PB13<Input<PullUp>>>,
+    pub left: HalInputPin<PB12<Input<PullUp>>>,
+    pub right: HalInputPin<PB14<Input<PullUp>>>,
+    pub select: HalInputPin<PB11<Input<PullUp>>>,
+    pub button: HalInputPin<PB10<Input<PullUp>>>,
 }
 
 pub struct Backlight {
-    red: PwmPin<TIM3, Channel1>,
-    green: PwmPin<TIM3, Channel2>,
-    blue: PwmPin<TIM3, Channel3>,
+    red: PwmPin<TIM3, Channel1>,   // TODO: TIM4_CH2
+    green: PwmPin<TIM3, Channel2>, // TODO: TIM4_CH3
+    blue: PwmPin<TIM3, Channel3>,  // TODO: TIM4_CH4
 }
 
 impl Backlight {
@@ -64,7 +65,7 @@ impl Backlight {
 
 pub struct VBat {
     adc: Adc,
-    vbat: PA0<Analog>,
+    vbat: PB2<Analog>,
 }
 
 impl VBat {
@@ -79,7 +80,7 @@ pub struct Peripherals {
     pub joystick: Joystick,
     pub vbat: VBat,
     pub backlight: Backlight,
-    pub display_power: HalOutputPin<PA1<Output<PushPull>>>,
+    pub display_power: HalOutputPin<PB6<Output<PushPull>>>,
 }
 
 pub struct Board {
@@ -104,7 +105,6 @@ impl Board {
 
         // Set clock to 4MHz (HSI speed is 16MHz).
         // Check I2C clock requirements (RM0444 32.4.4) before lowering.
-        // TODO: consider using Low Power Run mode.
         let mut rcc = dp.RCC.freeze(rcc::Config::hsi(rcc::Prescaler::Div4));
         let mut pwr = dp.PWR.constrain(&mut rcc);
         let gpioa = dp.GPIOA.split(&mut rcc);
@@ -112,9 +112,9 @@ impl Board {
         let mut adc = dp.ADC.constrain(&mut rcc);
 
         let backlight_pwm = dp.TIM3.pwm(10.kHz(), &mut rcc);
-        let backlight_red = backlight_pwm.bind_pin(gpiob.pb4);
-        let backlight_green = backlight_pwm.bind_pin(gpiob.pb5);
-        let backlight_blue = backlight_pwm.bind_pin(gpiob.pb0);
+        let backlight_red = backlight_pwm.bind_pin(gpiob.pb4); // TODO: PB7
+        let backlight_green = backlight_pwm.bind_pin(gpiob.pb5); // TODO: PB8
+        let backlight_blue = backlight_pwm.bind_pin(gpiob.pb0); // TODO: PB9
         debug_rprintln!("backlight pwm freq {}", backlight_pwm.freq());
         debug_rprintln!("backlight max_duty {}", backlight_red.get_max_duty());
 
@@ -133,12 +133,12 @@ impl Board {
         adc.calibrate();
 
         let joystick = Joystick {
-            up: HalInputPin::new(gpioa.pa12.into_pull_up_input()),
-            down: HalInputPin::new(gpioa.pa7.into_pull_up_input()),
-            left: HalInputPin::new(gpioa.pa6.into_pull_up_input()),
-            right: HalInputPin::new(gpioa.pa11.into_pull_up_input()),
-            select: HalInputPin::new(gpioa.pa5.into_pull_up_input()),
-            button: HalInputPin::new(gpioa.pa4.into_pull_up_input()),
+            up: HalInputPin::new(gpiob.pb15.into_pull_up_input()),
+            down: HalInputPin::new(gpiob.pb13.into_pull_up_input()),
+            left: HalInputPin::new(gpiob.pb12.into_pull_up_input()),
+            right: HalInputPin::new(gpiob.pb14.into_pull_up_input()),
+            select: HalInputPin::new(gpiob.pb11.into_pull_up_input()),
+            button: HalInputPin::new(gpiob.pb10.into_pull_up_input()),
         };
 
         let i2c_sda = gpioa.pa10.into_open_drain_output();
@@ -155,14 +155,35 @@ impl Board {
 
         let ticker = Ticker::new(dp.LPTIM2, &mut rcc);
 
+        // Upon reset, a pull-down resistor might be present on PB15, PA8, PD0, or PD2,
+        // depending on the voltage level on PB0, PA9, PC6, PA10, PD1, and PD3. In order
+        // to disable this resistor, strobe the UCPDx_STROBE bit of the SYSCFG_CFGR1
+        // register during start-up sequence.
+        let syscfg = dp.SYSCFG_VREFBUF;
+        syscfg
+            .cfgr1
+            .modify(|_, w| w.ucpd1_strobe().set_bit().ucpd2_strobe().set_bit());
+
         let exti = dp.EXTI;
-        exti.wakeup(Event::LPTIM2);
-        exti.listen(Event::GPIO4, SignalEdge::Falling);
-        exti.listen(Event::GPIO5, SignalEdge::Falling);
-        exti.listen(Event::GPIO6, SignalEdge::Falling);
-        exti.listen(Event::GPIO7, SignalEdge::Falling);
+        exti.exticr3
+            .modify(|_, w| w.exti16_23().pb().exti24_31().pb());
+        exti.exticr4.modify(|_, w| {
+            w.exti0_7()
+                .pb()
+                .exti8_15()
+                .pb()
+                .exti16_23()
+                .pb()
+                .exti24_31()
+                .pb()
+        });
+        exti.listen(Event::GPIO10, SignalEdge::Falling);
         exti.listen(Event::GPIO11, SignalEdge::Falling);
         exti.listen(Event::GPIO12, SignalEdge::Falling);
+        exti.listen(Event::GPIO13, SignalEdge::Falling);
+        exti.listen(Event::GPIO14, SignalEdge::Falling);
+        exti.listen(Event::GPIO15, SignalEdge::Falling);
+        exti.wakeup(Event::LPTIM2);
 
         unsafe {
             pac::NVIC::unmask(pac::Interrupt::TIM7_LPTIM2);
@@ -176,14 +197,14 @@ impl Board {
                 joystick,
                 vbat: VBat {
                     adc,
-                    vbat: gpioa.pa0.into_analog(),
+                    vbat: gpiob.pb2.into_analog(),
                 },
                 backlight: Backlight {
                     red: backlight_red,
                     green: backlight_green,
                     blue: backlight_blue,
                 },
-                display_power: HalOutputPin::new(gpioa.pa1.into_push_pull_output()),
+                display_power: HalOutputPin::new(gpiob.pb6.into_push_pull_output()),
             },
         })
     }
@@ -201,17 +222,17 @@ unsafe fn EXTI4_15() {
 
     // Clear interrupt for joystick GPIO lines
     exti.fpr1.write(|w| {
-        w.fpif4()
-            .set_bit()
-            .fpif5()
-            .set_bit()
-            .fpif6()
-            .set_bit()
-            .fpif7()
+        w.fpif10()
             .set_bit()
             .fpif11()
             .set_bit()
             .fpif12()
+            .set_bit()
+            .fpif13()
+            .set_bit()
+            .fpif14()
+            .set_bit()
+            .fpif15()
             .set_bit()
     });
 }
