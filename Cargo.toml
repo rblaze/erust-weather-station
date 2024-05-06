@@ -24,7 +24,10 @@ portable-atomic = { version = "1", default-features = false, features = [
     "unsafe-assume-single-core",
 ] }
 rtt-target = "0.5"
-stm32g0xx-hal = { version = "0.2", features = ["stm32g071", "rt"] }
+stm32g0xx-hal = { git = "https://github.com/stm32-rs/stm32g0xx-hal.git", features = [
+    "stm32g071",
+    "rt",
+] }
 
 [[bin]]
 name = "weather-station"
