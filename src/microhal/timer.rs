@@ -1,5 +1,3 @@
-#![deny(unsafe_code)]
-
 use super::rcc::RccControl;
 
 pub mod lptim;

@@ -1,5 +1,3 @@
-#![deny(unsafe_code)]
-
 /// SYSCLK prescaler
 #[allow(unused)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
