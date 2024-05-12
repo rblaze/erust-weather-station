@@ -1,10 +1,11 @@
+#![allow(unused)]
 use core::marker::PhantomData;
 
 use super::TimerExt;
 use crate::microhal::rcc::lptim::{LptimClock, LptimClockExt};
 use crate::microhal::rcc::{RccControl, ResetEnable};
 
-use stm32g0::stm32g071::LPTIM2;
+use stm32g0::stm32g071::{LPTIM1, LPTIM2};
 
 #[allow(unused)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -31,45 +32,6 @@ pub enum LptimEvent {
     CmpMatch,
 }
 
-impl TimerExt for LPTIM2 {
-    type RegisterWord = u16;
-    type Clock = LptimClock;
-    type Prescaler = LptimPrescaler;
-    type CountingTimer = LptimCounter<LPTIM2, Enabled>;
-
-    fn upcounter(
-        self,
-        clock: Self::Clock,
-        prescaler: Self::Prescaler,
-        limit: Self::RegisterWord,
-        rcc: &RccControl,
-    ) -> Self::CountingTimer {
-        // Configure timer clock.
-        Self::set_clock(clock, rcc);
-        Self::enable(rcc);
-        Self::reset(rcc);
-        self.cfgr.modify(|_, w| w.presc().variant(prescaler as u8));
-
-        self.cr.modify(|_, w| w.enable().set_bit());
-
-        // "After setting the ENABLE bit, a delay of two counter clock is needed before the LPTIM is
-        // actually enabled."
-        // The slowest LPTIM clock source is LSI at 32000 Hz, the fastest CPU clock is ~64 MHz. At
-        // these conditions, one cycle of the LPTIM clock takes about 2000 CPU cycles.
-        cortex_m::asm::delay(5000);
-
-        // ARR can only be changed while the timer is *en*abled.
-        self.arr.write(|w| w.arr().variant(limit));
-        while self.isr.read().arrok().bit_is_clear() {}
-        self.icr.write(|w| w.arrokcf().set_bit());
-
-        Self::CountingTimer {
-            timer: self,
-            state: PhantomData,
-        }
-    }
-}
-
 /// Type tag for enabled timer.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Enabled;
@@ -84,115 +46,161 @@ pub struct LptimCounter<TIM, STATE> {
     state: PhantomData<STATE>,
 }
 
-impl LptimCounter<LPTIM2, Enabled> {
-    /// Disables timer.
-    pub fn disable(self) -> LptimCounter<LPTIM2, Disabled> {
-        self.timer.cr.modify(|_, w| w.enable().clear_bit());
+macro_rules! low_power_timer {
+    ($TIM:ident) => {
+        impl TimerExt for $TIM {
+            type RegisterWord = u16;
+            type Clock = LptimClock;
+            type Prescaler = LptimPrescaler;
+            type CountingTimer = LptimCounter<$TIM, Enabled>;
 
-        LptimCounter {
-            timer: self.timer,
-            state: PhantomData,
+            fn upcounter(
+                self,
+                clock: Self::Clock,
+                prescaler: Self::Prescaler,
+                limit: Self::RegisterWord,
+                rcc: &RccControl,
+            ) -> Self::CountingTimer {
+                // Configure timer clock.
+                Self::set_clock(clock, rcc);
+                Self::enable(rcc);
+                Self::reset(rcc);
+                self.cfgr.modify(|_, w| w.presc().variant(prescaler as u8));
+
+                self.cr.modify(|_, w| w.enable().set_bit());
+
+                // "After setting the ENABLE bit, a delay of two counter clock is needed before the LPTIM is
+                // actually enabled."
+                // The slowest LPTIM clock source is LSI at 32000 Hz, the fastest CPU clock is ~64 MHz. At
+                // these conditions, one cycle of the LPTIM clock takes about 2000 CPU cycles.
+                cortex_m::asm::delay(5000);
+
+                // ARR can only be changed while the timer is *en*abled.
+                self.arr.write(|w| w.arr().variant(limit));
+                while self.isr.read().arrok().bit_is_clear() {}
+                self.icr.write(|w| w.arrokcf().set_bit());
+
+                Self::CountingTimer {
+                    timer: self,
+                    state: PhantomData,
+                }
+            }
         }
-    }
 
-    /// Starts counting.
-    pub fn start(&self) {
-        self.timer.cr.modify(|_, w| w.cntstrt().set_bit());
-    }
+        impl LptimCounter<$TIM, Enabled> {
+            /// Disables timer.
+            pub fn disable(self) -> LptimCounter<$TIM, Disabled> {
+                self.timer.cr.modify(|_, w| w.enable().clear_bit());
 
-    /// Stops counting.
-    #[allow(unused)]
-    pub fn stop(&self) {
-        self.timer.cr.modify(|_, w| w.cntstrt().clear_bit());
-    }
+                LptimCounter {
+                    timer: self.timer,
+                    state: PhantomData,
+                }
+            }
 
-    /// Returns current counter value.
-    pub fn counter(&self) -> u16 {
-        self.timer.cnt.read().cnt().bits()
-    }
+            /// Starts counting.
+            pub fn start(&self) {
+                self.timer.cr.modify(|_, w| w.cntstrt().set_bit());
+            }
 
-    /// Returns compare value.
-    pub fn cmp(&self) -> u16 {
-        self.timer.cnt.read().cnt().bits()
-    }
+            /// Stops counting.
+            #[allow(unused)]
+            pub fn stop(&self) {
+                self.timer.cr.modify(|_, w| w.cntstrt().clear_bit());
+            }
 
-    /// Writes to CMP and waits for CMPOK to be set again to make sure there is
-    /// no races later.
-    pub fn set_cmp(&self, value: u16) {
-        debug_assert!(self.timer.isr.read().cmpok().bit_is_clear());
+            /// Returns current counter value.
+            pub fn counter(&self) -> u16 {
+                self.timer.cnt.read().cnt().bits()
+            }
 
-        self.timer.cmp.write(|w| w.cmp().variant(value));
-        while self.timer.isr.read().cmpok().bit_is_clear() {}
-        self.timer.icr.write(|w| w.cmpokcf().set_bit());
-        while self.timer.isr.read().cmpok().bit_is_set() {}
-    }
+            /// Returns compare value.
+            pub fn cmp(&self) -> u16 {
+                self.timer.cnt.read().cnt().bits()
+            }
 
-    /// Checks if event is pending.
-    pub fn is_pending(&self, event: LptimEvent) -> bool {
-        let v = self.timer.isr.read();
-        match event {
-            LptimEvent::DirectionDown => v.down().bit_is_set(),
-            LptimEvent::DirectionUp => v.up().bit_is_set(),
-            LptimEvent::ArrOk => v.arrok().bit_is_set(),
-            LptimEvent::CmpOk => v.cmpok().bit_is_set(),
-            LptimEvent::ExtTrig => v.exttrig().bit_is_set(),
-            LptimEvent::ArrMatch => v.arrm().bit_is_set(),
-            LptimEvent::CmpMatch => v.cmpm().bit_is_set(),
+            /// Writes to CMP and waits for CMPOK to be set again to make sure there is
+            /// no races later.
+            pub fn set_cmp(&self, value: u16) {
+                debug_assert!(self.timer.isr.read().cmpok().bit_is_clear());
+
+                self.timer.cmp.write(|w| w.cmp().variant(value));
+                while self.timer.isr.read().cmpok().bit_is_clear() {}
+                self.timer.icr.write(|w| w.cmpokcf().set_bit());
+                while self.timer.isr.read().cmpok().bit_is_set() {}
+            }
+
+            /// Checks if event is pending.
+            pub fn is_pending(&self, event: LptimEvent) -> bool {
+                let v = self.timer.isr.read();
+                match event {
+                    LptimEvent::DirectionDown => v.down().bit_is_set(),
+                    LptimEvent::DirectionUp => v.up().bit_is_set(),
+                    LptimEvent::ArrOk => v.arrok().bit_is_set(),
+                    LptimEvent::CmpOk => v.cmpok().bit_is_set(),
+                    LptimEvent::ExtTrig => v.exttrig().bit_is_set(),
+                    LptimEvent::ArrMatch => v.arrm().bit_is_set(),
+                    LptimEvent::CmpMatch => v.cmpm().bit_is_set(),
+                }
+            }
+
+            /// Clears pending event.
+            pub fn unpend(&self, event: LptimEvent) {
+                self.timer.icr.write(|w| match event {
+                    LptimEvent::DirectionDown => w.downcf().set_bit(),
+                    LptimEvent::DirectionUp => w.upcf().set_bit(),
+                    LptimEvent::ArrOk => w.arrokcf().set_bit(),
+                    LptimEvent::CmpOk => w.cmpokcf().set_bit(),
+                    LptimEvent::ExtTrig => w.exttrigcf().set_bit(),
+                    LptimEvent::ArrMatch => w.arrmcf().set_bit(),
+                    LptimEvent::CmpMatch => w.cmpmcf().set_bit(),
+                })
+            }
         }
-    }
 
-    /// Clears pending event.
-    pub fn unpend(&self, event: LptimEvent) {
-        self.timer.icr.write(|w| match event {
-            LptimEvent::DirectionDown => w.downcf().set_bit(),
-            LptimEvent::DirectionUp => w.upcf().set_bit(),
-            LptimEvent::ArrOk => w.arrokcf().set_bit(),
-            LptimEvent::CmpOk => w.cmpokcf().set_bit(),
-            LptimEvent::ExtTrig => w.exttrigcf().set_bit(),
-            LptimEvent::ArrMatch => w.arrmcf().set_bit(),
-            LptimEvent::CmpMatch => w.cmpmcf().set_bit(),
-        })
-    }
+        impl LptimCounter<$TIM, Disabled> {
+            pub fn enable(self) -> LptimCounter<$TIM, Enabled> {
+                self.timer.cr.modify(|_, w| w.enable().set_bit());
+
+                // "After setting the ENABLE bit, a delay of two counter clock is needed before the LPTIM is
+                // actually enabled."
+                // The slowest LPTIM clock source is LSI at 32000 Hz, the fastest CPU clock is ~64 MHz. At
+                // these conditions, one cycle of the LPTIM clock takes about 2000 CPU cycles.
+                cortex_m::asm::delay(5000);
+
+                LptimCounter {
+                    timer: self.timer,
+                    state: PhantomData,
+                }
+            }
+
+            pub fn listen(&self, event: LptimEvent) {
+                self.timer.ier.modify(|_, w| match event {
+                    LptimEvent::DirectionDown => w.downie().set_bit(),
+                    LptimEvent::DirectionUp => w.upie().set_bit(),
+                    LptimEvent::ArrOk => w.arrokie().set_bit(),
+                    LptimEvent::CmpOk => w.cmpokie().set_bit(),
+                    LptimEvent::ExtTrig => w.exttrigie().set_bit(),
+                    LptimEvent::ArrMatch => w.arrmie().set_bit(),
+                    LptimEvent::CmpMatch => w.cmpmie().set_bit(),
+                })
+            }
+
+            #[allow(unused)]
+            pub fn unlisten(&self, event: LptimEvent) {
+                self.timer.ier.modify(|_, w| match event {
+                    LptimEvent::DirectionDown => w.downie().clear_bit(),
+                    LptimEvent::DirectionUp => w.upie().clear_bit(),
+                    LptimEvent::ArrOk => w.arrokie().clear_bit(),
+                    LptimEvent::CmpOk => w.cmpokie().clear_bit(),
+                    LptimEvent::ExtTrig => w.exttrigie().clear_bit(),
+                    LptimEvent::ArrMatch => w.arrmie().clear_bit(),
+                    LptimEvent::CmpMatch => w.cmpmie().clear_bit(),
+                })
+            }
+        }
+    };
 }
 
-impl LptimCounter<LPTIM2, Disabled> {
-    pub fn enable(self) -> LptimCounter<LPTIM2, Enabled> {
-        self.timer.cr.modify(|_, w| w.enable().set_bit());
-
-        // "After setting the ENABLE bit, a delay of two counter clock is needed before the LPTIM is
-        // actually enabled."
-        // The slowest LPTIM clock source is LSI at 32000 Hz, the fastest CPU clock is ~64 MHz. At
-        // these conditions, one cycle of the LPTIM clock takes about 2000 CPU cycles.
-        cortex_m::asm::delay(5000);
-
-        LptimCounter {
-            timer: self.timer,
-            state: PhantomData,
-        }
-    }
-
-    pub fn listen(&self, event: LptimEvent) {
-        self.timer.ier.modify(|_, w| match event {
-            LptimEvent::DirectionDown => w.downie().set_bit(),
-            LptimEvent::DirectionUp => w.upie().set_bit(),
-            LptimEvent::ArrOk => w.arrokie().set_bit(),
-            LptimEvent::CmpOk => w.cmpokie().set_bit(),
-            LptimEvent::ExtTrig => w.exttrigie().set_bit(),
-            LptimEvent::ArrMatch => w.arrmie().set_bit(),
-            LptimEvent::CmpMatch => w.cmpmie().set_bit(),
-        })
-    }
-
-    #[allow(unused)]
-    pub fn unlisten(&self, event: LptimEvent) {
-        self.timer.ier.modify(|_, w| match event {
-            LptimEvent::DirectionDown => w.downie().clear_bit(),
-            LptimEvent::DirectionUp => w.upie().clear_bit(),
-            LptimEvent::ArrOk => w.arrokie().clear_bit(),
-            LptimEvent::CmpOk => w.cmpokie().clear_bit(),
-            LptimEvent::ExtTrig => w.exttrigie().clear_bit(),
-            LptimEvent::ArrMatch => w.arrmie().clear_bit(),
-            LptimEvent::CmpMatch => w.cmpmie().clear_bit(),
-        })
-    }
-}
+low_power_timer!(LPTIM1);
+low_power_timer!(LPTIM2);
