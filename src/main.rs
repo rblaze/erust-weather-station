@@ -6,6 +6,7 @@ mod display;
 mod env;
 mod error;
 mod hal_compat;
+mod microhal;
 mod screen;
 mod system_time;
 

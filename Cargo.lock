@@ -467,5 +467,6 @@ dependencies = [
  "once_cell",
  "portable-atomic",
  "rtt-target",
+ "stm32g0",
  "stm32g0xx-hal",
 ]
