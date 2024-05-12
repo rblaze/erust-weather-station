@@ -19,6 +19,7 @@ use stm32g0xx_hal::timer::{Channel1, Channel2, Channel3};
 
 use crate::error::Error;
 use crate::hal_compat::{HalInputPin, HalOutputPin, I2cBus};
+use crate::microhal::rcc::config::Prescaler;
 use crate::system_time::Ticker;
 
 type I2cSda = PA10<Output<OpenDrain>>; // TODO: PB4
@@ -155,7 +156,10 @@ impl Board {
 
         pwr.set_mode(power::PowerMode::LowPower(power::LowPowerMode::StopMode2));
 
-        let ticker = Ticker::new(dp.LPTIM2, &mut rcc);
+        let clocks = crate::microhal::rcc::config::Config::use_hsi(Prescaler::Div4).enable_lsi();
+        let rcc_copy = unsafe { stm32g0::stm32g071::Peripherals::steal().RCC };
+        let rcc_control = crate::microhal::rcc::RccExt::constrain(rcc_copy).freeze(clocks);
+        let ticker = Ticker::new(dp.LPTIM2, &rcc_control);
 
         // Upon reset, a pull-down resistor might be present on PB15, PA8, PD0, or PD2,
         // depending on the voltage level on PB0, PA9, PC6, PA10, PD1, and PD3. In order
