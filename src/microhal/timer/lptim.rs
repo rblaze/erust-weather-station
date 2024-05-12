@@ -7,7 +7,6 @@ use crate::microhal::rcc::{RccControl, ResetEnable};
 
 use stm32g0::stm32g071::{LPTIM1, LPTIM2};
 
-#[allow(unused)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum LptimPrescaler {
     Div1 = 0b000,
@@ -20,7 +19,6 @@ pub enum LptimPrescaler {
     Div128 = 0b111,
 }
 
-#[allow(unused)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum LptimEvent {
     DirectionDown,
@@ -104,7 +102,6 @@ macro_rules! low_power_timer {
             }
 
             /// Stops counting.
-            #[allow(unused)]
             pub fn stop(&self) {
                 self.timer.cr.modify(|_, w| w.cntstrt().clear_bit());
             }
@@ -186,7 +183,6 @@ macro_rules! low_power_timer {
                 })
             }
 
-            #[allow(unused)]
             pub fn unlisten(&self, event: LptimEvent) {
                 self.timer.ier.modify(|_, w| match event {
                     LptimEvent::DirectionDown => w.downie().clear_bit(),
