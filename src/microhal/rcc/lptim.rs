@@ -1,5 +1,4 @@
-#![allow(unsafe_code)]
-use stm32g0::stm32g071::LPTIM2;
+use stm32g0::stm32g071::{LPTIM1, LPTIM2};
 
 use super::{RccControl, ResetEnable};
 
@@ -12,28 +11,33 @@ pub enum LptimClock {
     Lse = 0b11,
 }
 
-impl ResetEnable for LPTIM2 {
-    fn enable(rcc: &RccControl) {
-        rcc.rcc.apbenr1.modify(|_, w| w.lptim2en().set_bit());
-    }
-
-    fn disable(rcc: &RccControl) {
-        rcc.rcc.apbenr1.modify(|_, w| w.lptim2en().clear_bit());
-    }
-
-    fn reset(rcc: &RccControl) {
-        rcc.rcc.apbrstr1.write(|w| w.lptim2rst().set_bit());
-    }
-}
-
 pub trait LptimClockExt {
     fn set_clock(clock: LptimClock, rcc: &RccControl);
 }
 
-impl LptimClockExt for LPTIM2 {
-    fn set_clock(clock: LptimClock, rcc: &RccControl) {
-        rcc.rcc
-            .ccipr
-            .modify(|_, w| w.lptim2sel().variant(clock as u8));
-    }
+macro_rules! lptim_rcc {
+    ($TIM:ident, $enable:ident, $reset:ident, $clock:ident) => {
+        impl ResetEnable for $TIM {
+            fn enable(rcc: &RccControl) {
+                rcc.rcc.apbenr1.modify(|_, w| w.$enable().set_bit());
+            }
+
+            fn disable(rcc: &RccControl) {
+                rcc.rcc.apbenr1.modify(|_, w| w.$enable().clear_bit());
+            }
+
+            fn reset(rcc: &RccControl) {
+                rcc.rcc.apbrstr1.write(|w| w.$reset().set_bit());
+            }
+        }
+
+        impl LptimClockExt for $TIM {
+            fn set_clock(clock: LptimClock, rcc: &RccControl) {
+                rcc.rcc.ccipr.modify(|_, w| w.$clock().variant(clock as u8));
+            }
+        }
+    };
 }
+
+lptim_rcc!(LPTIM1, lptim1en, lptim1rst, lptim1sel);
+lptim_rcc!(LPTIM2, lptim2en, lptim2rst, lptim2sel);
