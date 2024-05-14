@@ -140,7 +140,7 @@ impl Ticker {
         // If there is an LPTIM event, it will be processed right
         // after exiting critical section.
         // Otherwise, reset CMP to zero.
-        if timer.is_pending(LptimEvent::CmpMatch) && timer.cmp() != 0 {
+        if !timer.is_pending(LptimEvent::CmpMatch) && timer.cmp() != 0 {
             timer.set_cmp(0);
         }
     }

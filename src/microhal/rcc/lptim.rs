@@ -27,7 +27,8 @@ macro_rules! lptim_rcc {
             }
 
             fn reset(rcc: &RccControl) {
-                rcc.rcc.apbrstr1.write(|w| w.$reset().set_bit());
+                rcc.rcc.apbrstr1.modify(|_, w| w.$reset().set_bit());
+                rcc.rcc.apbrstr1.modify(|_, w| w.$reset().clear_bit());
             }
         }
 
