@@ -9,12 +9,10 @@ macro_rules! reset_enable_bus {
         struct $bus;
 
         impl $bus {
-            #[inline(always)]
             pub fn enable_register(rcc: &RccControl) -> &$enable_type {
                 &rcc.rcc.$enable_register
             }
 
-            #[inline(always)]
             pub fn reset_register(rcc: &RccControl) -> &$reset_type {
                 &rcc.rcc.$reset_register
             }
@@ -29,17 +27,14 @@ reset_enable_bus!(Apb2, apbenr2, APBENR2, apbrstr2, APBRSTR2);
 macro_rules! reset_enable {
     ($dev:ident, $bus:ident, $enable:ident, $reset:ident) => {
         impl ResetEnable for $dev {
-            #[inline(always)]
             fn enable(rcc: &RccControl) {
                 $bus::enable_register(rcc).modify(|_, w| w.$enable().set_bit());
             }
 
-            #[inline(always)]
             fn disable(rcc: &RccControl) {
                 $bus::enable_register(rcc).modify(|_, w| w.$enable().clear_bit());
             }
 
-            #[inline(always)]
             fn reset(rcc: &RccControl) {
                 $bus::reset_register(rcc).modify(|_, w| w.$reset().set_bit());
                 $bus::reset_register(rcc).modify(|_, w| w.$reset().clear_bit());
