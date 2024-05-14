@@ -8,8 +8,7 @@ use stm32g0::stm32g071::{interrupt, LPTIM2};
 
 use crate::microhal::rcc::lptim::LptimClock;
 use crate::microhal::rcc::RccControl;
-use crate::microhal::timer::lptim::{Enabled, LptimCounter, LptimEvent, LptimPrescaler};
-use crate::microhal::timer::TimerExt;
+use crate::microhal::timer::{Enabled, LptimCounter, LptimEvent, LptimPrescaler, TimerExt};
 
 const LSI_FREQ: u32 = 32000 / 128;
 
