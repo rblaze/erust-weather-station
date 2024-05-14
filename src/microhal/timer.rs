@@ -1,7 +1,10 @@
+mod lptim;
+mod timers;
+
 use super::rcc::RccControl;
 
-pub mod lptim;
-pub mod timers;
+#[allow(unused)]
+pub use lptim::{Disabled, Enabled, LptimCounter, LptimEvent, LptimPrescaler};
 
 pub trait TimerExt {
     type RegisterWord;
