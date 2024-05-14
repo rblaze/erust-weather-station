@@ -1,6 +1,7 @@
 use super::rcc::RccControl;
 
 pub mod lptim;
+pub mod timers;
 
 pub trait TimerExt {
     type RegisterWord;

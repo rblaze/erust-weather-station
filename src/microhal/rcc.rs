@@ -1,5 +1,6 @@
 pub mod config;
 pub mod lptim;
+mod reset_enable;
 
 use stm32g0::stm32g071::RCC;
 

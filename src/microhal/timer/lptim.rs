@@ -98,27 +98,32 @@ macro_rules! low_power_timer {
             }
 
             /// Starts counting.
+            #[inline(always)]
             pub fn start(&self) {
                 self.timer.cr.modify(|_, w| w.cntstrt().set_bit());
             }
 
             /// Stops counting.
+            #[inline(always)]
             pub fn stop(&self) {
                 self.timer.cr.modify(|_, w| w.cntstrt().clear_bit());
             }
 
             /// Returns current counter value.
+            #[inline(always)]
             pub fn counter(&self) -> u16 {
                 self.timer.cnt.read().cnt().bits()
             }
 
             /// Returns compare value.
+            #[inline(always)]
             pub fn cmp(&self) -> u16 {
                 self.timer.cmp.read().cmp().bits()
             }
 
             /// Writes to CMP and waits for CMPOK to be set again to make sure there is
             /// no races later.
+            #[inline(always)]
             pub fn set_cmp(&self, value: u16) {
                 debug_assert!(self.timer.isr.read().cmpok().bit_is_clear());
 
@@ -129,6 +134,7 @@ macro_rules! low_power_timer {
             }
 
             /// Checks if event is pending.
+            #[inline(always)]
             pub fn is_pending(&self, event: LptimEvent) -> bool {
                 let v = self.timer.isr.read();
                 match event {
@@ -143,6 +149,7 @@ macro_rules! low_power_timer {
             }
 
             /// Clears pending event.
+            #[inline(always)]
             pub fn unpend(&self, event: LptimEvent) {
                 self.timer.icr.write(|w| match event {
                     LptimEvent::DirectionDown => w.downcf().set_bit(),
@@ -172,6 +179,7 @@ macro_rules! low_power_timer {
                 }
             }
 
+            #[inline(always)]
             pub fn listen(&self, event: LptimEvent) {
                 self.timer.ier.modify(|_, w| match event {
                     LptimEvent::DirectionDown => w.downie().set_bit(),
@@ -184,6 +192,7 @@ macro_rules! low_power_timer {
                 })
             }
 
+            #[inline(always)]
             pub fn unlisten(&self, event: LptimEvent) {
                 self.timer.ier.modify(|_, w| match event {
                     LptimEvent::DirectionDown => w.downie().clear_bit(),
