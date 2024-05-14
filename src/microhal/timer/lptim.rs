@@ -38,6 +38,7 @@ pub struct Enabled;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Disabled;
 
+/// Low power timer in counting mode
 #[derive(Debug)]
 pub struct LptimCounter<TIM, STATE> {
     timer: TIM,
@@ -113,7 +114,7 @@ macro_rules! low_power_timer {
 
             /// Returns compare value.
             pub fn cmp(&self) -> u16 {
-                self.timer.cnt.read().cnt().bits()
+                self.timer.cmp.read().cmp().bits()
             }
 
             /// Writes to CMP and waits for CMPOK to be set again to make sure there is
