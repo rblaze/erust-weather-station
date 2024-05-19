@@ -1,7 +1,6 @@
 #![allow(unused)]
 use core::marker::PhantomData;
 
-use super::{BasicTimer, TimerExt};
 use crate::microhal::rcc::lptim::{LptimClock, LptimClockExt};
 use crate::microhal::rcc::{RccControl, ResetEnable};
 
@@ -30,6 +29,11 @@ pub enum LptimEvent {
     CmpMatch,
 }
 
+#[derive(Debug)]
+pub struct LowPowerTimer<TIM> {
+    timer: TIM,
+}
+
 /// Type tag for enabled timer.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Enabled;
@@ -47,26 +51,27 @@ pub struct LptimCounter<TIM, STATE> {
 
 macro_rules! low_power_timer {
     ($TIM:ident) => {
-        impl TimerExt for $TIM {
-            type RegisterWord = u16;
-            type Clock = LptimClock;
-            type Prescaler = LptimPrescaler;
-            type CountingTimer = LptimCounter<$TIM, Enabled>;
+        impl LowPowerTimer<$TIM> {
+            pub fn new(timer: $TIM) -> Self {
+                Self { timer }
+            }
 
-            fn upcounter(
+            pub fn upcounter(
                 self,
-                clock: Self::Clock,
-                prescaler: Self::Prescaler,
-                limit: Self::RegisterWord,
+                clock: LptimClock,
+                prescaler: LptimPrescaler,
+                limit: u16,
                 rcc: &RccControl,
-            ) -> Self::CountingTimer {
+            ) -> LptimCounter<$TIM, Enabled> {
                 // Configure timer clock.
-                Self::set_clock(clock, rcc);
-                Self::enable(rcc);
-                Self::reset(rcc);
-                self.cfgr.modify(|_, w| w.presc().variant(prescaler as u8));
+                $TIM::set_clock(clock, rcc);
+                $TIM::enable(rcc);
+                $TIM::reset(rcc);
+                self.timer
+                    .cfgr
+                    .modify(|_, w| w.presc().variant(prescaler as u8));
 
-                self.cr.modify(|_, w| w.enable().set_bit());
+                self.timer.cr.modify(|_, w| w.enable().set_bit());
 
                 // "After setting the ENABLE bit, a delay of two counter clock is needed before the LPTIM is
                 // actually enabled."
@@ -75,12 +80,12 @@ macro_rules! low_power_timer {
                 cortex_m::asm::delay(5000);
 
                 // ARR can only be changed while the timer is *en*abled.
-                self.arr.write(|w| w.arr().variant(limit));
-                while self.isr.read().arrok().bit_is_clear() {}
-                self.icr.write(|w| w.arrokcf().set_bit());
+                self.timer.arr.write(|w| w.arr().variant(limit));
+                while self.timer.isr.read().arrok().bit_is_clear() {}
+                self.timer.icr.write(|w| w.arrokcf().set_bit());
 
-                Self::CountingTimer {
-                    timer: self,
+                LptimCounter {
+                    timer: self.timer,
                     state: PhantomData,
                 }
             }
@@ -95,6 +100,26 @@ macro_rules! low_power_timer {
                     timer: self.timer,
                     state: PhantomData,
                 }
+            }
+
+            /// Starts counting.
+            pub fn start(&self) {
+                self.timer.cr.modify(|_, w| w.cntstrt().set_bit());
+            }
+
+            /// Stops counting.
+            pub fn stop(&self) {
+                self.timer.cr.modify(|_, w| w.cntstrt().clear_bit());
+            }
+
+            /// Returns current counter value.
+            pub fn counter(&self) -> u16 {
+                self.timer.cnt.read().cnt().bits()
+            }
+
+            /// Returns compare value.
+            pub fn cmp(&self) -> u16 {
+                self.timer.cmp.read().cmp().bits()
             }
 
             /// Writes to CMP and waits for CMPOK to be set again to make sure there is
@@ -133,28 +158,6 @@ macro_rules! low_power_timer {
                     LptimEvent::ArrMatch => w.arrmcf().set_bit(),
                     LptimEvent::CmpMatch => w.cmpmcf().set_bit(),
                 })
-            }
-        }
-
-        impl BasicTimer<u16> for LptimCounter<$TIM, Enabled> {
-            /// Starts counting.
-            fn start(&self) {
-                self.timer.cr.modify(|_, w| w.cntstrt().set_bit());
-            }
-
-            /// Stops counting.
-            fn stop(&self) {
-                self.timer.cr.modify(|_, w| w.cntstrt().clear_bit());
-            }
-
-            /// Returns current counter value.
-            fn counter(&self) -> u16 {
-                self.timer.cnt.read().cnt().bits()
-            }
-
-            /// Returns compare value.
-            fn cmp(&self) -> u16 {
-                self.timer.cmp.read().cmp().bits()
             }
         }
 

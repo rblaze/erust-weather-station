@@ -8,9 +8,7 @@ use stm32g0::stm32g071::{interrupt, LPTIM2};
 
 use crate::microhal::rcc::lptim::LptimClock;
 use crate::microhal::rcc::RccControl;
-use crate::microhal::timer::{
-    BasicTimer, Enabled, LptimCounter, LptimEvent, LptimPrescaler, TimerExt,
-};
+use crate::microhal::timer::{Enabled, LowPowerTimer, LptimCounter, LptimEvent, LptimPrescaler};
 
 const LSI_FREQ: u32 = 32000 / 128;
 
@@ -26,7 +24,7 @@ impl Ticker {
     const MAX_COUNTER: u16 = u16::MAX;
     const CYCLE_LENGTH: TimerTicks = (Self::MAX_COUNTER as TimerTicks) + 1;
 
-    pub fn new(timer: LPTIM2, rcc: &RccControl) -> Self {
+    pub fn new(timer: LowPowerTimer<LPTIM2>, rcc: &RccControl) -> Self {
         debug_assert!(TIMER.get().is_none());
 
         // Set largest prescaler and longest reload cycle.
@@ -62,11 +60,9 @@ impl Ticker {
 
     /// Gets current tick count in LPTIM ticks.
     pub fn ticks_now(&self) -> TimerTicks {
-        // It is possible to for `num_full_cycles` to increment and counter
-        // wrap to zero between their reads. So we try reading the cycles before
-        // and after the counter. If number of cycles doesn't change, the result is valid.
-        // Reading CNT is also unreliable unless two reads in the row return the same result.
-        // See RM0444 26.7.8
+        // It is possible to for `num_full_cycles` to increment and counter wrap to zero
+        // while getting ticks count. Reading CNT is also unreliable unless two reads in
+        // the row return the same result. See RM0444 26.7.8
         let (cycles, ticks) = loop {
             let (first_cycles, first_ticks) = self.unreliable_ticks_now();
             let (second_cycles, second_ticks) = self.unreliable_ticks_now();
