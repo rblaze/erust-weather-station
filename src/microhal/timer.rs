@@ -20,3 +20,18 @@ pub trait TimerExt {
         rcc: &RccControl,
     ) -> Self::CountingTimer;
 }
+
+pub trait BasicTimer<RegisterWord> {
+    /// Starts counting.
+    fn start(&self);
+
+    /// Stops counting.
+    #[allow(unused)]
+    fn stop(&self);
+
+    /// Returns current counter value.
+    fn counter(&self) -> RegisterWord;
+
+    /// Returns compare value.
+    fn cmp(&self) -> RegisterWord;
+}

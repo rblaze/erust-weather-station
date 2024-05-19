@@ -1,7 +1,7 @@
 #![allow(unused)]
 use core::marker::PhantomData;
 
-use super::TimerExt;
+use super::{BasicTimer, TimerExt};
 use crate::microhal::rcc::lptim::{LptimClock, LptimClockExt};
 use crate::microhal::rcc::{RccControl, ResetEnable};
 
@@ -97,26 +97,6 @@ macro_rules! low_power_timer {
                 }
             }
 
-            /// Starts counting.
-            pub fn start(&self) {
-                self.timer.cr.modify(|_, w| w.cntstrt().set_bit());
-            }
-
-            /// Stops counting.
-            pub fn stop(&self) {
-                self.timer.cr.modify(|_, w| w.cntstrt().clear_bit());
-            }
-
-            /// Returns current counter value.
-            pub fn counter(&self) -> u16 {
-                self.timer.cnt.read().cnt().bits()
-            }
-
-            /// Returns compare value.
-            pub fn cmp(&self) -> u16 {
-                self.timer.cmp.read().cmp().bits()
-            }
-
             /// Writes to CMP and waits for CMPOK to be set again to make sure there is
             /// no races later.
             pub fn set_cmp(&self, value: u16) {
@@ -153,6 +133,28 @@ macro_rules! low_power_timer {
                     LptimEvent::ArrMatch => w.arrmcf().set_bit(),
                     LptimEvent::CmpMatch => w.cmpmcf().set_bit(),
                 })
+            }
+        }
+
+        impl BasicTimer<u16> for LptimCounter<$TIM, Enabled> {
+            /// Starts counting.
+            fn start(&self) {
+                self.timer.cr.modify(|_, w| w.cntstrt().set_bit());
+            }
+
+            /// Stops counting.
+            fn stop(&self) {
+                self.timer.cr.modify(|_, w| w.cntstrt().clear_bit());
+            }
+
+            /// Returns current counter value.
+            fn counter(&self) -> u16 {
+                self.timer.cnt.read().cnt().bits()
+            }
+
+            /// Returns compare value.
+            fn cmp(&self) -> u16 {
+                self.timer.cmp.read().cmp().bits()
             }
         }
 

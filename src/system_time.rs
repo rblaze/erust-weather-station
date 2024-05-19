@@ -8,7 +8,9 @@ use stm32g0::stm32g071::{interrupt, LPTIM2};
 
 use crate::microhal::rcc::lptim::LptimClock;
 use crate::microhal::rcc::RccControl;
-use crate::microhal::timer::{Enabled, LptimCounter, LptimEvent, LptimPrescaler, TimerExt};
+use crate::microhal::timer::{
+    BasicTimer, Enabled, LptimCounter, LptimEvent, LptimPrescaler, TimerExt,
+};
 
 const LSI_FREQ: u32 = 32000 / 128;
 
@@ -203,7 +205,6 @@ unsafe fn TIM7_LPTIM2() {
 
         // Clear compare interrupt.
         timer.unpend(LptimEvent::CmpMatch);
-        while timer.is_pending(LptimEvent::CmpMatch) {}
 
         // Set next cmp event to the start of the loop.
         // sleep_until() will set it to the correct value.
@@ -227,6 +228,10 @@ unsafe fn TIM7_LPTIM2() {
             // Clear update event
             timer.unpend(LptimEvent::ArrMatch);
         }
+
+        // Wait for pending interrupt flag to be cleared.
+        // TODO: check if this is necessary.
+        while timer.is_pending(LptimEvent::CmpMatch) {}
     } else {
         debug_rprintln!("LPTIM interrupt without compare event");
     }
