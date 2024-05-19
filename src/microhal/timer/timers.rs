@@ -1,58 +1,88 @@
 #![allow(unused)]
 use stm32g0::stm32g071::{TIM2, TIM3};
 
-use super::TimerExt;
 use crate::microhal::rcc::{RccControl, ResetEnable};
 
-/// Basic timers support only one clock
-pub enum BasicTimerClock {
-    ApbClock,
+/// Wrapper for timer peripheral.
+#[derive(Debug)]
+pub struct Timer<TIM> {
+    timer: TIM,
 }
 
+/// Counting timer
+#[derive(Debug)]
 pub struct Counter<TIM> {
     timer: TIM,
 }
 
-macro_rules! basic_timer {
-    ($TIM:ident, $REG:ty) => {
-        impl TimerExt for $TIM {
-            type RegisterWord = $REG;
-            type Clock = BasicTimerClock;
-            type Prescaler = u16;
-            type CountingTimer = Counter<$TIM>;
+/// PWM timer
+#[derive(Debug)]
+pub struct Pwm<TIM> {
+    timer: TIM,
+}
 
-            fn upcounter(
-                self,
-                _clock: Self::Clock,
-                prescaler: Self::Prescaler,
-                limit: Self::RegisterWord,
-                rcc: &RccControl,
-            ) -> Self::CountingTimer {
-                Self::enable(rcc);
-                Self::reset(rcc);
+macro_rules! general_purpose_timer {
+    ($TIM:ident, $REG:tt) => {
+        impl Timer<$TIM> {
+            pub fn new(timer: $TIM) -> Self {
+                Self { timer }
+            }
 
-                self.psc.write(|w| w.psc().bits(prescaler));
+            pub fn upcounter(self, prescaler: u16, limit: $REG, rcc: &RccControl) -> Counter<$TIM> {
+                $TIM::enable(rcc);
+                $TIM::reset(rcc);
 
+                self.timer.psc.write(|w| w.psc().bits(prescaler));
+
+                // TODO: update after switching to g0b1
                 #[allow(unsafe_code)]
-                self.arr.write(|w| unsafe { w.bits(limit.into()) });
+                self.timer.arr.write(|w| unsafe { w.bits(limit.into()) });
 
-                Self::CountingTimer { timer: self }
+                Counter { timer: self.timer }
+            }
+
+            pub fn pwm(self, prescaler: u16, limit: $REG, rcc: &RccControl) -> Pwm<$TIM> {
+                $TIM::enable(rcc);
+                $TIM::reset(rcc);
+
+                self.timer.psc.write(|w| w.psc().bits(prescaler));
+
+                // TODO: update after switching to g0b1
+                #[allow(unsafe_code)]
+                self.timer.arr.write(|w| unsafe { w.bits(limit.into()) });
+
+                // TODO: set PWM mode
+
+                Pwm { timer: self.timer }
             }
         }
 
         impl Counter<$TIM> {
-            /// Starts counting.
             pub fn start(&self) {
                 self.timer.cr1.modify(|_, w| w.cen().set_bit());
             }
 
-            /// Stops counting.
             pub fn stop(&self) {
                 self.timer.cr1.modify(|_, w| w.cen().clear_bit());
             }
+
+            basic_timer_impl!($TIM, $REG);
         }
     };
 }
 
-basic_timer!(TIM2, u32);
-basic_timer!(TIM3, u16);
+macro_rules! basic_timer_impl {
+    ($TIM:ident, u16) => {
+        pub fn counter(&self) -> u16 {
+            self.timer.cnt.read().cnt_l().bits()
+        }
+    };
+    ($TIM:ident, u32) => {
+        pub fn counter(&self) -> u32 {
+            self.timer.cnt.read().bits()
+        }
+    };
+}
+
+general_purpose_timer!(TIM2, u32);
+general_purpose_timer!(TIM3, u16);
