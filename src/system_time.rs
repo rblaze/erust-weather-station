@@ -3,6 +3,7 @@ use core::cell::Cell;
 use critical_section::{CriticalSection, Mutex};
 use fugit::{TimerDuration, TimerInstant};
 use futures::{select_biased, Future, FutureExt};
+use once_cell::sync::OnceCell;
 use rtt_target::debug_rprintln;
 use stm32g0::stm32g071::{interrupt, LPTIM2};
 
