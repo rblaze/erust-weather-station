@@ -1,5 +1,9 @@
-use stm32g0::stm32g071::rcc::{AHBENR, AHBRSTR, APBENR1, APBENR2, APBRSTR1, APBRSTR2};
-use stm32g0::stm32g071::{ADC, DMA, LPTIM1, LPTIM2, TIM1, TIM2, TIM3};
+use stm32g0::stm32g071::rcc::{
+    AHBENR, AHBRSTR, APBENR1, APBENR2, APBRSTR1, APBRSTR2, IOPENR, IOPRSTR,
+};
+use stm32g0::stm32g071::{
+    ADC, DMA, GPIOA, GPIOB, GPIOC, GPIOD, GPIOF, LPTIM1, LPTIM2, TIM1, TIM2, TIM3,
+};
 
 use super::{RccControl, ResetEnable};
 
@@ -24,6 +28,7 @@ macro_rules! reset_enable_bus {
 reset_enable_bus!(AHB, ahbenr, AHBENR, ahbrstr, AHBRSTR);
 reset_enable_bus!(APB1, apbenr1, APBENR1, apbrstr1, APBRSTR1);
 reset_enable_bus!(APB2, apbenr2, APBENR2, apbrstr2, APBRSTR2);
+reset_enable_bus!(GPIO, iopenr, IOPENR, ioprstr, IOPRSTR);
 
 macro_rules! reset_enable {
     ($dev:ident, $bus:ident, $enable:ident, $reset:ident) => {
@@ -56,3 +61,10 @@ reset_enable!(LPTIM1, APB1, lptim1en, lptim1rst); // 31
 // APB2 devices
 reset_enable!(TIM1, APB2, tim1en, tim1rst); // 11
 reset_enable!(ADC, APB2, adcen, adcrst); // 20
+
+// GPIO devices
+reset_enable!(GPIOA, GPIO, iopaen, ioparst); // 0
+reset_enable!(GPIOB, GPIO, iopben, iopbrst); // 1
+reset_enable!(GPIOC, GPIO, iopcen, iopcrst); // 2
+reset_enable!(GPIOD, GPIO, iopden, iopdrst); // 3
+reset_enable!(GPIOF, GPIO, iopfen, iopfrst); // 5
