@@ -3,7 +3,7 @@ use core::marker::PhantomData;
 
 use stm32g0::stm32g071::{TIM2, TIM3};
 
-use crate::microhal::gpio::gpiob::{PB0, PB1};
+use crate::microhal::gpio::gpiob::{PB0, PB1, PB4, PB5};
 use crate::microhal::gpio::Alternate;
 use crate::microhal::rcc::{RccControl, ResetEnable};
 
@@ -122,12 +122,20 @@ impl<TIM, CH> embedded_hal::pwm::SetDutyCycle for PwmPin<TIM, CH> {
     }
 }
 
-impl TimerPin<TIM3> for PB0<Alternate> {
+impl TimerPin<TIM3> for PB0<Alternate<1>> {
     type Channel = Channel3;
 }
 
-impl TimerPin<TIM3> for PB1<Alternate> {
+impl TimerPin<TIM3> for PB1<Alternate<1>> {
     type Channel = Channel4;
+}
+
+impl TimerPin<TIM3> for PB4<Alternate<1>> {
+    type Channel = Channel1;
+}
+
+impl TimerPin<TIM3> for PB5<Alternate<1>> {
+    type Channel = Channel2;
 }
 
 impl Pwm<TIM3> {
@@ -135,7 +143,6 @@ impl Pwm<TIM3> {
     where
         PIN: TimerPin<TIM3>,
     {
-        // TODO: set alternate function
         PwmPin {
             timer: PhantomData,
             channel: PhantomData,
