@@ -1,12 +1,9 @@
 #![deny(unsafe_code)]
 
-use core::convert::Infallible;
-
-use embedded_hal::digital::{self};
 use embedded_hal::i2c::{self};
 use stm32g0xx_hal::i2c as stmhal_i2c;
 use stm32g0xx_hal::prelude::{
-    InputPin, OutputPin, _embedded_hal_blocking_i2c_Read, _embedded_hal_blocking_i2c_Write,
+    _embedded_hal_blocking_i2c_Read, _embedded_hal_blocking_i2c_Write,
     _embedded_hal_blocking_i2c_WriteRead,
 };
 
@@ -61,61 +58,5 @@ where
         };
 
         result.map_err(I2cError)
-    }
-}
-
-pub struct HalOutputPin<PIN>(PIN);
-
-impl<PIN> HalOutputPin<PIN> {
-    pub fn new(pin: PIN) -> Self {
-        Self(pin)
-    }
-}
-
-impl<PIN> digital::ErrorType for HalOutputPin<PIN>
-where
-    PIN: OutputPin<Error = Infallible>,
-{
-    type Error = PIN::Error;
-}
-
-impl<PIN> digital::OutputPin for HalOutputPin<PIN>
-where
-    PIN: OutputPin<Error = Infallible>,
-{
-    fn set_low(&mut self) -> Result<(), Self::Error> {
-        self.0.set_low()
-    }
-
-    fn set_high(&mut self) -> Result<(), Self::Error> {
-        self.0.set_high()
-    }
-}
-
-pub struct HalInputPin<PIN>(PIN);
-
-impl<PIN> HalInputPin<PIN> {
-    pub fn new(pin: PIN) -> Self {
-        Self(pin)
-    }
-}
-
-impl<PIN> digital::ErrorType for HalInputPin<PIN>
-where
-    PIN: InputPin<Error = Infallible>,
-{
-    type Error = PIN::Error;
-}
-
-impl<PIN> digital::InputPin for HalInputPin<PIN>
-where
-    PIN: InputPin<Error = Infallible>,
-{
-    fn is_high(&mut self) -> Result<bool, Self::Error> {
-        self.0.is_high()
-    }
-
-    fn is_low(&mut self) -> Result<bool, Self::Error> {
-        self.0.is_low()
     }
 }

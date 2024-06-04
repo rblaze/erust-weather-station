@@ -11,7 +11,7 @@ pub trait GpioExt {
     type Parts;
 
     /// Splits the GPIO block into independent pins and registers
-    fn split(self, rcc: &mut RccControl) -> Self::Parts;
+    fn split(self, rcc: &RccControl) -> Self::Parts;
 }
 
 /// Input mode
@@ -67,7 +67,7 @@ macro_rules! gpio {
             impl GpioExt for $GPIO {
                 type Parts = Parts;
 
-                fn split(self, rcc: &mut RccControl) -> Self::Parts {
+                fn split(self, rcc: &RccControl) -> Self::Parts {
                     $GPIO::enable(rcc);
                     $GPIO::reset(rcc);
 
