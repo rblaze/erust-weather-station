@@ -5,10 +5,8 @@ use stm32g0::stm32g071::LPTIM2;
 use stm32g0xx_hal::analog::adc::{Adc, AdcExt, OversamplingRatio, Precision, SampleTime};
 use stm32g0xx_hal::exti::{Event, ExtiExt};
 use stm32g0xx_hal::gpio::gpioa::{PA10, PA9};
-use stm32g0xx_hal::gpio::gpiob::{PB10, PB11, PB12, PB13, PB14, PB15, PB2, PB6};
-use stm32g0xx_hal::gpio::{
-    Analog, GpioExt, Input, OpenDrain, Output, PullUp, PushPull, SignalEdge,
-};
+use stm32g0xx_hal::gpio::gpiob::PB2;
+use stm32g0xx_hal::gpio::{Analog, GpioExt, OpenDrain, Output, SignalEdge};
 use stm32g0xx_hal::i2c::{self, I2c};
 use stm32g0xx_hal::pac::{self, interrupt, EXTI, TIM3};
 use stm32g0xx_hal::power::{self, PowerExt};
@@ -19,7 +17,9 @@ use stm32g0xx_hal::timer::pwm::{PwmExt, PwmPin};
 use stm32g0xx_hal::timer::{Channel1, Channel2, Channel3};
 
 use crate::error::Error;
-use crate::hal_compat::{HalInputPin, HalOutputPin, I2cBus};
+use crate::hal_compat::I2cBus;
+use crate::microhal::gpio::gpiob::{PB10, PB11, PB12, PB13, PB14, PB15, PB6};
+use crate::microhal::gpio::{Input, PullUp, PushPull};
 use crate::microhal::rcc::config::Prescaler;
 use crate::microhal::timer::LowPowerTimer;
 use crate::system_time::Ticker;
@@ -30,14 +30,12 @@ type HalI2c1 = I2c<pac::I2C1, I2cSda, I2cScl>;
 pub type BoardI2c = I2cBus<HalI2c1>;
 
 pub struct Joystick {
-    pub up: HalInputPin<PB15<Input<PullUp>>>,
-    pub down: HalInputPin<PB13<Input<PullUp>>>,
-    #[allow(unused)]
-    pub left: HalInputPin<PB12<Input<PullUp>>>,
-    #[allow(unused)]
-    pub right: HalInputPin<PB14<Input<PullUp>>>,
-    pub select: HalInputPin<PB11<Input<PullUp>>>,
-    pub button: HalInputPin<PB10<Input<PullUp>>>,
+    pub up: PB15<Input<PullUp>>,
+    pub down: PB13<Input<PullUp>>,
+    pub left: PB12<Input<PullUp>>,
+    pub right: PB14<Input<PullUp>>,
+    pub select: PB11<Input<PullUp>>,
+    pub button: PB10<Input<PullUp>>,
 }
 
 pub struct Backlight {
@@ -85,7 +83,7 @@ pub struct Peripherals {
     pub joystick: Joystick,
     pub vbat: VBat,
     pub backlight: Backlight,
-    pub display_power: HalOutputPin<PB6<Output<PushPull>>>,
+    pub display_power: PB6<crate::microhal::gpio::Output<PushPull>>,
 }
 
 pub struct Board {
@@ -107,6 +105,14 @@ impl Board {
             dp.DBG.cr.modify(|_, w| w.dbg_stop().set_bit());
             dp.RCC.ahbenr.modify(|_, w| w.dmaen().set_bit());
         }
+
+        let clocks = crate::microhal::rcc::config::Config::use_hsi(Prescaler::Div4).enable_lsi();
+        let microhal_rcc = unsafe { stm32g0::stm32g071::Peripherals::steal().RCC };
+        let rcc_control = crate::microhal::rcc::RccExt::constrain(microhal_rcc).freeze(clocks);
+        let microhal_gpiob = crate::microhal::gpio::GpioExt::split(
+            unsafe { stm32g0::stm32g071::Peripherals::steal().GPIOB },
+            &rcc_control,
+        );
 
         // Set clock to 4MHz (HSI speed is 16MHz).
         // Check I2C clock requirements (RM0444 32.4.4) before lowering.
@@ -138,12 +144,12 @@ impl Board {
         adc.calibrate();
 
         let joystick = Joystick {
-            up: HalInputPin::new(gpiob.pb15.into_pull_up_input()),
-            down: HalInputPin::new(gpiob.pb13.into_pull_up_input()),
-            left: HalInputPin::new(gpiob.pb12.into_pull_up_input()),
-            right: HalInputPin::new(gpiob.pb14.into_pull_up_input()),
-            select: HalInputPin::new(gpiob.pb11.into_pull_up_input()),
-            button: HalInputPin::new(gpiob.pb10.into_pull_up_input()),
+            up: microhal_gpiob.pb15.into_pullup_input(),
+            down: microhal_gpiob.pb13.into_pullup_input(),
+            left: microhal_gpiob.pb12.into_pullup_input(),
+            right: microhal_gpiob.pb14.into_pullup_input(),
+            select: microhal_gpiob.pb11.into_pullup_input(),
+            button: microhal_gpiob.pb10.into_pullup_input(),
         };
 
         let i2c_sda = gpioa.pa10.into_open_drain_output();
@@ -158,9 +164,6 @@ impl Board {
 
         pwr.set_mode(power::PowerMode::LowPower(power::LowPowerMode::StopMode2));
 
-        let clocks = crate::microhal::rcc::config::Config::use_hsi(Prescaler::Div4).enable_lsi();
-        let rcc_copy = unsafe { stm32g0::stm32g071::Peripherals::steal().RCC };
-        let rcc_control = crate::microhal::rcc::RccExt::constrain(rcc_copy).freeze(clocks);
         let system_timer = LowPowerTimer::<LPTIM2>::new(dp.LPTIM2);
         let ticker = Ticker::new(system_timer, &rcc_control);
 
@@ -213,7 +216,7 @@ impl Board {
                     green: backlight_green,
                     blue: backlight_blue,
                 },
-                display_power: HalOutputPin::new(gpiob.pb6.into_push_pull_output()),
+                display_power: microhal_gpiob.pb6.into_push_pull_output(),
             },
         })
     }
