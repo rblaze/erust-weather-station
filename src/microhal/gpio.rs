@@ -62,6 +62,13 @@ macro_rules! gpio {
                 pub trait AF {}
 
                 impl AF for super::Alternate<0> {}
+                impl AF for super::Alternate<1> {}
+                impl AF for super::Alternate<2> {}
+                impl AF for super::Alternate<3> {}
+                impl AF for super::Alternate<4> {}
+                impl AF for super::Alternate<5> {}
+                impl AF for super::Alternate<6> {}
+                impl AF for super::Alternate<7> {}
             }
 
             impl GpioExt for $GPIO {
