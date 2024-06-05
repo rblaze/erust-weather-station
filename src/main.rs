@@ -1,6 +1,7 @@
 #![no_std]
 #![no_main]
 
+mod backlight;
 mod board;
 mod display;
 mod env;
@@ -16,6 +17,7 @@ use core::pin::pin;
 
 use async_scheduler::executor::LocalExecutor;
 use async_scheduler::mailbox::Mailbox;
+use backlight::backlight_handler;
 use board::{Peripherals, JOYSTICK_EVENT};
 use bq24259::BQ24259;
 use cortex_m_rt::entry;
@@ -27,6 +29,7 @@ use rtt_target::debug_rprintln;
 use rtt_target::rtt_init_print;
 use system_time::Duration;
 
+use crate::backlight::DisplayBacklight;
 use crate::display::DisplayPage;
 use crate::error::Error;
 
@@ -40,24 +43,6 @@ fn panic(info: &PanicInfo) -> ! {
 
 async fn panic_if_exited<F: core::future::Future<Output = Result<(), Error>>>(f: F) {
     panic!("future exited with {:?}", f.await)
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-enum DisplayBacklight {
-    Off,
-    Half,
-    Full,
-}
-
-impl DisplayBacklight {
-    fn next(self) -> Self {
-        use DisplayBacklight::*;
-        match self {
-            Off => Half,
-            Half => Full,
-            Full => Off,
-        }
-    }
 }
 
 async fn navigation(
@@ -130,18 +115,11 @@ fn main() -> ! {
                 system_time::sleep(Duration::secs(11)).await;
             }
         }));
-        let backlight_handler = pin!(panic_if_exited(async {
-            loop {
-                debug_rprintln!("backlight {:?}", backlight.get());
-                match backlight.get() {
-                    DisplayBacklight::Off => peripherals.borrow_mut().backlight.set(0, 0, 0),
-                    DisplayBacklight::Half => peripherals.borrow_mut().backlight.set(50, 50, 50),
-                    DisplayBacklight::Full => peripherals.borrow_mut().backlight.set(100, 100, 100),
-                };
-
-                backlight_event.read().await?;
-            }
-        }));
+        let backlight_handler = pin!(panic_if_exited(backlight_handler(
+            board.backlight,
+            &backlight,
+            &backlight_event
+        )));
         let display_handler = pin!(panic_if_exited(display::task(
             display_bus,
             &display_refresh_event,
