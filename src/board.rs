@@ -40,7 +40,8 @@ pub struct VBat {
 }
 
 impl VBat {
-    const VBAT_MULTIPLIER: f32 = 1.343;
+    const VBAT_MULTIPLIER: f32 = 1.622;
+
     pub fn read_battery_volts(&mut self) -> f32 {
         let battery_mv = self.adc.read_voltage(&mut self.vbat);
         battery_mv as f32 / 1000.0 * Self::VBAT_MULTIPLIER
