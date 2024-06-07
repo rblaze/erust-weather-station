@@ -18,7 +18,7 @@ use core::pin::pin;
 use async_scheduler::executor::LocalExecutor;
 use async_scheduler::mailbox::Mailbox;
 use backlight::backlight_handler;
-use board::{Peripherals, JOYSTICK_EVENT};
+use board::{Joystick, JOYSTICK_EVENT};
 use bq24259::BQ24259;
 use cortex_m_rt::entry;
 use embedded_hal::digital::InputPin;
@@ -50,7 +50,7 @@ async fn navigation(
     page: &Cell<DisplayPage>,
     backlight_event: &Mailbox<()>,
     backlight: &Cell<DisplayBacklight>,
-    board: &RefCell<Peripherals>,
+    joystick: &mut Joystick,
 ) -> Result<(), Error> {
     let mut last_visible_page = None;
 
@@ -59,7 +59,6 @@ async fn navigation(
         JOYSTICK_EVENT.read().await?;
 
         let current_page = page.get();
-        let joystick = &mut board.borrow_mut().joystick;
         if joystick.up.is_low()? {
             page.set(current_page.prev());
         } else if joystick.down.is_low()? {
@@ -94,11 +93,10 @@ fn main() -> ! {
 
         debug_rprintln!("starting");
 
-        let board = board::Board::new()?;
+        let mut board = board::Board::new()?;
 
         env::init_env(board.ticker)?;
 
-        let peripherals = RefCell::new(board.peripherals);
         let backlight_event = Mailbox::<()>::new();
         let backlight = Cell::new(DisplayBacklight::Off);
         let display_refresh_event = Mailbox::<()>::new();
@@ -125,14 +123,15 @@ fn main() -> ! {
             &display_refresh_event,
             &display_page,
             &charger,
-            &peripherals,
+            &mut board.vbat,
+            &mut board.display_power,
         )));
         let navigation = pin!(panic_if_exited(navigation(
             &display_refresh_event,
             &display_page,
             &backlight_event,
             &backlight,
-            &peripherals
+            &mut board.joystick
         )));
 
         LocalExecutor::new().run([
