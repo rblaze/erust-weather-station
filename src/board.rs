@@ -2,11 +2,9 @@ use core::cell::RefCell;
 
 use rtt_target::debug_rprintln;
 use stm32g0::stm32g071::LPTIM2;
-use stm32g0xx_hal::analog::adc::{Adc, AdcExt, OversamplingRatio, Precision, SampleTime};
 use stm32g0xx_hal::exti::{Event, ExtiExt};
 use stm32g0xx_hal::gpio::gpioa::{PA10, PA9};
-use stm32g0xx_hal::gpio::gpiob::PB2;
-use stm32g0xx_hal::gpio::{Analog, GpioExt, OpenDrain, Output, SignalEdge};
+use stm32g0xx_hal::gpio::{GpioExt, OpenDrain, Output, SignalEdge};
 use stm32g0xx_hal::i2c::{self, I2c};
 use stm32g0xx_hal::pac::{self, interrupt, EXTI, TIM3};
 use stm32g0xx_hal::power::{self, PowerExt};
@@ -15,8 +13,9 @@ use stm32g0xx_hal::time::RateExtU32;
 
 use crate::error::Error;
 use crate::hal_compat::I2cBus;
-use crate::microhal::gpio::gpiob::{PB0, PB10, PB11, PB12, PB13, PB14, PB15, PB4, PB5, PB6};
-use crate::microhal::gpio::{Alternate, Input, PullUp, PushPull};
+use crate::microhal::adc::Adc;
+use crate::microhal::gpio::gpiob::{PB0, PB10, PB11, PB12, PB13, PB14, PB15, PB2, PB4, PB5, PB6};
+use crate::microhal::gpio::{Alternate, Analog, Input, PullUp, PushPull};
 use crate::microhal::rcc::config::Prescaler;
 use crate::microhal::timer::{LowPowerTimer, Pwm, Timer};
 use crate::system_time::Ticker;
@@ -43,7 +42,7 @@ pub struct VBat {
 impl VBat {
     const VBAT_MULTIPLIER: f32 = 1.343;
     pub fn read_battery_volts(&mut self) -> f32 {
-        let battery_mv = self.adc.read_voltage(&mut self.vbat).unwrap();
+        let battery_mv = self.adc.read_voltage(&mut self.vbat);
         battery_mv as f32 / 1000.0 * Self::VBAT_MULTIPLIER
     }
 }
@@ -85,42 +84,29 @@ impl Board {
         let clocks = crate::microhal::rcc::config::Config::use_hsi(Prescaler::Div4).enable_lsi();
         let microhal_rcc = unsafe { stm32g0::stm32g071::Peripherals::steal().RCC };
         let rcc_control = crate::microhal::rcc::RccExt::constrain(microhal_rcc).freeze(clocks);
-        let microhal_gpiob = crate::microhal::gpio::GpioExt::split(
-            unsafe { stm32g0::stm32g071::Peripherals::steal().GPIOB },
-            &rcc_control,
-        );
 
         // Set clock to 4MHz (HSI speed is 16MHz).
         // Check I2C clock requirements (RM0444 32.4.4) before lowering.
         let mut rcc = dp.RCC.freeze(rcc::Config::hsi(rcc::Prescaler::Div4));
         let mut pwr = dp.PWR.constrain(&mut rcc);
         let gpioa = dp.GPIOA.split(&mut rcc);
-        let gpiob = dp.GPIOB.split(&mut rcc);
-        let mut adc = dp.ADC.constrain(&mut rcc);
 
+        let gpiob = crate::microhal::gpio::GpioExt::split(
+            unsafe { stm32g0::stm32g071::Peripherals::steal().GPIOB },
+            &rcc_control,
+        );
         let backlight_pwm = Timer::<TIM3>::new(dp.TIM3).pwm(0, u16::MAX, &rcc_control);
+        let mut adc = Adc::new(dp.ADC, &rcc_control);
 
-        adc.set_sample_time(SampleTime::T_160);
-        adc.set_precision(Precision::B_12);
-        adc.set_oversampling_ratio(OversamplingRatio::X_16);
-        adc.set_oversampling_shift(16);
-        adc.oversampling_enable(true);
-
-        // RM0444 15.3.3 Calibration can only be initiated when the ADC voltage regulator is
-        // enabled (ADVREGEN = 1 and tADCVREG_SETUP has elapsed) and the ADC is disabled
-        // (when ADEN = 0).
-        // tADCVREG_SETUP = 20us, at 80MHz it's 80*20 = 1600 cycles. Round up for  a safety
-        // margin.
-        cortex_m::asm::delay(2000);
         adc.calibrate();
 
         let joystick = Joystick {
-            up: microhal_gpiob.pb14.into_pullup_input(),
-            down: microhal_gpiob.pb12.into_pullup_input(),
-            left: microhal_gpiob.pb15.into_pullup_input(),
-            right: microhal_gpiob.pb10.into_pullup_input(),
-            select: microhal_gpiob.pb11.into_pullup_input(),
-            button: microhal_gpiob.pb13.into_pullup_input(),
+            up: gpiob.pb14.into_pullup_input(),
+            down: gpiob.pb12.into_pullup_input(),
+            left: gpiob.pb15.into_pullup_input(),
+            right: gpiob.pb10.into_pullup_input(),
+            select: gpiob.pb11.into_pullup_input(),
+            button: gpiob.pb13.into_pullup_input(),
         };
 
         let i2c_sda = gpioa.pa10.into_open_drain_output();
@@ -182,13 +168,13 @@ impl Board {
                     adc,
                     vbat: gpiob.pb2.into_analog(),
                 },
-                display_power: microhal_gpiob.pb6.into_push_pull_output(),
+                display_power: gpiob.pb6.into_push_pull_output(),
             },
             backlight: Backlight {
                 pwm: backlight_pwm,
-                red: microhal_gpiob.pb4.into_alternate_function(),
-                green: microhal_gpiob.pb5.into_alternate_function(),
-                blue: microhal_gpiob.pb0.into_alternate_function(),
+                red: gpiob.pb4.into_alternate_function(),
+                green: gpiob.pb5.into_alternate_function(),
+                blue: gpiob.pb0.into_alternate_function(),
             },
         })
     }
