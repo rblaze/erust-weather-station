@@ -47,12 +47,6 @@ impl VBat {
     }
 }
 
-pub struct Peripherals {
-    pub joystick: Joystick,
-    pub vbat: VBat,
-    pub display_power: PB6<crate::microhal::gpio::Output<PushPull>>,
-}
-
 pub struct Backlight {
     pub pwm: Pwm<TIM3>,
     pub red: PB4<Alternate<1>>,
@@ -60,11 +54,15 @@ pub struct Backlight {
     pub blue: PB0<Alternate<1>>,
 }
 
+pub type DisplayPowerPin = PB6<crate::microhal::gpio::Output<PushPull>>;
+
 pub struct Board {
     pub ticker: Ticker,
     pub i2c: RefCell<BoardI2c>,
-    pub peripherals: Peripherals,
     pub backlight: Backlight,
+    pub vbat: VBat,
+    pub joystick: Joystick,
+    pub display_power: DisplayPowerPin,
 }
 
 impl Board {
@@ -162,13 +160,10 @@ impl Board {
         Ok(Self {
             ticker,
             i2c: RefCell::new(I2cBus::new(i2c)),
-            peripherals: Peripherals {
-                joystick,
-                vbat: VBat {
-                    adc,
-                    vbat: gpiob.pb2.into_analog(),
-                },
-                display_power: gpiob.pb6.into_push_pull_output(),
+            joystick,
+            vbat: VBat {
+                adc,
+                vbat: gpiob.pb2.into_analog(),
             },
             backlight: Backlight {
                 pwm: backlight_pwm,
@@ -176,6 +171,7 @@ impl Board {
                 green: gpiob.pb5.into_alternate_function(),
                 blue: gpiob.pb0.into_alternate_function(),
             },
+            display_power: gpiob.pb6.into_push_pull_output(),
         })
     }
 }
