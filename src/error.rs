@@ -4,6 +4,7 @@ use core::convert::Infallible;
 
 use crate::hal_compat::I2cError;
 
+#[allow(unused)] // TODO: check why some errors are considered unused
 #[derive(Debug)]
 pub enum Error {
     AlreadyTaken,

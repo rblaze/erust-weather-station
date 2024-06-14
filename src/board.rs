@@ -25,6 +25,7 @@ type I2cScl = PA9<Output<OpenDrain>>; // TODO: PB3
 type HalI2c1 = I2c<pac::I2C1, I2cSda, I2cScl>;
 pub type BoardI2c = I2cBus<HalI2c1>;
 
+#[allow(unused)]
 pub struct Joystick {
     pub up: PB14<Input<PullUp>>,
     pub down: PB12<Input<PullUp>>,
