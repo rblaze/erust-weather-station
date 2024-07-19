@@ -27,12 +27,12 @@ pub type BoardI2c = I2cBus<HalI2c1>;
 
 #[allow(unused)]
 pub struct Joystick {
-    pub up: PB14<Input<PullUp>>,
+    pub up: PB13<Input<PullUp>>,
     pub down: PB12<Input<PullUp>>,
-    pub left: PB15<Input<PullUp>>,
+    pub left: PB11<Input<PullUp>>,
     pub right: PB10<Input<PullUp>>,
-    pub select: PB11<Input<PullUp>>,
-    pub button: PB13<Input<PullUp>>,
+    pub select: PB15<Input<PullUp>>,
+    pub button: PB14<Input<PullUp>>,
 }
 
 pub struct VBat {
@@ -101,12 +101,12 @@ impl Board {
         adc.calibrate();
 
         let joystick = Joystick {
-            up: gpiob.pb14.into_pullup_input(),
+            up: gpiob.pb13.into_pullup_input(),
             down: gpiob.pb12.into_pullup_input(),
-            left: gpiob.pb15.into_pullup_input(),
+            left: gpiob.pb11.into_pullup_input(),
             right: gpiob.pb10.into_pullup_input(),
-            select: gpiob.pb11.into_pullup_input(),
-            button: gpiob.pb13.into_pullup_input(),
+            select: gpiob.pb15.into_pullup_input(),
+            button: gpiob.pb14.into_pullup_input(),
         };
 
         let i2c_sda = gpioa.pa10.into_open_drain_output();
@@ -185,7 +185,8 @@ pub static JOYSTICK_EVENT: async_scheduler::sync::mailbox::Mailbox<()> =
 unsafe fn EXTI4_15() {
     let exti = &(*EXTI::ptr());
 
-    debug_rprintln!("button interrupt {:b}", exti.fpr1.read().bits());
+    debug_rprintln!("button interrupt {:016b}", exti.fpr1.read().bits());
+    debug_rprintln!("button mask      5432109876543210");
     JOYSTICK_EVENT.post(());
 
     // Clear interrupt for joystick GPIO lines
