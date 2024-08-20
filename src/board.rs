@@ -29,7 +29,9 @@ pub type BoardI2c = I2cBus<HalI2c1>;
 pub struct Joystick {
     pub up: HalInputPin<PB15<Input<PullUp>>>,
     pub down: HalInputPin<PB13<Input<PullUp>>>,
+    #[allow(unused)]
     pub left: HalInputPin<PB12<Input<PullUp>>>,
+    #[allow(unused)]
     pub right: HalInputPin<PB14<Input<PullUp>>>,
     pub select: HalInputPin<PB11<Input<PullUp>>>,
     pub button: HalInputPin<PB10<Input<PullUp>>>,

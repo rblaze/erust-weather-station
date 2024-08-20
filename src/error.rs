@@ -8,7 +8,9 @@ use crate::hal_compat::I2cError;
 pub enum Error {
     AlreadyTaken,
     CoreFmt,
+    #[allow(unused)]
     Environment(async_scheduler::executor::EnvError),
+    #[allow(unused)]
     I2c(I2cError),
     InvalidLcdLine,
     Mailbox(async_scheduler::sync::mailbox::Error),
