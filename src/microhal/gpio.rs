@@ -1,7 +1,7 @@
 #![allow(unused)]
 use core::marker::PhantomData;
 
-use stm32g0::stm32g071::GPIOB;
+use stm32g0::stm32g071::{GPIOA, GPIOB};
 
 use super::rcc::{RccControl, ResetEnable};
 
@@ -45,31 +45,49 @@ pub struct Analog;
 /// Alternate function mode
 pub struct Alternate<const N: u8>;
 
+pub(crate) enum AltFunction {
+    AF0 = 0,
+    AF1 = 1,
+    AF2 = 2,
+    AF3 = 3,
+    AF4 = 4,
+    AF5 = 5,
+    AF6 = 6,
+    AF7 = 7,
+    AF8 = 8,
+    AF9 = 9,
+    AF10 = 10,
+}
+
+mod marker {
+    // Marker trait for allowed alternate function values
+    pub trait AF {}
+
+    impl AF for super::Alternate<0> {}
+    impl AF for super::Alternate<1> {}
+    impl AF for super::Alternate<2> {}
+    impl AF for super::Alternate<3> {}
+    impl AF for super::Alternate<4> {}
+    impl AF for super::Alternate<5> {}
+    impl AF for super::Alternate<6> {}
+    impl AF for super::Alternate<7> {}
+    impl AF for super::Alternate<8> {}
+    impl AF for super::Alternate<9> {}
+    impl AF for super::Alternate<10> {}
+}
+
 macro_rules! gpio {
-    ($GPIO:ident, $gpio:ident, [$($PXi:ident: ($pxi:ident, $default_mode:ident,
+    ($GPIO:ident, $gpio:ident, [$($PXi:ident: ($pxi:ident, $default_mode:ty,
             $idrbit:ident, $odrbit:ident, $bsbit:ident, $brbit:ident, $moderbit:ident,
             $pupdrbit:ident, $otbit:ident, $afreg:ident, $afbit:ident),)+]) => {
         pub mod $gpio {
             use super::{GpioExt, ResetEnable, RccControl, $GPIO};
             use super::{Output, PushPull, OpenDrain};
             use super::{Input, Floating, PullUp, PullDown};
-            use super::{Analog, Alternate};
+            use super::{Analog, Alternate, AltFunction};
+            use super::marker::AF;
 
             use core::marker::PhantomData;
-
-            mod marker {
-                // Marker trait for allowed alternate function values
-                pub trait AF {}
-
-                impl AF for super::Alternate<0> {}
-                impl AF for super::Alternate<1> {}
-                impl AF for super::Alternate<2> {}
-                impl AF for super::Alternate<3> {}
-                impl AF for super::Alternate<4> {}
-                impl AF for super::Alternate<5> {}
-                impl AF for super::Alternate<6> {}
-                impl AF for super::Alternate<7> {}
-            }
 
             impl GpioExt for $GPIO {
                 type Parts = Parts;
@@ -144,11 +162,17 @@ macro_rules! gpio {
                     }
 
                     pub fn into_alternate_function<const N: u8>(self) -> $PXi<Alternate<N>>
-                    where Alternate<N> : marker::AF {
+                    where Alternate<N> : AF {
                         let rb = unsafe { &(*$GPIO::ptr()) };
                         rb.$afreg.modify(|_, w| unsafe { w.$afbit().bits(N) });
                         rb.moder.modify(|_, w| w.$moderbit().alternate());
                         $PXi { _mode: PhantomData }
+                    }
+
+                    pub(crate) fn set_alternate_function_mode(&self, mode: AltFunction) {
+                        let rb = unsafe { &(*$GPIO::ptr()) };
+                        rb.$afreg.modify(|_, w| unsafe { w.$afbit().bits(mode as u8) });
+                        rb.moder.modify(|_, w| w.$moderbit().alternate());
                     }
                 }
 
@@ -200,6 +224,26 @@ macro_rules! gpio {
         }
     };
 }
+
+gpio!(GPIOA, gpioa, [
+    // Pin: (pin, default_mode, bits...)
+    PA0:  (pa0,  Analog, idr0,  odr0,  bs0,  br0,  moder0,  pupdr0,  ot0,  afrl,  afsel0 ),
+    PA1:  (pa1,  Analog, idr1,  odr1,  bs1,  br1,  moder1,  pupdr1,  ot1,  afrl,  afsel1 ),
+    PA2:  (pa2,  Analog, idr2,  odr2,  bs2,  br2,  moder2,  pupdr2,  ot2,  afrl,  afsel2 ),
+    PA3:  (pa3,  Analog, idr3,  odr3,  bs3,  br3,  moder3,  pupdr3,  ot3,  afrl,  afsel3 ),
+    PA4:  (pa4,  Analog, idr4,  odr4,  bs4,  br4,  moder4,  pupdr4,  ot4,  afrl,  afsel4 ),
+    PA5:  (pa5,  Analog, idr5,  odr5,  bs5,  br5,  moder5,  pupdr5,  ot5,  afrl,  afsel5 ),
+    PA6:  (pa6,  Analog, idr6,  odr6,  bs6,  br6,  moder6,  pupdr6,  ot6,  afrl,  afsel6 ),
+    PA7:  (pa7,  Analog, idr7,  odr7,  bs7,  br7,  moder7,  pupdr7,  ot7,  afrl,  afsel7 ),
+    PA8:  (pa8,  Analog, idr8,  odr8,  bs8,  br8,  moder8,  pupdr8,  ot8,  afrh,  afsel8 ),
+    PA9:  (pa9,  Analog, idr9,  odr9,  bs9,  br9,  moder9,  pupdr9,  ot9,  afrh,  afsel9 ),
+    PA10: (pa10, Analog, idr10, odr10, bs10, br10, moder10, pupdr10, ot10, afrh, afsel10),
+    PA11: (pa11, Analog, idr11, odr11, bs11, br11, moder11, pupdr11, ot11, afrh, afsel11),
+    PA12: (pa12, Analog, idr12, odr12, bs12, br12, moder12, pupdr12, ot12, afrh, afsel12),
+    PA13: (pa13, Alternate<0>, idr13, odr13, bs13, br13, moder13, pupdr13, ot13, afrh, afsel13),
+    PA14: (pa14, Alternate<0>, idr14, odr14, bs14, br14, moder14, pupdr14, ot14, afrh, afsel14),
+    PA15: (pa15, Analog, idr15, odr15, bs15, br15, moder15, pupdr15, ot15, afrh, afsel15),
+]);
 
 gpio!(GPIOB, gpiob, [
     // Pin: (pin, default_mode, bits...)

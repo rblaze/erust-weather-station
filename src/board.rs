@@ -1,29 +1,31 @@
 use core::cell::RefCell;
 
 use rtt_target::debug_rprintln;
-use stm32g0::stm32g071::LPTIM2;
+use stm32g0::stm32g071::{I2C1, LPTIM2};
 use stm32g0xx_hal::exti::{Event, ExtiExt};
-use stm32g0xx_hal::gpio::gpioa::{PA10, PA9};
-use stm32g0xx_hal::gpio::{GpioExt, OpenDrain, Output, SignalEdge};
-use stm32g0xx_hal::i2c::{self, I2c};
+// use stm32g0xx_hal::gpio::gpioa::{PA10, PA9};
+use stm32g0xx_hal::gpio::SignalEdge;
+// use stm32g0xx_hal::i2c::{self, I2c};
 use stm32g0xx_hal::pac::{self, interrupt, EXTI, TIM3};
 use stm32g0xx_hal::power::{self, PowerExt};
 use stm32g0xx_hal::rcc::{self, RccExt};
-use stm32g0xx_hal::time::RateExtU32;
+// use stm32g0xx_hal::time::RateExtU32;
 
 use crate::error::Error;
-use crate::hal_compat::I2cBus;
 use crate::microhal::adc::Adc;
+// use crate::microhal::gpio::gpioa::{PA10, PA9};
 use crate::microhal::gpio::gpiob::{PB0, PB10, PB11, PB12, PB13, PB14, PB15, PB2, PB4, PB5, PB6};
-use crate::microhal::gpio::{Alternate, Analog, Input, PullUp, PushPull};
+use crate::microhal::gpio::{Alternate, Analog, GpioExt, Input, PullUp, PushPull};
+use crate::microhal::i2c::{self, I2c, I2cExt};
 use crate::microhal::rcc::config::Prescaler;
 use crate::microhal::timer::{LowPowerTimer, Pwm, Timer};
 use crate::system_time::Ticker;
 
-type I2cSda = PA10<Output<OpenDrain>>; // TODO: PB4
-type I2cScl = PA9<Output<OpenDrain>>; // TODO: PB3
-type HalI2c1 = I2c<pac::I2C1, I2cSda, I2cScl>;
-pub type BoardI2c = I2cBus<HalI2c1>;
+// type I2cSda = PA10<Output<OpenDrain>>; // TODO: PB4
+// type I2cScl = PA9<Output<OpenDrain>>; // TODO: PB3
+// type HalI2c1 = I2c<pac::I2C1, I2cSda, I2cScl>;
+// pub type BoardI2c = I2cBus<HalI2c1>;
+pub type BoardI2c = I2c<I2C1>;
 
 #[allow(unused)]
 pub struct Joystick {
@@ -89,12 +91,9 @@ impl Board {
         // Check I2C clock requirements (RM0444 32.4.4) before lowering.
         let mut rcc = dp.RCC.freeze(rcc::Config::hsi(rcc::Prescaler::Div4));
         let mut pwr = dp.PWR.constrain(&mut rcc);
-        let gpioa = dp.GPIOA.split(&mut rcc);
+        let gpioa = dp.GPIOA.split(&rcc_control);
+        let gpiob = dp.GPIOB.split(&rcc_control);
 
-        let gpiob = crate::microhal::gpio::GpioExt::split(
-            unsafe { stm32g0::stm32g071::Peripherals::steal().GPIOB },
-            &rcc_control,
-        );
         let backlight_pwm = Timer::<TIM3>::new(dp.TIM3).pwm(0, u16::MAX, &rcc_control);
         let mut adc = Adc::new(dp.ADC, &rcc_control);
 
@@ -111,13 +110,8 @@ impl Board {
 
         let i2c_sda = gpioa.pa10.into_open_drain_output();
         let i2c_scl = gpioa.pa9.into_open_drain_output();
-        let i2c = I2c::i2c1(
-            dp.I2C1,
-            i2c_sda,
-            i2c_scl,
-            i2c::Config::new(100_u32.kHz()),
-            &mut rcc,
-        );
+        let config = i2c::Config::from_cubemx(true, 0, 0x00100D14);
+        let i2c = dp.I2C1.i2c(i2c_sda, i2c_scl, &config, &rcc_control);
 
         pwr.set_mode(power::PowerMode::LowPower(power::LowPowerMode::StopMode2));
 
@@ -161,7 +155,7 @@ impl Board {
 
         Ok(Self {
             ticker,
-            i2c: RefCell::new(I2cBus::new(i2c)),
+            i2c: RefCell::new(i2c),
             joystick,
             vbat: VBat {
                 adc,
