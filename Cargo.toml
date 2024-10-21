@@ -11,7 +11,7 @@ async-scheduler = { git = "https://github.com/rblaze/rust-async-scheduler.git" }
 bq24259 = { git = "https://github.com/rblaze/erust-bq24259.git" }
 cortex-m = { version = "0.7", features = ["critical-section-single-core"] }
 cortex-m-rt = "0.7"
-critical-section = { version = "1.1" }
+critical-section = { version = "1.2" }
 embedded-hal = "1.0"
 embedded-hal-bus = "0.2"
 fugit = "0.3"
