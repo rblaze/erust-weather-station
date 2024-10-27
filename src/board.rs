@@ -3,17 +3,13 @@ use core::cell::RefCell;
 use rtt_target::debug_rprintln;
 use stm32g0::stm32g071::{I2C1, LPTIM2};
 use stm32g0xx_hal::exti::{Event, ExtiExt};
-// use stm32g0xx_hal::gpio::gpioa::{PA10, PA9};
 use stm32g0xx_hal::gpio::SignalEdge;
-// use stm32g0xx_hal::i2c::{self, I2c};
 use stm32g0xx_hal::pac::{self, interrupt, EXTI, TIM3};
 use stm32g0xx_hal::power::{self, PowerExt};
 use stm32g0xx_hal::rcc::{self, RccExt};
-// use stm32g0xx_hal::time::RateExtU32;
 
 use crate::error::Error;
 use crate::microhal::adc::Adc;
-// use crate::microhal::gpio::gpioa::{PA10, PA9};
 use crate::microhal::gpio::gpiob::{PB0, PB10, PB11, PB12, PB13, PB14, PB15, PB2, PB4, PB5, PB6};
 use crate::microhal::gpio::{Alternate, Analog, GpioExt, Input, PullUp, PushPull};
 use crate::microhal::i2c::{self, I2c, I2cExt};
@@ -23,8 +19,6 @@ use crate::system_time::Ticker;
 
 // type I2cSda = PA10<Output<OpenDrain>>; // TODO: PB4
 // type I2cScl = PA9<Output<OpenDrain>>; // TODO: PB3
-// type HalI2c1 = I2c<pac::I2C1, I2cSda, I2cScl>;
-// pub type BoardI2c = I2cBus<HalI2c1>;
 pub type BoardI2c = I2c<I2C1>;
 
 #[allow(unused)]
