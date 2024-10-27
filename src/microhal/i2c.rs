@@ -7,13 +7,17 @@ use super::gpio::gpiob::{PB10, PB11, PB13, PB14, PB6, PB7, PB8, PB9};
 use super::gpio::{AltFunction, OpenDrain, Output};
 use super::rcc::{RccControl, ResetEnable};
 
+/// Trait for pins that can be used as I2C data
 pub trait SdaPin<I2C> {
     fn setup(&self);
 }
+
+/// Trait for pins that can be used as I2C clock
 pub trait SclPin<I2C> {
     fn setup(&self);
 }
 
+/// I2C bus configuration
 #[derive(Debug, Copy, Clone)]
 pub struct Config {
     analog_filter: bool,
@@ -26,6 +30,7 @@ pub struct Config {
 }
 
 impl Config {
+    /// Creates new I2C configuration from cubemx timings
     pub fn from_cubemx(enable_analog_filter: bool, digital_filter: u8, cubemx_bits: u32) -> Self {
         Self {
             analog_filter: enable_analog_filter,
@@ -38,6 +43,7 @@ impl Config {
         }
     }
 
+    /// Programs peripheral
     fn write_timings<'a>(
         &self,
         w: &'a mut stm32g0::stm32g071::i2c1::timingr::W,
@@ -55,6 +61,7 @@ impl Config {
     }
 }
 
+/// Extension trait to create I2C bus from a raw device
 pub trait I2cExt<I2C> {
     fn i2c<SDA, SCL>(self, sda: SDA, scl: SCL, config: &Config, rcc: &RccControl) -> I2c<I2C>
     where
@@ -64,6 +71,7 @@ pub trait I2cExt<I2C> {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[non_exhaustive]
+/// I2C errors
 pub enum Error {
     ArbitrationLost,
     Bus,
@@ -91,6 +99,7 @@ enum TransferState {
 }
 
 #[derive(Debug)]
+/// I2C bus
 pub struct I2c<I2C> {
     i2c: I2C,
 }
@@ -282,6 +291,7 @@ macro_rules! i2c {
                         .software()
                 });
 
+                // Perform all operations but last.
                 for i in 0..operations.len() - 1 {
                     let next_op_is_same = match (&operations[i], &operations[i + 1]) {
                         (i2c::Operation::Read(_), i2c::Operation::Read(_)) => true,
@@ -378,6 +388,7 @@ i2c!(I2C1,
         PB8<Output<OpenDrain>>,
     ]
 );
+
 i2c!(I2C2,
     sda: [
         PA12<Output<OpenDrain>>,
