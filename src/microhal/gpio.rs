@@ -1,7 +1,7 @@
 #![allow(unused)]
 use core::marker::PhantomData;
 
-use stm32g0::stm32g071::{GPIOA, GPIOB};
+use stm32g0::stm32g071::{EXTI, GPIOA, GPIOB};
 
 use super::rcc::{RccControl, ResetEnable};
 
@@ -12,6 +12,14 @@ pub trait GpioExt {
 
     /// Splits the GPIO block into independent pins and registers
     fn split(self, rcc: &RccControl) -> Self::Parts;
+}
+
+/// Trigger edge
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+pub enum SignalEdge {
+    Rising,
+    Falling,
+    Both,
 }
 
 /// Input mode
@@ -74,6 +82,12 @@ mod marker {
     impl AF for super::Alternate<8> {}
     impl AF for super::Alternate<9> {}
     impl AF for super::Alternate<10> {}
+
+    // Marker trait for modes able to generate interrupts
+    pub trait Interruptable {}
+
+    impl<MODE> Interruptable for super::Input<MODE> {}
+    impl<MODE> Interruptable for super::Output<MODE> {}
 }
 
 macro_rules! gpio {
@@ -81,11 +95,12 @@ macro_rules! gpio {
             $idrbit:ident, $odrbit:ident, $bsbit:ident, $brbit:ident, $moderbit:ident,
             $pupdrbit:ident, $otbit:ident, $afreg:ident, $afbit:ident),)+]) => {
         pub mod $gpio {
-            use super::{GpioExt, ResetEnable, RccControl, $GPIO};
+            use super::{GpioExt, ResetEnable, RccControl, EXTI, $GPIO};
             use super::{Output, PushPull, OpenDrain};
             use super::{Input, Floating, PullUp, PullDown};
             use super::{Analog, Alternate, AltFunction};
-            use super::marker::AF;
+            use super::SignalEdge;
+            use super::marker::{AF, Interruptable};
 
             use core::marker::PhantomData;
 
@@ -173,6 +188,15 @@ macro_rules! gpio {
                         let rb = unsafe { &(*$GPIO::ptr()) };
                         rb.$afreg.modify(|_, w| unsafe { w.$afbit().bits(mode as u8) });
                         rb.moder.modify(|_, w| w.$moderbit().alternate());
+                    }
+                }
+
+                impl<MODE> $PXi<MODE> where MODE: Interruptable {
+                    fn make_interrupt_source(&mut self, exti: &mut EXTI) {
+                        todo!()
+                    }
+                    fn trigger_on_edge(&mut self, exti: &mut EXTI, level: SignalEdge) {
+                        todo!()
                     }
                 }
 
