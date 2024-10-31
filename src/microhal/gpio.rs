@@ -91,9 +91,10 @@ mod marker {
 }
 
 macro_rules! gpio {
-    ($GPIO:ident, $gpio:ident, [$($PXi:ident: ($pxi:ident, $default_mode:ty,
+    ($GPIO:ident, $gpio:ident, $muxport:ident, [$($PXi:ident: ($pxi:ident, $default_mode:ty,
             $idrbit:ident, $odrbit:ident, $bsbit:ident, $brbit:ident, $moderbit:ident,
-            $pupdrbit:ident, $otbit:ident, $afreg:ident, $afbit:ident),)+]) => {
+            $pupdrbit:ident, $otbit:ident, $afreg:ident, $afbit:ident,
+            $muxreg:ident, $muxbits:ident, $rtbit:ident, $ftbit:ident),)+]) => {
         pub mod $gpio {
             use super::{GpioExt, ResetEnable, RccControl, EXTI, $GPIO};
             use super::{Output, PushPull, OpenDrain};
@@ -192,11 +193,19 @@ macro_rules! gpio {
                 }
 
                 impl<MODE> $PXi<MODE> where MODE: Interruptable {
-                    fn make_interrupt_source(&mut self, exti: &mut EXTI) {
-                        todo!()
+                    pub fn make_interrupt_source(&mut self, exti: &mut EXTI) {
+                        exti.$muxreg.modify(|_, w| w.$muxbits().$muxport());
                     }
-                    fn trigger_on_edge(&mut self, exti: &mut EXTI, level: SignalEdge) {
-                        todo!()
+
+                    pub fn trigger_on_edge(&mut self, edge: SignalEdge, exti: &mut EXTI) {
+                        match edge {
+                            SignalEdge::Rising => exti.rtsr1.modify(|_, w| w.$rtbit().enabled()),
+                            SignalEdge::Falling => exti.ftsr1.modify(|_, w| w.$ftbit().enabled()),
+                            SignalEdge::Both => {
+                                exti.rtsr1.modify(|_, w| w.$rtbit().enabled());
+                                exti.ftsr1.modify(|_, w| w.$ftbit().enabled());
+                            }
+                        }
                     }
                 }
 
@@ -249,42 +258,42 @@ macro_rules! gpio {
     };
 }
 
-gpio!(GPIOA, gpioa, [
+gpio!(GPIOA, gpioa, pa, [
     // Pin: (pin, default_mode, bits...)
-    PA0:  (pa0,  Analog, idr0,  odr0,  bs0,  br0,  moder0,  pupdr0,  ot0,  afrl,  afsel0 ),
-    PA1:  (pa1,  Analog, idr1,  odr1,  bs1,  br1,  moder1,  pupdr1,  ot1,  afrl,  afsel1 ),
-    PA2:  (pa2,  Analog, idr2,  odr2,  bs2,  br2,  moder2,  pupdr2,  ot2,  afrl,  afsel2 ),
-    PA3:  (pa3,  Analog, idr3,  odr3,  bs3,  br3,  moder3,  pupdr3,  ot3,  afrl,  afsel3 ),
-    PA4:  (pa4,  Analog, idr4,  odr4,  bs4,  br4,  moder4,  pupdr4,  ot4,  afrl,  afsel4 ),
-    PA5:  (pa5,  Analog, idr5,  odr5,  bs5,  br5,  moder5,  pupdr5,  ot5,  afrl,  afsel5 ),
-    PA6:  (pa6,  Analog, idr6,  odr6,  bs6,  br6,  moder6,  pupdr6,  ot6,  afrl,  afsel6 ),
-    PA7:  (pa7,  Analog, idr7,  odr7,  bs7,  br7,  moder7,  pupdr7,  ot7,  afrl,  afsel7 ),
-    PA8:  (pa8,  Analog, idr8,  odr8,  bs8,  br8,  moder8,  pupdr8,  ot8,  afrh,  afsel8 ),
-    PA9:  (pa9,  Analog, idr9,  odr9,  bs9,  br9,  moder9,  pupdr9,  ot9,  afrh,  afsel9 ),
-    PA10: (pa10, Analog, idr10, odr10, bs10, br10, moder10, pupdr10, ot10, afrh, afsel10),
-    PA11: (pa11, Analog, idr11, odr11, bs11, br11, moder11, pupdr11, ot11, afrh, afsel11),
-    PA12: (pa12, Analog, idr12, odr12, bs12, br12, moder12, pupdr12, ot12, afrh, afsel12),
-    PA13: (pa13, Alternate<0>, idr13, odr13, bs13, br13, moder13, pupdr13, ot13, afrh, afsel13),
-    PA14: (pa14, Alternate<0>, idr14, odr14, bs14, br14, moder14, pupdr14, ot14, afrh, afsel14),
-    PA15: (pa15, Analog, idr15, odr15, bs15, br15, moder15, pupdr15, ot15, afrh, afsel15),
+    PA0:  (pa0,  Analog, idr0,  odr0,  bs0,  br0,  moder0,  pupdr0,  ot0,  afrl,  afsel0, exticr1, exti0_7,   tr0,  tr0),
+    PA1:  (pa1,  Analog, idr1,  odr1,  bs1,  br1,  moder1,  pupdr1,  ot1,  afrl,  afsel1, exticr1, exti8_15,  tr1,  tr1),
+    PA2:  (pa2,  Analog, idr2,  odr2,  bs2,  br2,  moder2,  pupdr2,  ot2,  afrl,  afsel2, exticr1, exti16_23, tr2,  tr2),
+    PA3:  (pa3,  Analog, idr3,  odr3,  bs3,  br3,  moder3,  pupdr3,  ot3,  afrl,  afsel3, exticr1, exti24_31, tr3,  tr3),
+    PA4:  (pa4,  Analog, idr4,  odr4,  bs4,  br4,  moder4,  pupdr4,  ot4,  afrl,  afsel4, exticr2, exti0_7,   tr4,  tr4),
+    PA5:  (pa5,  Analog, idr5,  odr5,  bs5,  br5,  moder5,  pupdr5,  ot5,  afrl,  afsel5, exticr2, exti8_15,  tr5,  tr5),
+    PA6:  (pa6,  Analog, idr6,  odr6,  bs6,  br6,  moder6,  pupdr6,  ot6,  afrl,  afsel6, exticr2, exti16_23, tr6,  tr6),
+    PA7:  (pa7,  Analog, idr7,  odr7,  bs7,  br7,  moder7,  pupdr7,  ot7,  afrl,  afsel7, exticr2, exti24_31, tr7,  tr7),
+    PA8:  (pa8,  Analog, idr8,  odr8,  bs8,  br8,  moder8,  pupdr8,  ot8,  afrh,  afsel8, exticr3, exti0_7,   tr8,  tr8),
+    PA9:  (pa9,  Analog, idr9,  odr9,  bs9,  br9,  moder9,  pupdr9,  ot9,  afrh,  afsel9, exticr3, exti8_15,  tr9,  tr9),
+    PA10: (pa10, Analog, idr10, odr10, bs10, br10, moder10, pupdr10, ot10, afrh, afsel10, exticr3, exti16_23, tr10, tr10),
+    PA11: (pa11, Analog, idr11, odr11, bs11, br11, moder11, pupdr11, ot11, afrh, afsel11, exticr3, exti24_31, tr11, tr11),
+    PA12: (pa12, Analog, idr12, odr12, bs12, br12, moder12, pupdr12, ot12, afrh, afsel12, exticr4, exti0_7,   tr12, tr12),
+    PA13: (pa13, Alternate<0>, idr13, odr13, bs13, br13, moder13, pupdr13, ot13, afrh, afsel13, exticr4, exti8_15,  tr13, tr13),
+    PA14: (pa14, Alternate<0>, idr14, odr14, bs14, br14, moder14, pupdr14, ot14, afrh, afsel14, exticr4, exti16_23, tr14, tr14),
+    PA15: (pa15, Analog, idr15, odr15, bs15, br15, moder15, pupdr15, ot15, afrh, afsel15, exticr4, exti24_31, tr15, tr15),
 ]);
 
-gpio!(GPIOB, gpiob, [
+gpio!(GPIOB, gpiob, pb, [
     // Pin: (pin, default_mode, bits...)
-    PB0:  (pb0,  Analog, idr0,  odr0,  bs0,  br0,  moder0,  pupdr0,  ot0,  afrl,  afsel0 ),
-    PB1:  (pb1,  Analog, idr1,  odr1,  bs1,  br1,  moder1,  pupdr1,  ot1,  afrl,  afsel1 ),
-    PB2:  (pb2,  Analog, idr2,  odr2,  bs2,  br2,  moder2,  pupdr2,  ot2,  afrl,  afsel2 ),
-    PB3:  (pb3,  Analog, idr3,  odr3,  bs3,  br3,  moder3,  pupdr3,  ot3,  afrl,  afsel3 ),
-    PB4:  (pb4,  Analog, idr4,  odr4,  bs4,  br4,  moder4,  pupdr4,  ot4,  afrl,  afsel4 ),
-    PB5:  (pb5,  Analog, idr5,  odr5,  bs5,  br5,  moder5,  pupdr5,  ot5,  afrl,  afsel5 ),
-    PB6:  (pb6,  Analog, idr6,  odr6,  bs6,  br6,  moder6,  pupdr6,  ot6,  afrl,  afsel6 ),
-    PB7:  (pb7,  Analog, idr7,  odr7,  bs7,  br7,  moder7,  pupdr7,  ot7,  afrl,  afsel7 ),
-    PB8:  (pb8,  Analog, idr8,  odr8,  bs8,  br8,  moder8,  pupdr8,  ot8,  afrh,  afsel8 ),
-    PB9:  (pb9,  Analog, idr9,  odr9,  bs9,  br9,  moder9,  pupdr9,  ot9,  afrh,  afsel9 ),
-    PB10: (pb10, Analog, idr10, odr10, bs10, br10, moder10, pupdr10, ot10, afrh, afsel10),
-    PB11: (pb11, Analog, idr11, odr11, bs11, br11, moder11, pupdr11, ot11, afrh, afsel11),
-    PB12: (pb12, Analog, idr12, odr12, bs12, br12, moder12, pupdr12, ot12, afrh, afsel12),
-    PB13: (pb13, Analog, idr13, odr13, bs13, br13, moder13, pupdr13, ot13, afrh, afsel13),
-    PB14: (pb14, Analog, idr14, odr14, bs14, br14, moder14, pupdr14, ot14, afrh, afsel14),
-    PB15: (pb15, Analog, idr15, odr15, bs15, br15, moder15, pupdr15, ot15, afrh, afsel15),
+    PB0:  (pb0,  Analog, idr0,  odr0,  bs0,  br0,  moder0,  pupdr0,  ot0,  afrl,  afsel0, exticr1, exti0_7,   tr0,  tr0),
+    PB1:  (pb1,  Analog, idr1,  odr1,  bs1,  br1,  moder1,  pupdr1,  ot1,  afrl,  afsel1, exticr1, exti8_15,  tr1,  tr1),
+    PB2:  (pb2,  Analog, idr2,  odr2,  bs2,  br2,  moder2,  pupdr2,  ot2,  afrl,  afsel2, exticr1, exti16_23, tr2,  tr2),
+    PB3:  (pb3,  Analog, idr3,  odr3,  bs3,  br3,  moder3,  pupdr3,  ot3,  afrl,  afsel3, exticr1, exti24_31, tr3,  tr3),
+    PB4:  (pb4,  Analog, idr4,  odr4,  bs4,  br4,  moder4,  pupdr4,  ot4,  afrl,  afsel4, exticr2, exti0_7,   tr4,  tr4),
+    PB5:  (pb5,  Analog, idr5,  odr5,  bs5,  br5,  moder5,  pupdr5,  ot5,  afrl,  afsel5, exticr2, exti8_15,  tr5,  tr5),
+    PB6:  (pb6,  Analog, idr6,  odr6,  bs6,  br6,  moder6,  pupdr6,  ot6,  afrl,  afsel6, exticr2, exti16_23, tr6,  tr6),
+    PB7:  (pb7,  Analog, idr7,  odr7,  bs7,  br7,  moder7,  pupdr7,  ot7,  afrl,  afsel7, exticr2, exti24_31, tr7,  tr7),
+    PB8:  (pb8,  Analog, idr8,  odr8,  bs8,  br8,  moder8,  pupdr8,  ot8,  afrh,  afsel8, exticr3, exti0_7,   tr8,  tr8),
+    PB9:  (pb9,  Analog, idr9,  odr9,  bs9,  br9,  moder9,  pupdr9,  ot9,  afrh,  afsel9, exticr3, exti8_15,  tr9,  tr9),
+    PB10: (pb10, Analog, idr10, odr10, bs10, br10, moder10, pupdr10, ot10, afrh, afsel10, exticr3, exti16_23, tr10, tr10),
+    PB11: (pb11, Analog, idr11, odr11, bs11, br11, moder11, pupdr11, ot11, afrh, afsel11, exticr3, exti24_31, tr11, tr11),
+    PB12: (pb12, Analog, idr12, odr12, bs12, br12, moder12, pupdr12, ot12, afrh, afsel12, exticr4, exti0_7,   tr12, tr12),
+    PB13: (pb13, Analog, idr13, odr13, bs13, br13, moder13, pupdr13, ot13, afrh, afsel13, exticr4, exti8_15,  tr13, tr13),
+    PB14: (pb14, Analog, idr14, odr14, bs14, br14, moder14, pupdr14, ot14, afrh, afsel14, exticr4, exti16_23, tr14, tr14),
+    PB15: (pb15, Analog, idr15, odr15, bs15, br15, moder15, pupdr15, ot15, afrh, afsel15, exticr4, exti24_31, tr15, tr15),
 ]);

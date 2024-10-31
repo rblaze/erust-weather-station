@@ -1,17 +1,17 @@
 use core::cell::RefCell;
 
 use rtt_target::debug_rprintln;
-use stm32g0::stm32g071::{I2C1, LPTIM2};
-use stm32g0xx_hal::exti::{Event, ExtiExt};
-use stm32g0xx_hal::gpio::SignalEdge;
-use stm32g0xx_hal::pac::{self, interrupt, EXTI, TIM3};
+use stm32g0::stm32g071::{interrupt, Interrupt};
+use stm32g0::stm32g071::{CorePeripherals, Peripherals};
+use stm32g0::stm32g071::{EXTI, I2C1, LPTIM2, NVIC, TIM3};
 use stm32g0xx_hal::power::{self, PowerExt};
 use stm32g0xx_hal::rcc::{self, RccExt};
 
 use crate::error::Error;
 use crate::microhal::adc::Adc;
+use crate::microhal::exti::{Event, ExtiExt};
 use crate::microhal::gpio::gpiob::{PB0, PB10, PB11, PB12, PB13, PB14, PB15, PB2, PB4, PB5, PB6};
-use crate::microhal::gpio::{Alternate, Analog, GpioExt, Input, PullUp, PushPull};
+use crate::microhal::gpio::{Alternate, Analog, GpioExt, Input, PullUp, PushPull, SignalEdge};
 use crate::microhal::i2c::{self, I2c, I2cExt};
 use crate::microhal::rcc::config::Prescaler;
 use crate::microhal::timer::{LowPowerTimer, Pwm, Timer};
@@ -65,8 +65,8 @@ pub struct Board {
 
 impl Board {
     pub fn new() -> Result<Self, Error> {
-        let _cp = pac::CorePeripherals::take().ok_or(Error::AlreadyTaken)?;
-        let dp = pac::Peripherals::take().ok_or(Error::AlreadyTaken)?;
+        let _cp = CorePeripherals::take().ok_or(Error::AlreadyTaken)?;
+        let dp = Peripherals::take().ok_or(Error::AlreadyTaken)?;
 
         // Enable debug while stopped to keep probe-rs happy while WFI
         // Enabling DMA resolves another instability issue:
@@ -93,7 +93,7 @@ impl Board {
 
         adc.calibrate();
 
-        let joystick = Joystick {
+        let mut joystick = Joystick {
             up: gpiob.pb13.into_pullup_input(),
             down: gpiob.pb12.into_pullup_input(),
             left: gpiob.pb11.into_pullup_input(),
@@ -121,30 +121,41 @@ impl Board {
             .cfgr1
             .modify(|_, w| w.ucpd1_strobe().set_bit().ucpd2_strobe().set_bit());
 
-        let exti = dp.EXTI;
-        exti.exticr3
-            .modify(|_, w| w.exti16_23().pb().exti24_31().pb());
-        exti.exticr4.modify(|_, w| {
-            w.exti0_7()
-                .pb()
-                .exti8_15()
-                .pb()
-                .exti16_23()
-                .pb()
-                .exti24_31()
-                .pb()
-        });
-        exti.listen(Event::GPIO10, SignalEdge::Falling);
-        exti.listen(Event::GPIO11, SignalEdge::Falling);
-        exti.listen(Event::GPIO12, SignalEdge::Falling);
-        exti.listen(Event::GPIO13, SignalEdge::Falling);
-        exti.listen(Event::GPIO14, SignalEdge::Falling);
-        exti.listen(Event::GPIO15, SignalEdge::Falling);
-        exti.wakeup(Event::LPTIM2);
+        let mut exti = dp.EXTI;
+        joystick.up.make_interrupt_source(&mut exti);
+        joystick.up.trigger_on_edge(SignalEdge::Falling, &mut exti);
+        joystick.down.make_interrupt_source(&mut exti);
+        joystick
+            .down
+            .trigger_on_edge(SignalEdge::Falling, &mut exti);
+        joystick.left.make_interrupt_source(&mut exti);
+        joystick
+            .left
+            .trigger_on_edge(SignalEdge::Falling, &mut exti);
+        joystick.right.make_interrupt_source(&mut exti);
+        joystick
+            .right
+            .trigger_on_edge(SignalEdge::Falling, &mut exti);
+        joystick.button.make_interrupt_source(&mut exti);
+        joystick
+            .button
+            .trigger_on_edge(SignalEdge::Falling, &mut exti);
+        joystick.select.make_interrupt_source(&mut exti);
+        joystick
+            .select
+            .trigger_on_edge(SignalEdge::Falling, &mut exti);
+
+        exti.listen(Event::Gpio10);
+        exti.listen(Event::Gpio11);
+        exti.listen(Event::Gpio12);
+        exti.listen(Event::Gpio13);
+        exti.listen(Event::Gpio14);
+        exti.listen(Event::Gpio15);
+        exti.listen(Event::LpTim2);
 
         unsafe {
-            pac::NVIC::unmask(pac::Interrupt::TIM7_LPTIM2);
-            pac::NVIC::unmask(pac::Interrupt::EXTI4_15);
+            NVIC::unmask(Interrupt::TIM7_LPTIM2);
+            NVIC::unmask(Interrupt::EXTI4_15);
         }
 
         Ok(Self {
