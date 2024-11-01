@@ -1,5 +1,5 @@
-use stm32g0::stm32g071::adc::chselr1;
-use stm32g0::stm32g071::ADC;
+use crate::microhal::pac::adc::chselr1;
+use crate::microhal::pac::ADC;
 
 use super::gpio::gpiob::{PB0, PB1, PB10, PB2};
 use super::gpio::Analog;

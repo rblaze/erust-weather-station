@@ -4,7 +4,7 @@ use core::marker::PhantomData;
 use crate::microhal::rcc::lptim::{LptimClock, LptimClockExt};
 use crate::microhal::rcc::{Rcc, ResetEnable};
 
-use stm32g0::stm32g071::{LPTIM1, LPTIM2};
+use crate::microhal::pac::{LPTIM1, LPTIM2};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum LptimPrescaler {

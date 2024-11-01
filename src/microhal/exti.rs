@@ -1,6 +1,6 @@
 #![allow(unsafe_code, unused)]
 
-use stm32g0::stm32g071::EXTI;
+use super::pac::EXTI;
 
 use super::gpio::SignalEdge;
 

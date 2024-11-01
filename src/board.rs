@@ -1,9 +1,6 @@
 use core::cell::RefCell;
 
 use rtt_target::debug_rprintln;
-use stm32g0::stm32g071::{interrupt, Interrupt};
-use stm32g0::stm32g071::{CorePeripherals, Peripherals};
-use stm32g0::stm32g071::{EXTI, I2C1, LPTIM2, NVIC, TIM3};
 
 use crate::error::Error;
 use crate::microhal::adc::Adc;
@@ -11,6 +8,9 @@ use crate::microhal::exti::{Event, ExtiExt};
 use crate::microhal::gpio::gpiob::{PB0, PB10, PB11, PB12, PB13, PB14, PB15, PB2, PB4, PB5, PB6};
 use crate::microhal::gpio::{Alternate, Analog, GpioExt, Input, PullUp, PushPull, SignalEdge};
 use crate::microhal::i2c::{self, I2c, I2cExt};
+use crate::microhal::pac::{interrupt, Interrupt};
+use crate::microhal::pac::{CorePeripherals, Peripherals};
+use crate::microhal::pac::{EXTI, I2C1, LPTIM2, NVIC, TIM3};
 use crate::microhal::rcc::config::{Config, Prescaler};
 use crate::microhal::rcc::RccExt;
 use crate::microhal::timer::{LowPowerTimer, Pwm, Timer};

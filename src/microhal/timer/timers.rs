@@ -1,7 +1,7 @@
 #![allow(unused)]
 use core::marker::PhantomData;
 
-use stm32g0::stm32g071::{TIM2, TIM3};
+use crate::microhal::pac::{TIM2, TIM3};
 
 use crate::microhal::gpio::gpiob::{PB0, PB1, PB4, PB5};
 use crate::microhal::gpio::Alternate;

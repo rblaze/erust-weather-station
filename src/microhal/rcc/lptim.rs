@@ -1,4 +1,4 @@
-use stm32g0::stm32g071::{LPTIM1, LPTIM2};
+use crate::microhal::pac::{LPTIM1, LPTIM2};
 
 use super::Rcc;
 

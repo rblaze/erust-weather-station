@@ -1,8 +1,7 @@
 #![allow(unused)]
 use core::marker::PhantomData;
 
-use stm32g0::stm32g071::{EXTI, GPIOA, GPIOB};
-
+use super::pac::{EXTI, GPIOA, GPIOB};
 use super::rcc::{Rcc, ResetEnable};
 
 /// Extension trait to split a GPIO peripheral in independent pins and registers

@@ -1,7 +1,7 @@
-use stm32g0::stm32g071::rcc::{
+use crate::microhal::pac::rcc::{
     AHBENR, AHBRSTR, APBENR1, APBENR2, APBRSTR1, APBRSTR2, IOPENR, IOPRSTR,
 };
-use stm32g0::stm32g071::{
+use crate::microhal::pac::{
     ADC, DMA, GPIOA, GPIOB, GPIOC, GPIOD, GPIOF, I2C1, I2C2, LPTIM1, LPTIM2, TIM1, TIM2, TIM3,
 };
 

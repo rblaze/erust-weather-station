@@ -3,9 +3,9 @@ pub mod lptim;
 mod reset_enable;
 
 use self::config::Config;
+use super::pac::RCC;
 
 use fugit::KilohertzU32;
-use stm32g0::stm32g071::RCC;
 
 /// HSI frequency
 pub const HSI_FREQ: KilohertzU32 = KilohertzU32::MHz(16);

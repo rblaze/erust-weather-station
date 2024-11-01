@@ -1,10 +1,10 @@
 use embedded_hal::i2c;
 use scopeguard::defer;
-use stm32g0::stm32g071::{I2C1, I2C2};
 
 use super::gpio::gpioa::{PA10, PA11, PA12, PA9};
 use super::gpio::gpiob::{PB10, PB11, PB13, PB14, PB6, PB7, PB8, PB9};
 use super::gpio::{AltFunction, OpenDrain, Output};
+use super::pac::{I2C1, I2C2};
 use super::rcc::{Rcc, ResetEnable};
 
 /// Trait for pins that can be used as I2C data
@@ -46,8 +46,8 @@ impl Config {
     /// Programs peripheral
     fn write_timings<'a>(
         &self,
-        w: &'a mut stm32g0::stm32g071::i2c1::timingr::W,
-    ) -> &'a mut stm32g0::stm32g071::i2c1::timingr::W {
+        w: &'a mut super::pac::i2c1::timingr::W,
+    ) -> &'a mut super::pac::i2c1::timingr::W {
         w.presc()
             .bits(self.prescaler)
             .sdadel()
@@ -161,7 +161,7 @@ macro_rules! i2c {
             // (Read/Read and Write/Write op pairs) correctly.
             fn check_errors(
                 &self,
-                status: &stm32g0::stm32g071::i2c1::isr::R,
+                status: &super::pac::i2c1::isr::R,
                 transfer_kind: i2c::NoAcknowledgeSource,
             ) -> Result<(), Error> {
                 if status.ovr().is_overrun() {

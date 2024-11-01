@@ -5,8 +5,8 @@ use fugit::{TimerDuration, TimerInstant};
 use futures::{select_biased, Future, FutureExt};
 use once_cell::sync::OnceCell;
 use rtt_target::debug_rprintln;
-use stm32g0::stm32g071::{interrupt, LPTIM2};
 
+use crate::microhal::pac::{interrupt, LPTIM2};
 use crate::microhal::rcc::lptim::LptimClock;
 use crate::microhal::rcc::Rcc;
 use crate::microhal::timer::{Enabled, LowPowerTimer, LptimCounter, LptimEvent, LptimPrescaler};
