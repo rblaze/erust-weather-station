@@ -1,11 +1,12 @@
 #![no_std]
 #![no_main]
 
+mod backlight;
 mod board;
 mod display;
 mod env;
 mod error;
-mod hal_compat;
+mod microhal;
 mod screen;
 mod system_time;
 
@@ -15,7 +16,8 @@ use core::pin::pin;
 
 use async_scheduler::executor::LocalExecutor;
 use async_scheduler::mailbox::Mailbox;
-use board::{Peripherals, JOYSTICK_EVENT};
+use backlight::backlight_handler;
+use board::{Joystick, JOYSTICK_EVENT};
 use bq24259::BQ24259;
 use cortex_m_rt::entry;
 use embedded_hal::digital::InputPin;
@@ -26,6 +28,7 @@ use rtt_target::debug_rprintln;
 use rtt_target::rtt_init_print;
 use system_time::Duration;
 
+use crate::backlight::DisplayBacklight;
 use crate::display::DisplayPage;
 use crate::error::Error;
 
@@ -41,30 +44,12 @@ async fn panic_if_exited<F: core::future::Future<Output = Result<(), Error>>>(f:
     panic!("future exited with {:?}", f.await)
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-enum DisplayBacklight {
-    Off,
-    Half,
-    Full,
-}
-
-impl DisplayBacklight {
-    fn next(self) -> Self {
-        use DisplayBacklight::*;
-        match self {
-            Off => Half,
-            Half => Full,
-            Full => Off,
-        }
-    }
-}
-
 async fn navigation(
     display_event: &Mailbox<()>,
     page: &Cell<DisplayPage>,
     backlight_event: &Mailbox<()>,
     backlight: &Cell<DisplayBacklight>,
-    board: &RefCell<Peripherals>,
+    joystick: &mut Joystick,
 ) -> Result<(), Error> {
     let mut last_visible_page = None;
 
@@ -73,7 +58,6 @@ async fn navigation(
         JOYSTICK_EVENT.read().await?;
 
         let current_page = page.get();
-        let joystick = &mut board.borrow_mut().joystick;
         if joystick.up.is_low()? {
             page.set(current_page.prev());
         } else if joystick.down.is_low()? {
@@ -108,11 +92,10 @@ fn main() -> ! {
 
         debug_rprintln!("starting");
 
-        let board = board::Board::new()?;
+        let mut board = board::Board::new()?;
 
         env::init_env(board.ticker)?;
 
-        let peripherals = RefCell::new(board.peripherals);
         let backlight_event = Mailbox::<()>::new();
         let backlight = Cell::new(DisplayBacklight::Off);
         let display_refresh_event = Mailbox::<()>::new();
@@ -129,31 +112,25 @@ fn main() -> ! {
                 system_time::sleep(Duration::secs(11)).await;
             }
         }));
-        let backlight_handler = pin!(panic_if_exited(async {
-            loop {
-                debug_rprintln!("backlight {:?}", backlight.get());
-                match backlight.get() {
-                    DisplayBacklight::Off => peripherals.borrow_mut().backlight.set(0, 0, 0),
-                    DisplayBacklight::Half => peripherals.borrow_mut().backlight.set(50, 50, 50),
-                    DisplayBacklight::Full => peripherals.borrow_mut().backlight.set(100, 100, 100),
-                };
-
-                backlight_event.read().await?;
-            }
-        }));
+        let backlight_handler = pin!(panic_if_exited(backlight_handler(
+            board.backlight,
+            &backlight,
+            &backlight_event
+        )));
         let display_handler = pin!(panic_if_exited(display::task(
             display_bus,
             &display_refresh_event,
             &display_page,
             &charger,
-            &peripherals,
+            &mut board.vbat,
+            &mut board.display_power,
         )));
         let navigation = pin!(panic_if_exited(navigation(
             &display_refresh_event,
             &display_page,
             &backlight_event,
             &backlight,
-            &peripherals
+            &mut board.joystick
         )));
 
         LocalExecutor::new().run([

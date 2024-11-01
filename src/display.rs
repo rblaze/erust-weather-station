@@ -10,7 +10,7 @@ use fugit::SecsDurationU64;
 use lcd::screen::Screen;
 use rtt_target::debug_rprintln;
 
-use crate::board::Peripherals;
+use crate::board::{DisplayPowerPin, VBat};
 use crate::error::Error;
 use crate::screen::Lcd;
 use crate::system_time::{self, Duration, Instant};
@@ -51,7 +51,7 @@ async fn show_page<Bus>(
     start_time: Instant,
     display: &mut Lcd<'_, Bus>,
     charger: &RefCell<BQ24259<Bus>>,
-    board: &RefCell<Peripherals>,
+    vbat: &mut VBat,
 ) -> Result<(), Error>
 where
     Bus: embedded_hal::i2c::I2c,
@@ -61,7 +61,7 @@ where
     match page {
         DisplayPage::BatteryStatus => {
             let status = charger.borrow_mut().status()?;
-            let battery_volts = board.borrow_mut().vbat.read_battery_volts();
+            let battery_volts = vbat.read_battery_volts();
 
             display.cls()?;
             display.set_output_line(0)?;
@@ -104,20 +104,21 @@ async fn page_loop<Bus>(
     event: &Mailbox<()>,
     page: &Cell<DisplayPage>,
     charger: &RefCell<BQ24259<Bus>>,
-    board: &RefCell<Peripherals>,
+    vbat: &mut VBat,
+    display_power: &mut DisplayPowerPin,
     start_time: Instant,
 ) -> Result<(), Error>
 where
     Bus: embedded_hal::i2c::I2c,
     Error: From<Bus::Error>,
 {
-    board.borrow_mut().display_power.set_low()?;
+    display_power.set_low()?;
     // Give display time to initialize.
     system_time::sleep(Duration::millis(200)).await;
 
     let mut display = Lcd::new(display_bus)?;
     while page.get() != DisplayPage::Off {
-        show_page(page.get(), start_time, &mut display, charger, board).await?;
+        show_page(page.get(), start_time, &mut display, charger, vbat).await?;
 
         system_time::timeout(Duration::secs(2), event.read()).await?;
     }
@@ -131,7 +132,8 @@ pub async fn task<Bus>(
     event: &Mailbox<()>,
     page: &Cell<DisplayPage>,
     charger: &RefCell<BQ24259<Bus>>,
-    board: &RefCell<Peripherals>,
+    vbat: &mut VBat,
+    display_power: &mut DisplayPowerPin,
 ) -> Result<(), Error>
 where
     Bus: embedded_hal::i2c::I2c,
@@ -140,10 +142,19 @@ where
     let start_time = system_time::now();
 
     loop {
-        let result = page_loop(&mut display_bus, event, page, charger, board, start_time).await;
+        let result = page_loop(
+            &mut display_bus,
+            event,
+            page,
+            charger,
+            vbat,
+            display_power,
+            start_time,
+        )
+        .await;
 
         // If we fell out of previous loop, it means LCD was turned off.
-        board.borrow_mut().display_power.set_high()?;
+        display_power.set_high()?;
 
         match result {
             Ok(()) => {
