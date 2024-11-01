@@ -4,8 +4,6 @@ use rtt_target::debug_rprintln;
 use stm32g0::stm32g071::{interrupt, Interrupt};
 use stm32g0::stm32g071::{CorePeripherals, Peripherals};
 use stm32g0::stm32g071::{EXTI, I2C1, LPTIM2, NVIC, TIM3};
-use stm32g0xx_hal::power::{self, PowerExt};
-use stm32g0xx_hal::rcc::{self, RccExt};
 
 use crate::error::Error;
 use crate::microhal::adc::Adc;
@@ -13,7 +11,8 @@ use crate::microhal::exti::{Event, ExtiExt};
 use crate::microhal::gpio::gpiob::{PB0, PB10, PB11, PB12, PB13, PB14, PB15, PB2, PB4, PB5, PB6};
 use crate::microhal::gpio::{Alternate, Analog, GpioExt, Input, PullUp, PushPull, SignalEdge};
 use crate::microhal::i2c::{self, I2c, I2cExt};
-use crate::microhal::rcc::config::Prescaler;
+use crate::microhal::rcc::config::{Config, Prescaler};
+use crate::microhal::rcc::RccExt;
 use crate::microhal::timer::{LowPowerTimer, Pwm, Timer};
 use crate::system_time::Ticker;
 
@@ -77,19 +76,16 @@ impl Board {
             dp.RCC.ahbenr.modify(|_, w| w.dmaen().set_bit());
         }
 
-        let clocks = crate::microhal::rcc::config::Config::use_hsi(Prescaler::Div4).enable_lsi();
-        let microhal_rcc = unsafe { stm32g0::stm32g071::Peripherals::steal().RCC };
-        let rcc_control = crate::microhal::rcc::RccExt::constrain(microhal_rcc).freeze(clocks);
-
         // Set clock to 4MHz (HSI speed is 16MHz).
         // Check I2C clock requirements (RM0444 32.4.4) before lowering.
-        let mut rcc = dp.RCC.freeze(rcc::Config::hsi(rcc::Prescaler::Div4));
-        let mut pwr = dp.PWR.constrain(&mut rcc);
-        let gpioa = dp.GPIOA.split(&rcc_control);
-        let gpiob = dp.GPIOB.split(&rcc_control);
+        let clocks = Config::sysclk_hsi(Prescaler::Div4).enable_lsi();
+        let rcc = dp.RCC.constrain(clocks);
 
-        let backlight_pwm = Timer::<TIM3>::new(dp.TIM3).pwm(0, u16::MAX, &rcc_control);
-        let mut adc = Adc::new(dp.ADC, &rcc_control);
+        let gpioa = dp.GPIOA.split(&rcc);
+        let gpiob = dp.GPIOB.split(&rcc);
+
+        let backlight_pwm = Timer::<TIM3>::new(dp.TIM3).pwm(0, u16::MAX, &rcc);
+        let mut adc = Adc::new(dp.ADC, &rcc);
 
         adc.calibrate();
 
@@ -105,12 +101,10 @@ impl Board {
         let i2c_sda = gpioa.pa10.into_open_drain_output();
         let i2c_scl = gpioa.pa9.into_open_drain_output();
         let config = i2c::Config::from_cubemx(true, 0, 0x00100D14);
-        let i2c = dp.I2C1.i2c(i2c_sda, i2c_scl, &config, &rcc_control);
-
-        pwr.set_mode(power::PowerMode::LowPower(power::LowPowerMode::StopMode2));
+        let i2c = dp.I2C1.i2c(i2c_sda, i2c_scl, &config, &rcc);
 
         let system_timer = LowPowerTimer::<LPTIM2>::new(dp.LPTIM2);
-        let ticker = Ticker::new(system_timer, &rcc_control);
+        let ticker = Ticker::new(system_timer, &rcc);
 
         // Upon reset, a pull-down resistor might be present on PB15, PA8, PD0, or PD2,
         // depending on the voltage level on PB0, PA9, PC6, PA10, PD1, and PD3. In order

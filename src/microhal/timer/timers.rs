@@ -5,7 +5,7 @@ use stm32g0::stm32g071::{TIM2, TIM3};
 
 use crate::microhal::gpio::gpiob::{PB0, PB1, PB4, PB5};
 use crate::microhal::gpio::Alternate;
-use crate::microhal::rcc::{RccControl, ResetEnable};
+use crate::microhal::rcc::{Rcc, ResetEnable};
 
 /// Wrapper for timer peripheral.
 #[derive(Debug)]
@@ -32,7 +32,7 @@ macro_rules! general_purpose_timer {
                 Self { timer }
             }
 
-            pub fn upcounter(self, prescaler: u16, limit: $REG, rcc: &RccControl) -> Counter<$TIM> {
+            pub fn upcounter(self, prescaler: u16, limit: $REG, rcc: &Rcc) -> Counter<$TIM> {
                 $TIM::enable(rcc);
                 $TIM::reset(rcc);
 
@@ -45,7 +45,7 @@ macro_rules! general_purpose_timer {
                 Counter { timer: self.timer }
             }
 
-            pub fn pwm(self, prescaler: u16, limit: $REG, rcc: &RccControl) -> Pwm<$TIM> {
+            pub fn pwm(self, prescaler: u16, limit: $REG, rcc: &Rcc) -> Pwm<$TIM> {
                 $TIM::enable(rcc);
                 $TIM::reset(rcc);
 

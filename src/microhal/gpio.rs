@@ -3,7 +3,7 @@ use core::marker::PhantomData;
 
 use stm32g0::stm32g071::{EXTI, GPIOA, GPIOB};
 
-use super::rcc::{RccControl, ResetEnable};
+use super::rcc::{Rcc, ResetEnable};
 
 /// Extension trait to split a GPIO peripheral in independent pins and registers
 pub trait GpioExt {
@@ -11,7 +11,7 @@ pub trait GpioExt {
     type Parts;
 
     /// Splits the GPIO block into independent pins and registers
-    fn split(self, rcc: &RccControl) -> Self::Parts;
+    fn split(self, rcc: &Rcc) -> Self::Parts;
 }
 
 /// Trigger edge
@@ -96,7 +96,7 @@ macro_rules! gpio {
             $pupdrbit:ident, $otbit:ident, $afreg:ident, $afbit:ident,
             $muxreg:ident, $muxbits:ident, $rtbit:ident, $ftbit:ident),)+]) => {
         pub mod $gpio {
-            use super::{GpioExt, ResetEnable, RccControl, EXTI, $GPIO};
+            use super::{GpioExt, ResetEnable, Rcc, EXTI, $GPIO};
             use super::{Output, PushPull, OpenDrain};
             use super::{Input, Floating, PullUp, PullDown};
             use super::{Analog, Alternate, AltFunction};
@@ -108,7 +108,7 @@ macro_rules! gpio {
             impl GpioExt for $GPIO {
                 type Parts = Parts;
 
-                fn split(self, rcc: &RccControl) -> Self::Parts {
+                fn split(self, rcc: &Rcc) -> Self::Parts {
                     $GPIO::enable(rcc);
                     $GPIO::reset(rcc);
 

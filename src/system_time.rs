@@ -8,7 +8,7 @@ use rtt_target::debug_rprintln;
 use stm32g0::stm32g071::{interrupt, LPTIM2};
 
 use crate::microhal::rcc::lptim::LptimClock;
-use crate::microhal::rcc::RccControl;
+use crate::microhal::rcc::Rcc;
 use crate::microhal::timer::{Enabled, LowPowerTimer, LptimCounter, LptimEvent, LptimPrescaler};
 
 const LSI_FREQ: u32 = 32000 / 128;
@@ -25,7 +25,7 @@ impl Ticker {
     const MAX_COUNTER: u16 = u16::MAX;
     const CYCLE_LENGTH: TimerTicks = (Self::MAX_COUNTER as TimerTicks) + 1;
 
-    pub fn new(timer: LowPowerTimer<LPTIM2>, rcc: &RccControl) -> Self {
+    pub fn new(timer: LowPowerTimer<LPTIM2>, rcc: &Rcc) -> Self {
         debug_assert!(TIMER.get().is_none());
 
         // Set largest prescaler and longest reload cycle.

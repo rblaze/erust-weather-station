@@ -2,7 +2,7 @@
 use core::marker::PhantomData;
 
 use crate::microhal::rcc::lptim::{LptimClock, LptimClockExt};
-use crate::microhal::rcc::{RccControl, ResetEnable};
+use crate::microhal::rcc::{Rcc, ResetEnable};
 
 use stm32g0::stm32g071::{LPTIM1, LPTIM2};
 
@@ -61,7 +61,7 @@ macro_rules! low_power_timer {
                 clock: LptimClock,
                 prescaler: LptimPrescaler,
                 limit: u16,
-                rcc: &RccControl,
+                rcc: &Rcc,
             ) -> LptimCounter<$TIM, Enabled> {
                 // Configure timer clock.
                 $TIM::set_clock(clock, rcc);

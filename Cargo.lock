@@ -382,20 +382,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "stm32g0xx-hal"
-version = "0.2.0"
-source = "git+https://github.com/stm32-rs/stm32g0xx-hal.git#7b456806e8a58b5e8a72807d97df6e41f9b06033"
-dependencies = [
- "bare-metal 1.0.0",
- "cortex-m",
- "embedded-hal 0.2.7",
- "fugit",
- "nb 1.1.0",
- "stm32g0",
- "void",
-]
-
-[[package]]
 name = "syn"
 version = "1.0.109"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -475,5 +461,4 @@ dependencies = [
  "rtt-target",
  "scopeguard",
  "stm32g0",
- "stm32g0xx-hal",
 ]

@@ -5,7 +5,7 @@ use stm32g0::stm32g071::{I2C1, I2C2};
 use super::gpio::gpioa::{PA10, PA11, PA12, PA9};
 use super::gpio::gpiob::{PB10, PB11, PB13, PB14, PB6, PB7, PB8, PB9};
 use super::gpio::{AltFunction, OpenDrain, Output};
-use super::rcc::{RccControl, ResetEnable};
+use super::rcc::{Rcc, ResetEnable};
 
 /// Trait for pins that can be used as I2C data
 pub trait SdaPin<I2C> {
@@ -63,7 +63,7 @@ impl Config {
 
 /// Extension trait to create I2C bus from a raw device
 pub trait I2cExt<I2C> {
-    fn i2c<SDA, SCL>(self, sda: SDA, scl: SCL, config: &Config, rcc: &RccControl) -> I2c<I2C>
+    fn i2c<SDA, SCL>(self, sda: SDA, scl: SCL, config: &Config, rcc: &Rcc) -> I2c<I2C>
     where
         SDA: SdaPin<I2C>,
         SCL: SclPin<I2C>;
@@ -127,7 +127,7 @@ macro_rules! i2c {
         )+
 
         impl I2cExt<$I2C> for $I2C {
-            fn i2c<SDA, SCL>(self, sda: SDA, scl: SCL, config: &Config, rcc: &RccControl) -> I2c<$I2C>
+            fn i2c<SDA, SCL>(self, sda: SDA, scl: SCL, config: &Config, rcc: &Rcc) -> I2c<$I2C>
             where
                 SDA: SdaPin<$I2C>,
                 SCL: SclPin<$I2C>,

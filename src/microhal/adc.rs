@@ -3,7 +3,7 @@ use stm32g0::stm32g071::ADC;
 
 use super::gpio::gpiob::{PB0, PB1, PB10, PB2};
 use super::gpio::Analog;
-use super::rcc::{RccControl, ResetEnable};
+use super::rcc::{Rcc, ResetEnable};
 
 pub struct Adc {
     adc: ADC,
@@ -11,7 +11,7 @@ pub struct Adc {
 }
 
 impl Adc {
-    pub fn new(adc: ADC, rcc: &RccControl) -> Self {
+    pub fn new(adc: ADC, rcc: &Rcc) -> Self {
         ADC::enable(rcc);
         ADC::reset(rcc);
 

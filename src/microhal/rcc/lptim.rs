@@ -1,6 +1,6 @@
 use stm32g0::stm32g071::{LPTIM1, LPTIM2};
 
-use super::RccControl;
+use super::Rcc;
 
 #[allow(unused)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -12,13 +12,13 @@ pub enum LptimClock {
 }
 
 pub trait LptimClockExt {
-    fn set_clock(clock: LptimClock, rcc: &RccControl);
+    fn set_clock(clock: LptimClock, rcc: &Rcc);
 }
 
 macro_rules! lptim_rcc {
     ($TIM:ident, $clock:ident) => {
         impl LptimClockExt for $TIM {
-            fn set_clock(clock: LptimClock, rcc: &RccControl) {
+            fn set_clock(clock: LptimClock, rcc: &Rcc) {
                 rcc.rcc.ccipr.modify(|_, w| w.$clock().variant(clock as u8));
             }
         }
