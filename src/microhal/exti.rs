@@ -65,9 +65,9 @@ impl ExtiExt for EXTI {
 
         unsafe {
             match line {
-                0..=31 => self.imr1.modify(|r, w| w.bits(r.bits() | (1 << line))),
+                0..=31 => self.imr1().modify(|r, w| w.bits(r.bits() | (1 << line))),
                 32..=35 => self
-                    .imr2
+                    .imr2()
                     .modify(|r, w| w.bits(r.bits() | (1 << (line - 32)))),
                 _ => unreachable!(),
             }
@@ -80,9 +80,9 @@ impl ExtiExt for EXTI {
         let line = ev as u8;
         unsafe {
             match line {
-                0..=31 => self.imr1.modify(|r, w| w.bits(r.bits() & !(1 << line))),
+                0..=31 => self.imr1().modify(|r, w| w.bits(r.bits() & !(1 << line))),
                 32..=35 => self
-                    .imr2
+                    .imr2()
                     .modify(|r, w| w.bits(r.bits() & !(1 << (line - 32)))),
                 _ => unreachable!(),
             }
@@ -94,11 +94,11 @@ impl ExtiExt for EXTI {
 
         match line {
             0..=31 => match edge {
-                SignalEdge::Rising => self.rpr1.read().bits() & (1 << line) != 0,
-                SignalEdge::Falling => self.fpr1.read().bits() & (1 << line) != 0,
+                SignalEdge::Rising => self.rpr1().read().bits() & (1 << line) != 0,
+                SignalEdge::Falling => self.fpr1().read().bits() & (1 << line) != 0,
                 SignalEdge::Both => {
-                    self.rpr1.read().bits() & (1 << line) != 0
-                        || self.fpr1.read().bits() & (1 << line) != 0
+                    self.rpr1().read().bits() & (1 << line) != 0
+                        || self.fpr1().read().bits() & (1 << line) != 0
                 }
             },
             // 32..=35 => match edge {
@@ -119,8 +119,8 @@ impl ExtiExt for EXTI {
         unsafe {
             match line {
                 0..=18 | 20 => {
-                    self.rpr1.modify(|_, w| w.bits(1 << line));
-                    self.fpr1.modify(|_, w| w.bits(1 << line));
+                    self.rpr1().modify(|_, w| w.bits(1 << line));
+                    self.fpr1().modify(|_, w| w.bits(1 << line));
                 }
                 34 => {
                     // self.rpr2.modify(|_, w| w.bits(1 << (line - 32)));

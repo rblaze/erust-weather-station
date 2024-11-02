@@ -67,11 +67,13 @@ macro_rules! low_power_timer {
                 $TIM::set_clock(clock, rcc);
                 $TIM::enable(rcc);
                 $TIM::reset(rcc);
-                self.timer
-                    .cfgr
-                    .modify(|_, w| w.presc().variant(prescaler as u8));
 
-                self.timer.cr.modify(|_, w| w.enable().set_bit());
+                #[allow(unsafe_code)]
+                self.timer
+                    .cfgr()
+                    .modify(|_, w| unsafe { w.presc().bits(prescaler as u8) });
+
+                self.timer.cr().modify(|_, w| w.enable().set_bit());
 
                 // "After setting the ENABLE bit, a delay of two counter clock is needed before the LPTIM is
                 // actually enabled."
@@ -80,9 +82,10 @@ macro_rules! low_power_timer {
                 cortex_m::asm::delay(5000);
 
                 // ARR can only be changed while the timer is *en*abled.
-                self.timer.arr.write(|w| w.arr().variant(limit));
-                while self.timer.isr.read().arrok().bit_is_clear() {}
-                self.timer.icr.write(|w| w.arrokcf().set_bit());
+                #[allow(unsafe_code)]
+                self.timer.arr().write(|w| unsafe { w.arr().bits(limit) });
+                while self.timer.isr().read().arrok().bit_is_clear() {}
+                self.timer.icr().write(|w| w.arrokcf().set_bit());
 
                 LptimCounter {
                     timer: self.timer,
@@ -94,7 +97,7 @@ macro_rules! low_power_timer {
         impl LptimCounter<$TIM, Enabled> {
             /// Disables timer.
             pub fn disable(self) -> LptimCounter<$TIM, Disabled> {
-                self.timer.cr.modify(|_, w| w.enable().clear_bit());
+                self.timer.cr().modify(|_, w| w.enable().clear_bit());
 
                 LptimCounter {
                     timer: self.timer,
@@ -104,38 +107,39 @@ macro_rules! low_power_timer {
 
             /// Starts counting.
             pub fn start(&self) {
-                self.timer.cr.modify(|_, w| w.cntstrt().set_bit());
+                self.timer.cr().modify(|_, w| w.cntstrt().set_bit());
             }
 
             /// Stops counting.
             pub fn stop(&self) {
-                self.timer.cr.modify(|_, w| w.cntstrt().clear_bit());
+                self.timer.cr().modify(|_, w| w.cntstrt().clear_bit());
             }
 
             /// Returns current counter value.
             pub fn counter(&self) -> u16 {
-                self.timer.cnt.read().cnt().bits()
+                self.timer.cnt().read().cnt().bits()
             }
 
             /// Returns compare value.
             pub fn cmp(&self) -> u16 {
-                self.timer.cmp.read().cmp().bits()
+                self.timer.cmp().read().cmp().bits()
             }
 
             /// Writes to CMP and waits for CMPOK to be set again to make sure there is
             /// no races later.
             pub fn set_cmp(&self, value: u16) {
-                debug_assert!(self.timer.isr.read().cmpok().bit_is_clear());
+                debug_assert!(self.timer.isr().read().cmpok().bit_is_clear());
 
-                self.timer.cmp.write(|w| w.cmp().variant(value));
-                while self.timer.isr.read().cmpok().bit_is_clear() {}
-                self.timer.icr.write(|w| w.cmpokcf().set_bit());
-                while self.timer.isr.read().cmpok().bit_is_set() {}
+                #[allow(unsafe_code)]
+                self.timer.cmp().write(|w| unsafe { w.cmp().bits(value) });
+                while self.timer.isr().read().cmpok().bit_is_clear() {}
+                self.timer.icr().write(|w| w.cmpokcf().set_bit());
+                while self.timer.isr().read().cmpok().bit_is_set() {}
             }
 
             /// Checks if event is pending.
             pub fn is_pending(&self, event: LptimEvent) -> bool {
-                let v = self.timer.isr.read();
+                let v = self.timer.isr().read();
                 match event {
                     LptimEvent::DirectionDown => v.down().bit_is_set(),
                     LptimEvent::DirectionUp => v.up().bit_is_set(),
@@ -149,7 +153,7 @@ macro_rules! low_power_timer {
 
             /// Clears pending event.
             pub fn unpend(&self, event: LptimEvent) {
-                self.timer.icr.write(|w| match event {
+                self.timer.icr().write(|w| match event {
                     LptimEvent::DirectionDown => w.downcf().set_bit(),
                     LptimEvent::DirectionUp => w.upcf().set_bit(),
                     LptimEvent::ArrOk => w.arrokcf().set_bit(),
@@ -163,7 +167,7 @@ macro_rules! low_power_timer {
 
         impl LptimCounter<$TIM, Disabled> {
             pub fn enable(self) -> LptimCounter<$TIM, Enabled> {
-                self.timer.cr.modify(|_, w| w.enable().set_bit());
+                self.timer.cr().modify(|_, w| w.enable().set_bit());
 
                 // "After setting the ENABLE bit, a delay of two counter clock is needed before the LPTIM is
                 // actually enabled."
@@ -178,7 +182,7 @@ macro_rules! low_power_timer {
             }
 
             pub fn listen(&self, event: LptimEvent) {
-                self.timer.ier.modify(|_, w| match event {
+                self.timer.ier().modify(|_, w| match event {
                     LptimEvent::DirectionDown => w.downie().set_bit(),
                     LptimEvent::DirectionUp => w.upie().set_bit(),
                     LptimEvent::ArrOk => w.arrokie().set_bit(),
@@ -190,7 +194,7 @@ macro_rules! low_power_timer {
             }
 
             pub fn unlisten(&self, event: LptimEvent) {
-                self.timer.ier.modify(|_, w| match event {
+                self.timer.ier().modify(|_, w| match event {
                     LptimEvent::DirectionDown => w.downie().clear_bit(),
                     LptimEvent::DirectionUp => w.upie().clear_bit(),
                     LptimEvent::ArrOk => w.arrokie().clear_bit(),

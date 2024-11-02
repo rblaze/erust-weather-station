@@ -49,15 +49,15 @@ impl Config {
         w: &'a mut super::pac::i2c1::timingr::W,
     ) -> &'a mut super::pac::i2c1::timingr::W {
         w.presc()
-            .bits(self.prescaler)
+            .set(self.prescaler)
             .sdadel()
-            .bits(self.scadel)
+            .set(self.scadel)
             .scldel()
-            .bits(self.scldel)
+            .set(self.scldel)
             .sclh()
-            .bits(self.scl_h)
+            .set(self.scl_h)
             .scll()
-            .bits(self.scl_l)
+            .set(self.scl_l)
     }
 }
 
@@ -138,14 +138,14 @@ macro_rules! i2c {
                 $I2C::enable(rcc);
                 $I2C::reset(rcc);
 
-                self.cr1.modify(|_, w| {
+                self.cr1().modify(|_, w| {
                     w.anfoff()
                         .bit(config.analog_filter)
                         .dnf()
-                        .bits(config.digital_filter)
+                        .set(config.digital_filter)
                 });
 
-                self.timingr.modify(|_, w| config.write_timings(w));
+                self.timingr().modify(|_, w| config.write_timings(w));
 
                 I2c::<$I2C>::new(self)
             }
@@ -165,23 +165,23 @@ macro_rules! i2c {
                 transfer_kind: i2c::NoAcknowledgeSource,
             ) -> Result<(), Error> {
                 if status.ovr().is_overrun() {
-                    self.i2c.icr.write(|w| w.ovrcf().clear());
+                    self.i2c.icr().write(|w| w.ovrcf().clear());
                     return Err(Error::Overrun);
                 }
                 if status.arlo().is_lost() {
-                    self.i2c.icr.write(|w| w.ovrcf().clear());
+                    self.i2c.icr().write(|w| w.ovrcf().clear());
                     return Err(Error::ArbitrationLost);
                 }
                 if status.berr().is_error() {
-                    self.i2c.icr.write(|w| w.berrcf().clear());
+                    self.i2c.icr().write(|w| w.berrcf().clear());
                     return Err(Error::Bus);
                 }
                 if status.nackf().is_nack() {
-                    self.i2c.icr.write(|w| w.nackcf().clear());
+                    self.i2c.icr().write(|w| w.nackcf().clear());
                     return Err(Error::Nack(transfer_kind));
                 }
                 if status.stopf().is_stop() {
-                    self.i2c.icr.write(|w| w.stopcf().clear());
+                    self.i2c.icr().write(|w| w.stopcf().clear());
                     return Err(Error::IncorrectFrameSize);
                 }
                 // If this condition is not handled earlier, then it's an error.
@@ -202,7 +202,7 @@ macro_rules! i2c {
                 state: TransferState,
             ) -> Result<(), Error> {
                 loop {
-                    let status = self.i2c.isr.read();
+                    let status = self.i2c.isr().read();
                     match state {
                         TransferState::InProgress => {
                             if status.txis().is_empty() {
@@ -226,7 +226,7 @@ macro_rules! i2c {
 
                 for byte in wrbuf {
                     self.wait_for_txis(source, TransferState::InProgress)?;
-                    self.i2c.txdr.write(|w| w.txdata().bits(*byte));
+                    self.i2c.txdr().write(|w| w.txdata().set(*byte));
 
                     source = i2c::NoAcknowledgeSource::Data;
                 }
@@ -239,7 +239,7 @@ macro_rules! i2c {
 
             fn wait_for_rxne(&self, transfer_kind: i2c::NoAcknowledgeSource) -> Result<(), Error> {
                 loop {
-                    let status = self.i2c.isr.read();
+                    let status = self.i2c.isr().read();
                     if status.rxne().is_not_empty() {
                         break;
                     }
@@ -254,7 +254,7 @@ macro_rules! i2c {
 
                 for byte in rdbuf {
                     self.wait_for_rxne(source)?;
-                    *byte = self.i2c.rxdr.read().rxdata().bits();
+                    *byte = self.i2c.rxdr().read().rxdata().bits();
 
                     source = i2c::NoAcknowledgeSource::Unknown;
                 }
@@ -270,23 +270,24 @@ macro_rules! i2c {
                 operations: &mut [i2c::Operation<'_>],
             ) -> Result<(), Self::Error> {
                 // Enable peripheral
-                debug_assert!(self.i2c.cr1.read().pe().is_disabled());
-                self.i2c.cr1.modify(|_, w| w.pe().enabled());
+                // TODO: display writes happen in short chunks; do not disable I2C between them.
+                debug_assert!(self.i2c.cr1().read().pe().is_disabled());
+                self.i2c.cr1().modify(|_, w| w.pe().enabled());
 
                 // Disable peripheral when done
                 defer! {
-                    self.i2c.cr1.modify(|_, w| w.pe().disabled());
-                    while self.i2c.cr1.read().pe().is_enabled() {}
+                    self.i2c.cr1().modify(|_, w| w.pe().disabled());
+                    while self.i2c.cr1().read().pe().is_enabled() {}
                 }
 
-                while self.i2c.cr2.read().start().is_start() {}
+                while self.i2c.cr2().read().start().is_start() {}
 
                 // Set address
-                self.i2c.cr2.modify(|_, w| {
+                self.i2c.cr2().modify(|_, w| {
                     w.add10()
                         .bit7()
                         .sadd()
-                        .bits((address as u16) << 1)
+                        .set((address as u16) << 1)
                         .autoend()
                         .software()
                 });
@@ -304,13 +305,13 @@ macro_rules! i2c {
                         i2c::Operation::Read(rdbuf) => {
                             // TODO: handle buffers longer than 255 bytes
                             assert!(rdbuf.len() < 256);
-                            self.i2c.cr2.modify(|_, w| {
+                            self.i2c.cr2().modify(|_, w| {
                                 w.rd_wrn()
                                     .read()
                                     .reload()
                                     .bit(next_op_is_same)
                                     .nbytes()
-                                    .bits(rdbuf.len() as u8)
+                                    .set(rdbuf.len() as u8)
                                     .start()
                                     .set_bit()
                             });
@@ -319,13 +320,13 @@ macro_rules! i2c {
                         i2c::Operation::Write(wrbuf) => {
                             // TODO: handle buffers longer than 255 bytes
                             assert!(wrbuf.len() < 256);
-                            self.i2c.cr2.modify(|_, w| {
+                            self.i2c.cr2().modify(|_, w| {
                                 w.rd_wrn()
                                     .write()
                                     .reload()
                                     .bit(next_op_is_same)
                                     .nbytes()
-                                    .bits(wrbuf.len() as u8)
+                                    .set(wrbuf.len() as u8)
                                     .start()
                                     .set_bit()
                             });
@@ -336,7 +337,7 @@ macro_rules! i2c {
 
                 match operations.last_mut() {
                     Some(i2c::Operation::Read(rdbuf)) => {
-                        self.i2c.cr2.modify(|_, w| {
+                        self.i2c.cr2().modify(|_, w| {
                             w.rd_wrn()
                                 .read()
                                 .reload()
@@ -344,14 +345,14 @@ macro_rules! i2c {
                                 .autoend()
                                 .automatic()
                                 .nbytes()
-                                .bits(rdbuf.len() as u8)
+                                .set(rdbuf.len() as u8)
                                 .start()
                                 .set_bit()
                         });
                         self.read_buf(rdbuf)?;
                     }
                     Some(i2c::Operation::Write(wrbuf)) => {
-                        self.i2c.cr2.modify(|_, w| {
+                        self.i2c.cr2().modify(|_, w| {
                             w.rd_wrn()
                                 .write()
                                 .reload()
@@ -359,7 +360,7 @@ macro_rules! i2c {
                                 .autoend()
                                 .automatic()
                                 .nbytes()
-                                .bits(wrbuf.len() as u8)
+                                .set(wrbuf.len() as u8)
                                 .start()
                                 .set_bit()
                         });
@@ -368,7 +369,7 @@ macro_rules! i2c {
                     None => { /* empty operations list, do nothing */ }
                 }
 
-                self.i2c.icr.write(|w| w.stopcf().clear());
+                self.i2c.icr().write(|w| w.stopcf().clear());
 
                 Ok(())
             }

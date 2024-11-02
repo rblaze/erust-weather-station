@@ -2,7 +2,7 @@ use crate::microhal::pac::rcc::{
     AHBENR, AHBRSTR, APBENR1, APBENR2, APBRSTR1, APBRSTR2, IOPENR, IOPRSTR,
 };
 use crate::microhal::pac::{
-    ADC, DMA, GPIOA, GPIOB, GPIOC, GPIOD, GPIOF, I2C1, I2C2, LPTIM1, LPTIM2, TIM1, TIM2, TIM3,
+    ADC, DMA1, GPIOA, GPIOB, GPIOC, GPIOD, GPIOF, I2C1, I2C2, LPTIM1, LPTIM2, TIM1, TIM2, TIM3,
 };
 
 use super::{Rcc, ResetEnable};
@@ -15,11 +15,11 @@ macro_rules! reset_enable_bus {
 
         impl $bus {
             pub fn enr(rcc: &Rcc) -> &$enable_type {
-                &rcc.rcc.$enable_register
+                &rcc.rcc.$enable_register()
             }
 
             pub fn rstr(rcc: &Rcc) -> &$reset_type {
-                &rcc.rcc.$reset_register
+                &rcc.rcc.$reset_register()
             }
         }
     };
@@ -50,7 +50,7 @@ macro_rules! reset_enable {
 }
 
 // AHB devices
-reset_enable!(DMA, AHB, dmaen, dmarst); // 0
+reset_enable!(DMA1, AHB, dmaen, dmarst); // 0
 
 // APB1 devices
 reset_enable!(TIM2, APB1, tim2en, tim2rst); // 0

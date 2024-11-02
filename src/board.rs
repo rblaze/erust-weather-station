@@ -72,13 +72,13 @@ impl Board {
         // https://github.com/probe-rs/probe-rs/issues/350
         #[cfg(debug_assertions)]
         {
-            dp.DBG.cr.modify(|_, w| w.dbg_stop().set_bit());
-            dp.RCC.ahbenr.modify(|_, w| w.dmaen().set_bit());
+            dp.DBG.cr().modify(|_, w| w.dbg_stop().set_bit());
+            dp.RCC.ahbenr().modify(|_, w| w.dmaen().set_bit());
         }
 
         // Set clock to 4MHz (HSI speed is 16MHz).
         // Check I2C clock requirements (RM0444 32.4.4) before lowering.
-        let clocks = Config::sysclk_hsi(Prescaler::Div4).enable_lsi();
+        let clocks = Config::sysclk_hsi(Prescaler::Div3).enable_lsi();
         let rcc = dp.RCC.constrain(clocks);
 
         let gpioa = dp.GPIOA.split(&rcc);
@@ -110,9 +110,9 @@ impl Board {
         // depending on the voltage level on PB0, PA9, PC6, PA10, PD1, and PD3. In order
         // to disable this resistor, strobe the UCPDx_STROBE bit of the SYSCFG_CFGR1
         // register during start-up sequence.
-        let syscfg = dp.SYSCFG_VREFBUF;
+        let syscfg = dp.SYSCFG;
         syscfg
-            .cfgr1
+            .cfgr1()
             .modify(|_, w| w.ucpd1_strobe().set_bit().ucpd2_strobe().set_bit());
 
         let mut exti = dp.EXTI;
@@ -178,23 +178,23 @@ pub static JOYSTICK_EVENT: async_scheduler::sync::mailbox::Mailbox<()> =
 unsafe fn EXTI4_15() {
     let exti = &(*EXTI::ptr());
 
-    debug_rprintln!("button interrupt {:016b}", exti.fpr1.read().bits());
+    debug_rprintln!("button interrupt {:016b}", exti.fpr1().read().bits());
     debug_rprintln!("button mask      5432109876543210");
     JOYSTICK_EVENT.post(());
 
     // Clear interrupt for joystick GPIO lines
-    exti.fpr1.write(|w| {
+    exti.fpr1().write(|w| {
         w.fpif10()
-            .set_bit()
+            .clear()
             .fpif11()
-            .set_bit()
+            .clear()
             .fpif12()
-            .set_bit()
+            .clear()
             .fpif13()
-            .set_bit()
+            .clear()
             .fpif14()
-            .set_bit()
+            .clear()
             .fpif15()
-            .set_bit()
+            .clear()
     });
 }

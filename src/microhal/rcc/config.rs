@@ -1,16 +1,5 @@
 /// SYSCLK prescaler
-#[allow(unused)]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-pub enum Prescaler {
-    NotDivided,
-    Div2,
-    Div4,
-    Div8,
-    Div16,
-    Div32,
-    Div64,
-    Div128,
-}
+pub use crate::microhal::pac::rcc::cr::HSIDIV as Prescaler;
 
 /// MCU clock configuration
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -22,7 +11,7 @@ pub struct Config {
 impl Config {
     fn defaults() -> Self {
         Self {
-            hsisys_prescaler: Prescaler::NotDivided,
+            hsisys_prescaler: Prescaler::Div1,
             lsi_enabled: true,
         }
     }

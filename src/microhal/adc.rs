@@ -16,7 +16,7 @@ impl Adc {
         ADC::reset(rcc);
 
         // Enable ADC voltage regulator.
-        adc.cr.modify(|_, w| w.advregen().enabled());
+        adc.cr().modify(|_, w| w.advregen().enabled());
 
         // RM0444 15.3.3 Calibration can only be initiated when the ADC voltage regulator is
         // enabled (ADVREGEN = 1 and tADCVREG_SETUP has elapsed) and the ADC is disabled
@@ -25,11 +25,11 @@ impl Adc {
         // Round up for a safety margin.
         cortex_m::asm::delay(2000);
 
-        adc.cfgr1.modify(|_, w| w.chselrmod().sequence());
+        adc.cfgr1().modify(|_, w| w.chselrmod().sequence());
 
         // Set clock to PCLK/2.
         // TODO: make this configurable.
-        adc.cfgr2.modify(|_, w| w.ckmode().pclk_div2());
+        adc.cfgr2().modify(|_, w| w.ckmode().pclk_div2());
 
         Self {
             adc,
@@ -38,10 +38,10 @@ impl Adc {
     }
 
     pub fn calibrate(&mut self) {
-        self.adc.isr.write(|w| w.eocal().clear());
-        self.adc.cr.modify(|_, w| w.adcal().start_calibration());
-        while self.adc.isr.read().eocal().is_not_complete() {}
-        self.adc.isr.write(|w| w.eocal().clear());
+        self.adc.isr().write(|w| w.eocal().clear());
+        self.adc.cr().modify(|_, w| w.adcal().start_calibration());
+        while self.adc.isr().read().eocal().is_not_complete() {}
+        self.adc.isr().write(|w| w.eocal().clear());
 
         // Doesn't work for some reason. VRef reads ok, but pin returns 0.
         // Enable auto-on-off mode.
@@ -49,13 +49,13 @@ impl Adc {
     }
 
     fn power_on(&mut self) {
-        self.adc.cr.modify(|_, w| w.aden().enabled());
-        while self.adc.isr.read().adrdy().is_not_ready() {}
+        self.adc.cr().modify(|_, w| w.aden().enabled());
+        while self.adc.isr().read().adrdy().is_not_ready() {}
     }
 
     fn power_off(&mut self) {
-        self.adc.cr.modify(|_, w| w.addis().disable());
-        while self.adc.isr.read().adrdy().is_ready() {}
+        self.adc.cr().modify(|_, w| w.addis().disable());
+        while self.adc.isr().read().adrdy().is_ready() {}
     }
 
     pub fn read<PIN>(&mut self, pin: &mut PIN) -> u16
@@ -64,21 +64,21 @@ impl Adc {
     {
         self.power_on();
 
-        self.adc.isr.modify(|_, w| w.ccrdy().clear());
+        self.adc.isr().modify(|_, w| w.ccrdy().clear());
         // Set pin as the only channel.
         self.adc
             .chselr1()
             .write(|w| w.sq1().variant(pin.channel()).sq2().eos());
-        while self.adc.isr.read().ccrdy().is_not_complete() {}
+        while self.adc.isr().read().ccrdy().is_not_complete() {}
 
         // Do conversion.
-        self.adc.isr.modify(|_, w| w.eos().clear());
-        self.adc.cr.modify(|_, w| w.adstart().start_conversion());
+        self.adc.isr().modify(|_, w| w.eos().clear());
+        self.adc.cr().modify(|_, w| w.adstart().start_conversion());
         // Wait for conversion to complete.
-        while self.adc.isr.read().eos().is_not_complete() {}
+        while self.adc.isr().read().eos().is_not_complete() {}
 
         self.power_off();
-        self.adc.dr.read().data().bits()
+        self.adc.dr().read().data().bits()
     }
 
     pub fn read_voltage<PIN>(&mut self, pin: &mut PIN) -> u16
@@ -93,9 +93,9 @@ impl Adc {
     }
 
     pub fn read_vref(&mut self) -> u16 {
-        self.adc.ccr.modify(|_, w| w.vrefen().enabled());
+        self.adc.ccr().modify(|_, w| w.vrefen().enabled());
         let val: u32 = self.read(&mut VRef).into();
-        self.adc.ccr.modify(|_, w| w.vrefen().disabled());
+        self.adc.ccr().modify(|_, w| w.vrefen().disabled());
 
         #[allow(unsafe_code)]
         let vref_cal: u32 = unsafe {
@@ -122,14 +122,14 @@ impl Adc {
 pub struct VRef;
 
 pub trait AdcPin {
-    fn channel(&self) -> chselr1::SQ1_A;
+    fn channel(&self) -> chselr1::SQ1;
 }
 
 macro_rules! adc_pin {
     ($name:ident, $channel:ident) => {
         impl AdcPin for $name<Analog> {
-            fn channel(&self) -> chselr1::SQ1_A {
-                chselr1::SQ1_A::$channel
+            fn channel(&self) -> chselr1::SQ1 {
+                chselr1::SQ1::$channel
             }
         }
     };
@@ -143,7 +143,7 @@ adc_pin!(PB10, Ch11);
 // adc_pin!(PB12, Ch16);
 
 impl AdcPin for VRef {
-    fn channel(&self) -> chselr1::SQ1_A {
-        chselr1::SQ1_A::Ch13
+    fn channel(&self) -> chselr1::SQ1 {
+        chselr1::SQ1::Ch13
     }
 }
