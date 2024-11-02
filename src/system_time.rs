@@ -6,16 +6,16 @@ use futures::{select_biased, Future, FutureExt};
 use once_cell::sync::OnceCell;
 use rtt_target::debug_rprintln;
 
-use crate::microhal::pac::{interrupt, LPTIM2};
-use crate::microhal::rcc::lptim::LptimClock;
-use crate::microhal::rcc::Rcc;
-use crate::microhal::timer::{Enabled, LowPowerTimer, LptimCounter, LptimEvent, LptimPrescaler};
+use stm32g0_hal::pac::{interrupt, LPTIM2};
+use stm32g0_hal::rcc::lptim::LptimClock;
+use stm32g0_hal::rcc::{Rcc, LSI_FREQ};
+use stm32g0_hal::timer::{Enabled, LowPowerTimer, LptimCounter, LptimEvent, LptimPrescaler};
 
-const LSI_FREQ: u32 = 32000 / 128;
+const TIMER_FREQ: u32 = LSI_FREQ.to_Hz() / 128;
 
 type TimerTicks = u64;
-pub type Instant = TimerInstant<TimerTicks, LSI_FREQ>;
-pub type Duration = TimerDuration<TimerTicks, LSI_FREQ>;
+pub type Instant = TimerInstant<TimerTicks, TIMER_FREQ>;
+pub type Duration = TimerDuration<TimerTicks, TIMER_FREQ>;
 
 pub struct Ticker {
     timer: &'static SystemTimer,

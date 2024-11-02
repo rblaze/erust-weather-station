@@ -3,18 +3,18 @@ use core::cell::RefCell;
 use rtt_target::debug_rprintln;
 
 use crate::error::Error;
-use crate::microhal::adc::Adc;
-use crate::microhal::exti::{Event, ExtiExt};
-use crate::microhal::gpio::gpiob::{PB0, PB10, PB11, PB12, PB13, PB14, PB15, PB2, PB4, PB5, PB6};
-use crate::microhal::gpio::{Alternate, Analog, GpioExt, Input, PullUp, PushPull, SignalEdge};
-use crate::microhal::i2c::{self, I2c, I2cExt};
-use crate::microhal::pac::{interrupt, Interrupt};
-use crate::microhal::pac::{CorePeripherals, Peripherals};
-use crate::microhal::pac::{EXTI, I2C1, LPTIM2, NVIC, TIM3};
-use crate::microhal::rcc::config::{Config, Prescaler};
-use crate::microhal::rcc::RccExt;
-use crate::microhal::timer::{LowPowerTimer, Pwm, Timer};
 use crate::system_time::Ticker;
+use stm32g0_hal::adc::Adc;
+use stm32g0_hal::exti::{Event, ExtiExt};
+use stm32g0_hal::gpio::gpiob::{PB0, PB10, PB11, PB12, PB13, PB14, PB15, PB2, PB4, PB5, PB6};
+use stm32g0_hal::gpio::{Alternate, Analog, GpioExt, Input, PullUp, PushPull, SignalEdge};
+use stm32g0_hal::i2c::{self, I2c, I2cExt};
+use stm32g0_hal::pac::{interrupt, Interrupt};
+use stm32g0_hal::pac::{CorePeripherals, Peripherals};
+use stm32g0_hal::pac::{EXTI, I2C1, LPTIM2, NVIC, TIM3};
+use stm32g0_hal::rcc::config::{Config, Prescaler};
+use stm32g0_hal::rcc::RccExt;
+use stm32g0_hal::timer::{LowPowerTimer, Pwm, Timer};
 
 // type I2cSda = PA10<Output<OpenDrain>>; // TODO: PB4
 // type I2cScl = PA9<Output<OpenDrain>>; // TODO: PB3
@@ -51,7 +51,7 @@ pub struct Backlight {
     pub blue: PB0<Alternate<1>>,
 }
 
-pub type DisplayPowerPin = PB6<crate::microhal::gpio::Output<PushPull>>;
+pub type DisplayPowerPin = PB6<stm32g0_hal::gpio::Output<PushPull>>;
 
 pub struct Board {
     pub ticker: Ticker,

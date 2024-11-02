@@ -6,7 +6,6 @@ mod board;
 mod display;
 mod env;
 mod error;
-mod microhal;
 mod screen;
 mod system_time;
 

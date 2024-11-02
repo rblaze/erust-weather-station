@@ -382,6 +382,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "stm32g0-hal"
+version = "0.1.0"
+source = "git+https://github.com/rblaze/erust-stm32g0-hal.git#78d3231256d8bb4ee1898e7a6b3bdfcdaa5c5457"
+dependencies = [
+ "cortex-m",
+ "embedded-hal 1.0.0",
+ "fugit",
+ "scopeguard",
+ "stm32g0",
+]
+
+[[package]]
 name = "syn"
 version = "1.0.109"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -459,6 +471,5 @@ dependencies = [
  "once_cell",
  "portable-atomic",
  "rtt-target",
- "scopeguard",
- "stm32g0",
+ "stm32g0-hal",
 ]
