@@ -47,7 +47,7 @@ dependencies = [
  "proc-macro-error",
  "proc-macro2",
  "quote",
- "syn 2.0.86",
+ "syn 2.0.87",
 ]
 
 [[package]]
@@ -196,7 +196,7 @@ checksum = "162ee34ebcb7c64a8abebc059ce0fee27c2262618d7b60ed8faf72fef13c3650"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.86",
+ "syn 2.0.87",
 ]
 
 [[package]]
@@ -269,6 +269,12 @@ dependencies = [
  "critical-section",
  "portable-atomic",
 ]
+
+[[package]]
+name = "paste"
+version = "1.0.15"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "57c0d7b74b563b49d38dae00a0c37d4d6de9b432382b2892f0574ddcae73fd0a"
 
 [[package]]
 name = "pin-project-lite"
@@ -384,11 +390,12 @@ dependencies = [
 [[package]]
 name = "stm32g0-hal"
 version = "0.1.0"
-source = "git+https://github.com/rblaze/erust-stm32g0-hal.git#78d3231256d8bb4ee1898e7a6b3bdfcdaa5c5457"
+source = "git+https://github.com/rblaze/erust-stm32g0-hal.git#a32b66f5e3a3c4ac26a66ab2dbd209fdda36c158"
 dependencies = [
  "cortex-m",
  "embedded-hal 1.0.0",
  "fugit",
+ "paste",
  "scopeguard",
  "stm32g0",
 ]
@@ -406,9 +413,9 @@ dependencies = [
 
 [[package]]
 name = "syn"
-version = "2.0.86"
+version = "2.0.87"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e89275301d38033efb81a6e60e3497e734dfcc62571f2854bf4b16690398824c"
+checksum = "25aa4ce346d03a6dcd68dd8b4010bcb74e54e62c90c573f394c46eae99aba32d"
 dependencies = [
  "proc-macro2",
  "quote",

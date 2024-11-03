@@ -26,8 +26,10 @@ portable-atomic = { version = "1", default-features = false, features = [
     "unsafe-assume-single-core",
 ] }
 rtt-target = "0.5"
-stm32g0-hal = { git = "https://github.com/rblaze/erust-stm32g0-hal.git" }
-# stm32g0-hal = { path = "../erust-stm32g0-hal/" }
+stm32g0-hal = { git = "https://github.com/rblaze/erust-stm32g0-hal.git", features = [
+    "stm32g0b1",
+] }
+# stm32g0-hal = { path = "../erust-stm32g0-hal/", features = ["stm32g0b1"] }
 
 [[bin]]
 name = "weather-station"

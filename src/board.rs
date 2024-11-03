@@ -73,7 +73,7 @@ impl Board {
         #[cfg(debug_assertions)]
         {
             dp.DBG.cr().modify(|_, w| w.dbg_stop().set_bit());
-            dp.RCC.ahbenr().modify(|_, w| w.dmaen().set_bit());
+            dp.RCC.ahbenr().modify(|_, w| w.dma1en().set_bit());
         }
 
         // Set clock to 4MHz (HSI speed is 16MHz).
@@ -148,7 +148,7 @@ impl Board {
         exti.listen(Event::LpTim2);
 
         unsafe {
-            NVIC::unmask(Interrupt::TIM7_LPTIM2);
+            NVIC::unmask(Interrupt::TIM7);
             NVIC::unmask(Interrupt::EXTI4_15);
         }
 

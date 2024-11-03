@@ -191,7 +191,7 @@ unsafe impl Sync for SystemTimer {}
 static TIMER: OnceCell<SystemTimer> = OnceCell::new();
 
 #[interrupt]
-unsafe fn TIM7_LPTIM2() {
+unsafe fn TIM7() {
     let timer = &TIMER
         .get()
         .expect("Interrupt from uninitialized timer")
