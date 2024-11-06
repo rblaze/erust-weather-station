@@ -6,19 +6,17 @@ use crate::error::Error;
 use crate::system_time::Ticker;
 use stm32g0_hal::adc::Adc;
 use stm32g0_hal::exti::{Event, ExtiExt};
-use stm32g0_hal::gpio::gpiob::{PB0, PB10, PB11, PB12, PB13, PB14, PB15, PB2, PB4, PB5, PB6};
+use stm32g0_hal::gpio::gpiob::{PB10, PB11, PB12, PB13, PB14, PB15, PB2, PB6, PB7, PB8, PB9};
 use stm32g0_hal::gpio::{Alternate, Analog, GpioExt, Input, PullUp, PushPull, SignalEdge};
 use stm32g0_hal::i2c::{self, I2c, I2cExt};
 use stm32g0_hal::pac::{interrupt, Interrupt};
 use stm32g0_hal::pac::{CorePeripherals, Peripherals};
-use stm32g0_hal::pac::{EXTI, I2C1, LPTIM2, NVIC, TIM3};
+use stm32g0_hal::pac::{EXTI, I2C3, LPTIM2, NVIC, TIM4};
 use stm32g0_hal::rcc::config::{Config, Prescaler};
 use stm32g0_hal::rcc::RccExt;
 use stm32g0_hal::timer::{LowPowerTimer, Pwm, Timer};
 
-// type I2cSda = PA10<Output<OpenDrain>>; // TODO: PB4
-// type I2cScl = PA9<Output<OpenDrain>>; // TODO: PB3
-pub type BoardI2c = I2c<I2C1>;
+pub type BoardI2c = I2c<I2C3>;
 
 #[allow(unused)]
 pub struct Joystick {
@@ -45,13 +43,13 @@ impl VBat {
 }
 
 pub struct Backlight {
-    pub pwm: Pwm<TIM3>,
-    pub red: PB4<Alternate<1>>,
-    pub green: PB5<Alternate<1>>,
-    pub blue: PB0<Alternate<1>>,
+    pub pwm: Pwm<TIM4>,
+    pub red: PB6<Alternate<9>>,
+    pub green: PB7<Alternate<9>>,
+    pub blue: PB8<Alternate<9>>,
 }
 
-pub type DisplayPowerPin = PB6<stm32g0_hal::gpio::Output<PushPull>>;
+pub type DisplayPowerPin = PB9<stm32g0_hal::gpio::Output<PushPull>>;
 
 pub struct Board {
     pub ticker: Ticker,
@@ -81,10 +79,9 @@ impl Board {
         let clocks = Config::sysclk_hsi(Prescaler::Div3).enable_lsi();
         let rcc = dp.RCC.constrain(clocks);
 
-        let gpioa = dp.GPIOA.split(&rcc);
         let gpiob = dp.GPIOB.split(&rcc);
 
-        let backlight_pwm = Timer::<TIM3>::new(dp.TIM3).pwm(0, u16::MAX, &rcc);
+        let backlight_pwm = Timer::<TIM4>::new(dp.TIM4).pwm(0, u16::MAX, &rcc);
         let mut adc = Adc::new(dp.ADC, &rcc);
 
         adc.calibrate();
@@ -98,10 +95,10 @@ impl Board {
             button: gpiob.pb14.into_pullup_input(),
         };
 
-        let i2c_sda = gpioa.pa10.into_open_drain_output();
-        let i2c_scl = gpioa.pa9.into_open_drain_output();
+        let i2c_sda = gpiob.pb4.into_open_drain_output();
+        let i2c_scl = gpiob.pb3.into_open_drain_output();
         let config = i2c::Config::from_cubemx(true, 0, 0x00100D14);
-        let i2c = dp.I2C1.i2c(i2c_sda, i2c_scl, &config, &rcc);
+        let i2c = dp.I2C3.i2c(i2c_sda, i2c_scl, &config, &rcc);
 
         let system_timer = LowPowerTimer::<LPTIM2>::new(dp.LPTIM2);
         let ticker = Ticker::new(system_timer, &rcc);
@@ -162,11 +159,11 @@ impl Board {
             },
             backlight: Backlight {
                 pwm: backlight_pwm,
-                red: gpiob.pb4.into_alternate_function(),
-                green: gpiob.pb5.into_alternate_function(),
-                blue: gpiob.pb0.into_alternate_function(),
+                red: gpiob.pb6.into_alternate_function(),
+                green: gpiob.pb7.into_alternate_function(),
+                blue: gpiob.pb8.into_alternate_function(),
             },
-            display_power: gpiob.pb6.into_push_pull_output(),
+            display_power: gpiob.pb9.into_push_pull_output(),
         })
     }
 }
