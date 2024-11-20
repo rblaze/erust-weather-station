@@ -76,7 +76,7 @@ impl Board {
 
         // Set clock to 4MHz (HSI speed is 16MHz).
         // Check I2C clock requirements (RM0444 32.4.4) before lowering.
-        let clocks = Config::sysclk_hsi(Prescaler::Div3).enable_lsi();
+        let clocks = Config::sysclk_hsi(Prescaler::Div4).enable_lsi();
         let rcc = dp.RCC.constrain(clocks);
 
         let gpiob = dp.GPIOB.split(&rcc);
