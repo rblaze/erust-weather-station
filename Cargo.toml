@@ -25,7 +25,7 @@ once_cell = { version = "1.20", default-features = false, features = [
 portable-atomic = { version = "1", default-features = false, features = [
     "unsafe-assume-single-core",
 ] }
-rtt-target = "0.5"
+rtt-target = "0.6"
 stm32g0-hal = { git = "https://github.com/rblaze/erust-stm32g0-hal.git", features = [
     "stm32g0b1",
 ] }
