@@ -373,7 +373,7 @@ checksum = "388a1df253eca08550bef6c72392cfe7c30914bf41df5269b68cbd6ff8f570a3"
 [[package]]
 name = "stm32g0"
 version = "0.15.1"
-source = "git+https://github.com/stm32-rs/stm32-rs-nightlies?rev=f9d02d3#f9d02d37c832a6098c23d8ff3014828c0e33f674"
+source = "git+https://github.com/stm32-rs/stm32-rs-nightlies?rev=878a211#878a211016d946c0d762e8f82f6dc58a4aa2b206"
 dependencies = [
  "cortex-m",
  "cortex-m-rt",
@@ -384,7 +384,7 @@ dependencies = [
 [[package]]
 name = "stm32g0-hal"
 version = "0.1.0"
-source = "git+https://github.com/rblaze/erust-stm32g0-hal.git#390c4a337540c00da703a5b46e6397d88e46de72"
+source = "git+https://github.com/rblaze/erust-stm32g0-hal.git#f3c25070894787dfeb88ab539130e2afc6acb042"
 dependencies = [
  "cortex-m",
  "embedded-hal 1.0.0",
