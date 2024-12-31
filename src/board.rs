@@ -1,9 +1,6 @@
-use core::cell::RefCell;
+use core::cell::{OnceCell, RefCell};
 
 use rtt_target::debug_rprintln;
-
-use crate::error::Error;
-use crate::system_time::Ticker;
 use stm32g0_hal::adc::Adc;
 use stm32g0_hal::exti::{Event, ExtiExt};
 use stm32g0_hal::gpio::gpiob::{PB10, PB11, PB12, PB13, PB14, PB15, PB2, PB6, PB7, PB8, PB9};
@@ -15,8 +12,17 @@ use stm32g0_hal::pac::{EXTI, I2C3, LPTIM2, NVIC, TIM4};
 use stm32g0_hal::rcc::config::{Config, Prescaler};
 use stm32g0_hal::rcc::RccExt;
 use stm32g0_hal::timer::{LowPowerTimer, Pwm, Timer};
+use stm32g0_hal::usb::UsbExt;
+use usb_device::bus::UsbBusAllocator;
+use usb_device::device::{StringDescriptors, UsbDevice, UsbDeviceBuilder, UsbVidPid};
+use usb_device::LangID;
+
+use crate::error::Error;
+use crate::system_time::Ticker;
 
 pub type BoardI2c = I2c<I2C3>;
+pub type Usb = UsbDevice<'static, stm32g0_hal::usb::Bus<stm32g0_hal::pac::USB>>;
+pub type Serial = usbd_serial::SerialPort<'static, stm32g0_hal::usb::Bus<stm32g0_hal::pac::USB>>;
 
 #[allow(unused)]
 pub struct Joystick {
@@ -51,6 +57,13 @@ pub struct Backlight {
 
 pub type DisplayPowerPin = PB9<stm32g0_hal::gpio::Output<PushPull>>;
 
+struct OnlyUsedInAsync<T>(T);
+unsafe impl<T> Sync for OnlyUsedInAsync<T> {}
+
+static USB_BUS: OnlyUsedInAsync<
+    OnceCell<UsbBusAllocator<stm32g0_hal::usb::Bus<stm32g0_hal::pac::USB>>>,
+> = OnlyUsedInAsync(OnceCell::new());
+
 pub struct Board {
     pub ticker: Ticker,
     pub i2c: RefCell<BoardI2c>,
@@ -58,6 +71,8 @@ pub struct Board {
     pub vbat: VBat,
     pub joystick: Joystick,
     pub display_power: DisplayPowerPin,
+    pub serial: Serial,
+    pub usb: Usb,
 }
 
 impl Board {
@@ -76,7 +91,7 @@ impl Board {
 
         // Set clock to 4MHz (HSI speed is 16MHz).
         // Check I2C clock requirements (RM0444 32.4.4) before lowering.
-        let clocks = Config::sysclk_hsi(Prescaler::Div4).enable_lsi();
+        let clocks = Config::sysclk_hsi(Prescaler::Div1).enable_lsi();
         let rcc = dp.RCC.constrain(clocks);
 
         let gpiob = dp.GPIOB.split(&rcc);
@@ -97,7 +112,7 @@ impl Board {
 
         let i2c_sda = gpiob.pb4.into_open_drain_output();
         let i2c_scl = gpiob.pb3.into_open_drain_output();
-        let config = i2c::Config::from_cubemx(true, 0, 0x00100D14);
+        let config = i2c::Config::from_cubemx(true, 0, 0x00503D58);
         let i2c = dp.I2C3.i2c(i2c_sda, i2c_scl, &config, &rcc);
 
         let system_timer = LowPowerTimer::<LPTIM2>::new(dp.LPTIM2);
@@ -149,6 +164,19 @@ impl Board {
             NVIC::unmask(Interrupt::EXTI4_15);
         }
 
+        let usb_bus = USB_BUS.0.get_or_init(|| dp.USB.constrain(&rcc));
+        let serial = usbd_serial::SerialPort::new(usb_bus);
+        let usb = UsbDeviceBuilder::new(usb_bus, UsbVidPid(0x5824, 0x5432))
+            .strings(&[StringDescriptors::new(LangID::EN)
+                .product("Weather Station")
+                .manufacturer("Blaze")
+                .serial_number("initial")])
+            .expect("Failed to set strings")
+            .device_class(usbd_serial::USB_CLASS_CDC)
+            .device_release(0x0001)
+            .self_powered(true)
+            .build();
+
         Ok(Self {
             ticker,
             i2c: RefCell::new(i2c),
@@ -164,6 +192,8 @@ impl Board {
                 blue: gpiob.pb8.into_alternate_function(),
             },
             display_power: gpiob.pb9.into_push_pull_output(),
+            serial,
+            usb,
         })
     }
 }

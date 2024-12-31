@@ -11,7 +11,7 @@ checksum = "825297538d77367557b912770ca3083f778a196054b3ee63b22673c4a3cae0a5"
 [[package]]
 name = "async-scheduler"
 version = "0.5.0"
-source = "git+https://github.com/rblaze/rust-async-scheduler.git#1ab883b226eba77722fc7e56c8b4dc7649319e49"
+source = "git+https://github.com/rblaze/rust-async-scheduler.git#dfe0a6efc79c07832258c8a07a1b0813e7327f35"
 dependencies = [
  "critical-section",
  "futures",
@@ -148,6 +148,12 @@ dependencies = [
  "embedded-hal 1.0.0",
  "portable-atomic",
 ]
+
+[[package]]
+name = "embedded-io"
+version = "0.6.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "edd0f118536f44f5ccd48bcb8b111bdc3de888b58c74639dfb034a357d0f206d"
 
 [[package]]
 name = "fugit"
@@ -353,9 +359,9 @@ dependencies = [
 
 [[package]]
 name = "quote"
-version = "1.0.37"
+version = "1.0.38"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b5b9d34b8991d19d98081b46eacdd8eb58c6f2b201139f7c5f643cc155a633af"
+checksum = "0e4dccaaaf89514f546c693ddc140f729f958c247918a13380cccc6078391acc"
 dependencies = [
  "proc-macro2",
 ]
@@ -410,6 +416,7 @@ checksum = "a8f112729512f8e442d81f95a8a7ddf2b7c6b8a1a6f509a95864142b30cab2d3"
 [[package]]
 name = "stm32g0"
 version = "0.15.1"
+source = "git+https://github.com/stm32-rs/stm32-rs-nightlies?rev=6103c50#6103c5071f10ceaddc9c48025e72f4e46c9c9c79"
 dependencies = [
  "cortex-m",
  "cortex-m-rt",
@@ -420,12 +427,14 @@ dependencies = [
 [[package]]
 name = "stm32g0-hal"
 version = "0.1.0"
+source = "git+https://github.com/rblaze/erust-stm32g0-hal.git#0c98087333a06fba626dfc7c0f44edc036786757"
 dependencies = [
  "bitfield 0.17.0",
  "cortex-m",
  "embedded-hal 1.0.0",
  "fugit",
  "paste",
+ "rtt-target",
  "scopeguard",
  "stm32g0",
  "usb-device",
@@ -434,9 +443,9 @@ dependencies = [
 
 [[package]]
 name = "syn"
-version = "2.0.91"
+version = "2.0.93"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d53cbcb5a243bd33b7858b1d7f4aca2153490815872d86d955d6ea29f743c035"
+checksum = "9c786062daee0d6db1132800e623df74274a0a87322d8e183338e01b3d98d058"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -463,6 +472,18 @@ checksum = "98816b1accafbb09085168b90f27e93d790b4bfa19d883466b5e53315b5f06a6"
 dependencies = [
  "heapless",
  "portable-atomic",
+]
+
+[[package]]
+name = "usbd-serial"
+version = "0.2.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "065e4eaf93db81d5adac82d9cef8f8da314cb640fa7f89534b972383f1cf80fc"
+dependencies = [
+ "embedded-hal 0.2.7",
+ "embedded-io",
+ "nb 1.1.0",
+ "usb-device",
 ]
 
 [[package]]
@@ -510,4 +531,6 @@ dependencies = [
  "portable-atomic",
  "rtt-target",
  "stm32g0-hal",
+ "usb-device",
+ "usbd-serial",
 ]

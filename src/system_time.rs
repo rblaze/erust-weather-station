@@ -71,13 +71,13 @@ impl Ticker {
             if first_cycles == second_cycles && first_ticks == second_ticks {
                 break (first_cycles, first_ticks);
             }
-            debug_rprintln!(
-                "LPTIM CNT read retry, {}:{} != {}:{}",
-                first_cycles,
-                first_ticks,
-                second_cycles,
-                second_ticks
-            );
+            //            debug_rprintln!(
+            //                "LPTIM CNT read retry, {}:{} != {}:{}",
+            //                first_cycles,
+            //                first_ticks,
+            //                second_cycles,
+            //                second_ticks
+            //            );
         };
 
         cycles as u64 * Self::CYCLE_LENGTH + ticks as u64
@@ -131,7 +131,7 @@ impl Ticker {
             cortex_m::asm::wfi();
         } else {
             // It did run over, don't wait for interrupt.
-            debug_rprintln!("overrun");
+            // debug_rprintln!("overrun");
         }
 
         // Either we have interrupt pending or never called WFI.

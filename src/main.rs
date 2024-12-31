@@ -8,6 +8,7 @@ mod env;
 mod error;
 mod screen;
 mod system_time;
+mod usb;
 
 use core::cell::{Cell, RefCell};
 use core::panic::PanicInfo;
@@ -131,12 +132,14 @@ fn main() -> ! {
             &backlight,
             &mut board.joystick
         )));
+        let usb = pin!(panic_if_exited(usb::task(board.usb, board.serial)));
 
         LocalExecutor::new().run([
             LocalFutureObj::new(charger_watchdog),
             LocalFutureObj::new(navigation),
-            LocalFutureObj::new(display_handler),
+            // LocalFutureObj::new(display_handler),
             LocalFutureObj::new(backlight_handler),
+            LocalFutureObj::new(usb),
         ]);
         unreachable!();
     }()
