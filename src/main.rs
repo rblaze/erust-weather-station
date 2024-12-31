@@ -102,14 +102,25 @@ fn main() -> ! {
         let display_page = Cell::new(DisplayPage::BatteryStatus);
         let display_bus = RefCellDevice::new(&board.i2c);
         let charger = RefCell::new(BQ24259::new(RefCellDevice::new(&board.i2c)));
+        let power_good_event = Mailbox::<bool>::new();
 
         let charger_watchdog = pin!(panic_if_exited(async {
+            let mut last_power_state = charger.borrow_mut().status()?.pg();
+            power_good_event.post(last_power_state);
+
             loop {
                 debug_rprintln!("watchdog");
                 // Application is single-threaded and charger can't be borrowed
                 // by another coroutine.
                 charger.borrow_mut().reset_watchdog()?;
-                system_time::sleep(Duration::secs(11)).await;
+
+                let power_state = charger.borrow_mut().status()?.pg();
+                if power_state != last_power_state {
+                    last_power_state = power_state;
+                    power_good_event.post(power_state);
+                }
+
+                system_time::sleep(Duration::secs(4)).await;
             }
         }));
         let backlight_handler = pin!(panic_if_exited(backlight_handler(
@@ -132,7 +143,11 @@ fn main() -> ! {
             &backlight,
             &mut board.joystick
         )));
-        let usb = pin!(panic_if_exited(usb::task(board.usb_serial)));
+        let usb = pin!(panic_if_exited(usb::task(
+            &power_good_event,
+            board.usb_device,
+            board.usb_serial
+        )));
 
         LocalExecutor::new().run([
             LocalFutureObj::new(charger_watchdog),

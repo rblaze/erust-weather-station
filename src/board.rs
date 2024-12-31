@@ -26,6 +26,7 @@ use crate::system_time::Ticker;
 pub type BoardI2c = I2c<I2C3>;
 pub type Usb = UsbDevice<'static, stm32g0_hal::usb::Bus<stm32g0_hal::pac::USB>>;
 pub type Serial = usbd_serial::SerialPort<'static, stm32g0_hal::usb::Bus<stm32g0_hal::pac::USB>>;
+pub type MuxtexWithUsb = Mutex<RefCell<Usb>>;
 pub type MutexWithSerialPort = Mutex<RefCell<Serial>>;
 
 #[allow(unused)]
@@ -81,12 +82,6 @@ impl<T> SafelyInitializedStatic<T> {
     fn get(&self) -> &T {
         unsafe { (*self.0.get()).assume_init_ref() }
     }
-
-    /// Get mutable reference to the value.
-    #[allow(clippy::mut_from_ref)]
-    fn get_mut(&self) -> &mut T {
-        unsafe { (*self.0.get()).assume_init_mut() }
-    }
 }
 
 // USB_BUS is initialized once and only used via reference later.
@@ -97,7 +92,7 @@ static USB_BUS: SafelyInitializedStatic<
 // USB_SERIAL is used from both interrupt and async context.
 static USB_SERIAL: SafelyInitializedStatic<MutexWithSerialPort> = SafelyInitializedStatic::new();
 // USB_DEVICE is only used from interrupt context but needs mutable reference there.
-static USB_DEVICE: SafelyInitializedStatic<Usb> = SafelyInitializedStatic::new();
+static USB_DEVICE: SafelyInitializedStatic<MuxtexWithUsb> = SafelyInitializedStatic::new();
 
 pub struct Board {
     pub ticker: Ticker,
@@ -107,6 +102,7 @@ pub struct Board {
     pub joystick: Joystick,
     pub display_power: DisplayPowerPin,
     pub usb_serial: &'static MutexWithSerialPort,
+    pub usb_device: &'static MuxtexWithUsb,
 }
 
 impl Board {
@@ -197,7 +193,7 @@ impl Board {
         let usb_serial = USB_SERIAL.write(Mutex::new(RefCell::new(usbd_serial::SerialPort::new(
             usb_bus,
         ))));
-        USB_DEVICE.write(
+        let usb_device = USB_DEVICE.write(Mutex::new(RefCell::new(
             UsbDeviceBuilder::new(usb_bus, UsbVidPid(0x5824, 0x5432))
                 .strings(&[StringDescriptors::new(LangID::EN)
                     .product("Weather Station")
@@ -208,15 +204,15 @@ impl Board {
                 .device_release(0x0001)
                 .self_powered(true)
                 .build(),
-        );
+        )));
+
+        usb_device.get_mut().borrow_mut().bus().enable_interrupts();
 
         unsafe {
             NVIC::unmask(Interrupt::TIM7);
             NVIC::unmask(Interrupt::EXTI4_15);
             NVIC::unmask(Interrupt::UCPD1_UCPD2_USB);
         }
-
-        USB_DEVICE.get().bus().enable_interrupts();
 
         Ok(Self {
             ticker,
@@ -234,6 +230,7 @@ impl Board {
             },
             display_power: gpiob.pb9.into_push_pull_output(),
             usb_serial,
+            usb_device,
         })
     }
 }
@@ -271,15 +268,14 @@ pub static USB_EVENT: async_scheduler::sync::mailbox::Mailbox<()> =
 
 #[interrupt]
 fn UCPD1_UCPD2_USB() {
-    debug_rprintln!("USB interrupt");
+    // debug_rprintln!("USB interrupt");
     critical_section::with(|cs| {
-        let usb_device = USB_DEVICE.get_mut();
+        let mut usb_device = USB_DEVICE.get().borrow_ref_mut(cs);
         let mut serial = USB_SERIAL.get().borrow_ref_mut(cs);
 
         if usb_device.poll(&mut [&mut *serial]) {
             // Force serial port to read data from USB buffer to internal buffer.
             // Otherwise "transfer completed" interrupt will not be cleared.
-            // As a bonus, wake up serial reader only when the data is actually available.
             if let Ok(true) = serial.read_ready() {
                 USB_EVENT.post(());
             }

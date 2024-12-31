@@ -33,6 +33,8 @@ stm32g0-hal = { git = "https://github.com/rblaze/erust-stm32g0-hal.git", feature
 usb-device = "0.3"
 usbd-serial = "0.2"
 
+[features]
+usb_debug = ["stm32g0-hal/usb_debug"]
 
 [[bin]]
 name = "weather-station"
