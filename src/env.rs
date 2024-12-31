@@ -37,7 +37,7 @@ impl Environment for Env {
         mask: &AtomicU32,
         tick: Option<async_scheduler::time::Instant>,
     ) {
-        // debug_rprintln!("waiting for event, timeout {:?}", tick);
+        debug_rprintln!("waiting for event, timeout {:?}", tick);
         assert!(
             in_thread_mode(),
             "calling wait_for_event_with_timeout() in interrupt handler"

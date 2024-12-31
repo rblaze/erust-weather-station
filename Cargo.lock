@@ -427,10 +427,11 @@ dependencies = [
 [[package]]
 name = "stm32g0-hal"
 version = "0.1.0"
-source = "git+https://github.com/rblaze/erust-stm32g0-hal.git#0c98087333a06fba626dfc7c0f44edc036786757"
+source = "git+https://github.com/rblaze/erust-stm32g0-hal.git#ba03dc355c62a9473f850ec18258c84c505ed085"
 dependencies = [
  "bitfield 0.17.0",
  "cortex-m",
+ "critical-section",
  "embedded-hal 1.0.0",
  "fugit",
  "paste",
