@@ -88,7 +88,7 @@ async fn navigation(
 fn main() -> ! {
     move || -> Result<(), Error> {
         #[cfg(debug_assertions)]
-        rtt_init_print!();
+        rtt_init_print!(rtt_target::ChannelMode::NoBlockSkip, 4096);
 
         debug_rprintln!("starting");
 

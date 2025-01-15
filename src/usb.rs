@@ -2,13 +2,13 @@ use async_scheduler::mailbox::Mailbox;
 use futures::{select_biased, FutureExt};
 use rtt_target::debug_rprintln;
 
-use crate::board::{MutexWithSerialPort, MuxtexWithUsb, USB_EVENT};
+use crate::board::{MuxtexWithUsb, UsbSerialPort};
 use crate::error::Error;
 
 pub async fn task(
     pg_event: &Mailbox<bool>,
     device: &MuxtexWithUsb,
-    serial: &MutexWithSerialPort,
+    serial: UsbSerialPort,
 ) -> Result<(), Error> {
     let initial_power_state = pg_event.read().await?;
 
@@ -17,7 +17,7 @@ pub async fn task(
     }
 
     loop {
-        usb_active_loop(pg_event, serial).await?;
+        usb_active_loop(pg_event, &serial).await?;
         usb_poweroff_loop(pg_event, device).await?;
     }
 }
@@ -41,41 +41,25 @@ async fn usb_poweroff_loop(pg_event: &Mailbox<bool>, device: &MuxtexWithUsb) -> 
     Ok(())
 }
 
-enum UsbEvent {
-    PoweredDown,
-    DataReady,
-    Nothing,
-}
-
-async fn usb_active_loop(
-    pg_event: &Mailbox<bool>,
-    serial: &MutexWithSerialPort,
-) -> Result<(), Error> {
+async fn usb_active_loop(pg_event: &Mailbox<bool>, serial: &UsbSerialPort) -> Result<(), Error> {
     debug_rprintln!("USB power on");
+
+    let mut buf = [0u8; 40];
+    let mut total_bytes = 0;
+
     loop {
-        let event = select_biased! {
-            pg = pg_event.read().fuse() => if pg? { UsbEvent::Nothing } else { UsbEvent::PoweredDown },
-            _ = USB_EVENT.read().fuse() => UsbEvent::DataReady,
+        select_biased! {
+            pg = pg_event.read().fuse() => if !(pg?) { break },
+            read_result = serial.read(&mut buf).fuse() => match read_result {
+                Ok(bytes_read) => {
+                    total_bytes += bytes_read;
+                    debug_rprintln!("serial read ({}): {:?}", total_bytes, &buf[..bytes_read]);
+                }
+                Err(e) => {
+                    debug_rprintln!("serial read error: {:?}", e);
+                }
+            },
         };
-
-        match event {
-            UsbEvent::PoweredDown => break,
-            UsbEvent::DataReady => read_serial(serial)?,
-            UsbEvent::Nothing => {}
-        }
-    }
-
-    Ok(())
-}
-
-fn read_serial(serial: &MutexWithSerialPort) -> Result<(), Error> {
-    let mut buf = [0u8; 64];
-    let result = critical_section::with(|cs| serial.borrow_ref_mut(cs).read(&mut buf));
-
-    match result {
-        Err(usbd_serial::UsbError::WouldBlock) => {}
-        Ok(len) => debug_rprintln!("serial read: {:?}", &buf[..len]),
-        Err(e) => debug_rprintln!("serial read error: {:?}", e),
     }
 
     Ok(())

@@ -2,11 +2,13 @@ use core::cell::{RefCell, UnsafeCell};
 use core::mem::MaybeUninit;
 
 use critical_section::Mutex;
+use embedded_hal::digital::OutputPin;
 use rtt_target::debug_rprintln;
 use stm32g0_hal::adc::Adc;
 use stm32g0_hal::exti::{Event, ExtiExt};
+use stm32g0_hal::gpio::gpioa::PA15;
 use stm32g0_hal::gpio::gpiob::{PB10, PB11, PB12, PB13, PB14, PB15, PB2, PB6, PB7, PB8, PB9};
-use stm32g0_hal::gpio::{Alternate, Analog, GpioExt, Input, PullUp, PushPull, SignalEdge};
+use stm32g0_hal::gpio::{Alternate, Analog, GpioExt, Input, Output, PullUp, PushPull, SignalEdge};
 use stm32g0_hal::i2c::{self, I2c, I2cExt};
 use stm32g0_hal::pac::{interrupt, Interrupt};
 use stm32g0_hal::pac::{CorePeripherals, Peripherals};
@@ -18,16 +20,139 @@ use stm32g0_hal::usb::UsbExt;
 use usb_device::bus::UsbBusAllocator;
 use usb_device::device::{StringDescriptors, UsbDevice, UsbDeviceBuilder, UsbVidPid};
 use usb_device::LangID;
-use usbd_serial::embedded_io::ReadReady;
 
 use crate::error::Error;
 use crate::system_time::Ticker;
 
 pub type BoardI2c = I2c<I2C3>;
-pub type Usb = UsbDevice<'static, stm32g0_hal::usb::Bus<stm32g0_hal::pac::USB>>;
-pub type Serial = usbd_serial::SerialPort<'static, stm32g0_hal::usb::Bus<stm32g0_hal::pac::USB>>;
+
+pub type UsbBus = stm32g0_hal::usb::Bus<stm32g0_hal::pac::USB>;
+pub type CdcAcm = usbd_serial::CdcAcmClass<'static, UsbBus>;
+pub type Usb = UsbDevice<'static, UsbBus>;
+
+struct BufferedCdcAcm {
+    cdcacm: CdcAcm,
+    buffer: [u8; 64],
+    start_offset: usize,
+    bytes_in_buffer: usize,
+    led: PA15<Output<PushPull>>,
+}
+
+impl BufferedCdcAcm {
+    fn new(cdcacm: CdcAcm, led: PA15<Output<PushPull>>) -> Self {
+        Self {
+            cdcacm,
+            buffer: [0; 64],
+            start_offset: 0,
+            bytes_in_buffer: 0,
+            led,
+        }
+    }
+
+    /// Reads data to internal buffer and pauses the endpoint until buffer is consumed.
+    fn poll(&mut self, bus: &UsbBus) -> Result<(), usbd_serial::UsbError> {
+        // Pause endpoint so host won't send the next packet until we have buffer space.
+        self.pause(bus);
+
+        let result = self
+            .cdcacm
+            .read_packet(&mut self.buffer)
+            .and_then(|bytes_read| {
+                if self.bytes_in_buffer == 0 || bytes_read == 0 {
+                    // No buffer overrun.
+                    if bytes_read > 0 {
+                        self.start_offset = 0;
+                        self.bytes_in_buffer = bytes_read;
+                    }
+
+                    if self.bytes_in_buffer == 0 {
+                        Err(usbd_serial::UsbError::WouldBlock)
+                    } else {
+                        Ok(())
+                    }
+                } else {
+                    // Shouldn't happen, but handle it anyway.
+                    self.start_offset = 0;
+                    self.bytes_in_buffer = bytes_read;
+
+                    Err(usbd_serial::UsbError::BufferOverflow)
+                }
+            });
+
+        self.unpause_if_empty(bus);
+        debug_rprintln!("ser poll {} {:?}", self.bytes_in_buffer, result);
+
+        result
+    }
+
+    /// Reads data from internal buffer.
+    fn read(&mut self, bus: &UsbBus, buf: &mut [u8]) -> usize {
+        let bytes_to_copy = buf.len().min(self.bytes_in_buffer);
+
+        if bytes_to_copy != 0 {
+            buf[..bytes_to_copy].copy_from_slice(
+                &self.buffer[self.start_offset..self.start_offset + bytes_to_copy],
+            );
+            self.start_offset += bytes_to_copy;
+            self.bytes_in_buffer -= bytes_to_copy;
+        }
+
+        self.unpause_if_empty(bus);
+
+        debug_rprintln!("ser read {} {}", self.bytes_in_buffer, bytes_to_copy);
+
+        bytes_to_copy
+    }
+
+    /// Sets NACK on the rx endpoint
+    fn pause(&mut self, bus: &UsbBus) {
+        bus.set_out_nack(self.cdcacm.read_ep(), true);
+        self.led.set_high().unwrap();
+    }
+
+    /// Removes NACK from the rx endpoint if buffer is empty.
+    fn unpause_if_empty(&mut self, bus: &UsbBus) {
+        if self.bytes_in_buffer == 0 {
+            // Buffer is empty, allow new data to come in.
+            bus.set_out_nack(self.cdcacm.read_ep(), false);
+            self.led.set_low().unwrap();
+        }
+    }
+}
+
 pub type MuxtexWithUsb = Mutex<RefCell<Usb>>;
-pub type MutexWithSerialPort = Mutex<RefCell<Serial>>;
+type MutexWithSerialPort = Mutex<RefCell<BufferedCdcAcm>>;
+
+pub struct UsbSerialPort {
+    port: &'static MutexWithSerialPort,
+    bus: &'static MuxtexWithUsb,
+    event: &'static async_scheduler::sync::mailbox::Mailbox<()>,
+}
+
+impl UsbSerialPort {
+    fn new(
+        port: &'static MutexWithSerialPort,
+        bus: &'static MuxtexWithUsb,
+        event: &'static async_scheduler::sync::mailbox::Mailbox<()>,
+    ) -> Self {
+        Self { port, bus, event }
+    }
+
+    pub async fn read(&self, buf: &mut [u8]) -> Result<usize, usbd_serial::UsbError> {
+        loop {
+            let bytes_read = critical_section::with(|cs| {
+                let bus = self.bus.borrow_ref_mut(cs);
+                self.port.borrow_ref_mut(cs).read(bus.bus(), buf)
+            });
+
+            if bytes_read > 0 {
+                return Ok(bytes_read);
+            }
+
+            self.event.read().await.unwrap();
+        }
+    }
+}
 
 #[allow(unused)]
 pub struct Joystick {
@@ -85,13 +210,10 @@ impl<T> SafelyInitializedStatic<T> {
 }
 
 // USB_BUS is initialized once and only used via reference later.
-// Later bus is used from interrupt and async context, but it is Sync.
-static USB_BUS: SafelyInitializedStatic<
-    UsbBusAllocator<stm32g0_hal::usb::Bus<stm32g0_hal::pac::USB>>,
-> = SafelyInitializedStatic::new();
-// USB_SERIAL is used from both interrupt and async context.
+static USB_BUS: SafelyInitializedStatic<UsbBusAllocator<UsbBus>> = SafelyInitializedStatic::new();
+// USB_SERIAL is only used from interrupt and async contexts.
 static USB_SERIAL: SafelyInitializedStatic<MutexWithSerialPort> = SafelyInitializedStatic::new();
-// USB_DEVICE is only used from interrupt context but needs mutable reference there.
+// USB_DEVICE is only used from interrupt and async contexts.
 static USB_DEVICE: SafelyInitializedStatic<MuxtexWithUsb> = SafelyInitializedStatic::new();
 
 pub struct Board {
@@ -101,7 +223,7 @@ pub struct Board {
     pub vbat: VBat,
     pub joystick: Joystick,
     pub display_power: DisplayPowerPin,
-    pub usb_serial: &'static MutexWithSerialPort,
+    pub usb_serial: UsbSerialPort,
     pub usb_device: &'static MuxtexWithUsb,
 }
 
@@ -123,6 +245,11 @@ impl Board {
         // Check I2C clock requirements (RM0444 32.4.4) before lowering.
         let clocks = Config::sysclk_hsi(Prescaler::Div1).enable_lsi();
         let rcc = dp.RCC.constrain(clocks);
+
+        let gpioa = dp.GPIOA.split(&rcc);
+        // Setup USB NOE
+        // let _ = gpioa.pa15.into_alternate_function::<6>();
+        let led = gpioa.pa15.into_push_pull_output();
 
         let gpiob = dp.GPIOB.split(&rcc);
 
@@ -190,15 +317,16 @@ impl Board {
         exti.listen(Event::LpTim2);
 
         let usb_bus = USB_BUS.write(dp.USB.constrain(&rcc));
-        let usb_serial = USB_SERIAL.write(Mutex::new(RefCell::new(usbd_serial::SerialPort::new(
-            usb_bus,
+        let usb_serial = USB_SERIAL.write(Mutex::new(RefCell::new(BufferedCdcAcm::new(
+            usbd_serial::CdcAcmClass::new(usb_bus, 64),
+            led,
         ))));
         let usb_device = USB_DEVICE.write(Mutex::new(RefCell::new(
             UsbDeviceBuilder::new(usb_bus, UsbVidPid(0x5824, 0x5432))
                 .strings(&[StringDescriptors::new(LangID::EN)
                     .product("Weather Station")
                     .manufacturer("Blaze")
-                    .serial_number("initial")])
+                    .serial_number("unique")])
                 .expect("Failed to set strings")
                 .device_class(usbd_serial::USB_CLASS_CDC)
                 .device_release(0x0001)
@@ -229,7 +357,7 @@ impl Board {
                 blue: gpiob.pb8.into_alternate_function(),
             },
             display_power: gpiob.pb9.into_push_pull_output(),
-            usb_serial,
+            usb_serial: UsbSerialPort::new(usb_serial, usb_device, &USB_EVENT),
             usb_device,
         })
     }
@@ -242,8 +370,7 @@ pub static JOYSTICK_EVENT: async_scheduler::sync::mailbox::Mailbox<()> =
 unsafe fn EXTI4_15() {
     let exti = &(*EXTI::ptr());
 
-    debug_rprintln!("button interrupt {:016b}", exti.fpr1().read().bits());
-    debug_rprintln!("button mask      5432109876543210");
+    debug_rprintln!("EXTI interrupt {:016b}", exti.fpr1().read().bits());
     JOYSTICK_EVENT.post(());
 
     // Clear interrupt for joystick GPIO lines
@@ -263,7 +390,7 @@ unsafe fn EXTI4_15() {
     });
 }
 
-pub static USB_EVENT: async_scheduler::sync::mailbox::Mailbox<()> =
+static USB_EVENT: async_scheduler::sync::mailbox::Mailbox<()> =
     async_scheduler::sync::mailbox::Mailbox::new();
 
 #[interrupt]
@@ -273,11 +400,17 @@ fn UCPD1_UCPD2_USB() {
         let mut usb_device = USB_DEVICE.get().borrow_ref_mut(cs);
         let mut serial = USB_SERIAL.get().borrow_ref_mut(cs);
 
-        if usb_device.poll(&mut [&mut *serial]) {
-            // Force serial port to read data from USB buffer to internal buffer.
-            // Otherwise "transfer completed" interrupt will not be cleared.
-            if let Ok(true) = serial.read_ready() {
-                USB_EVENT.post(());
+        if usb_device.poll(&mut [&mut serial.cdcacm]) {
+            match serial.poll(usb_device.bus()) {
+                Ok(_) => {
+                    /* Read some data, wakeup coroutine */
+                    USB_EVENT.post(());
+                }
+                Err(usbd_serial::UsbError::WouldBlock) => { /* false trigger, ignore */ }
+                Err(err) => {
+                    // TODO: pass error to reader?
+                    debug_rprintln!("USB serial error: {:?}", err);
+                }
             }
         }
     });
