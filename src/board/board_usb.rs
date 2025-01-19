@@ -213,6 +213,9 @@ fn UCPD1_UCPD2_USB() {
         if usb_device.state() == UsbDeviceState::Suspend {
             // If USB is suspended and we are on battery power, shutdown USB
             if USB_POWER.borrow(cs).get() == PowerState::Battery {
+                drop(usb_device_ref);
+                drop(serial_ref);
+
                 shutdown_usb(cs);
             }
         }
@@ -222,24 +225,21 @@ fn UCPD1_UCPD2_USB() {
 fn start_usb(cs: critical_section::CriticalSection<'_>) {
     debug_rprintln!("starting USB");
     // TODO: turn on clock and peripheral
-    // TODO: power on bus
-    USB_DEVICE
-        .borrow_ref(cs)
-        .as_ref()
-        .unwrap()
-        .bus()
-        .enable_interrupts();
+
+    let borrow = USB_DEVICE.borrow_ref(cs);
+    let bus = borrow.as_ref().unwrap().bus();
+    bus.power_up();
+    bus.enable_interrupts();
 }
 
 fn shutdown_usb(cs: critical_section::CriticalSection<'_>) {
     debug_rprintln!("shutting down USB");
-    USB_DEVICE
-        .borrow_ref(cs)
-        .as_ref()
-        .unwrap()
-        .bus()
-        .disable_interrupts();
-    // TODO: power off bus
+
+    let borrow = USB_DEVICE.borrow_ref(cs);
+    let bus = borrow.as_ref().unwrap().bus();
+    bus.disable_interrupts();
+    bus.power_down();
+
     // TODO: turn off USB clock and peripheral
 }
 
@@ -253,8 +253,13 @@ pub(super) fn on_external_power() {
 pub(super) fn on_battery() {
     critical_section::with(|cs| {
         USB_POWER.borrow(cs).set(PowerState::Battery);
+        // If bus is already in suspend, turn off USB
+        let borrow = USB_DEVICE.borrow_ref(cs);
+        if borrow.as_ref().unwrap().state() == UsbDeviceState::Suspend {
+            drop(borrow);
+            shutdown_usb(cs);
+        }
     });
-    // TODO: trigger USB interrupt
 }
 
 pub(super) fn serial_port(usb: UsbBus, led: PA15<Output<PushPull>>) -> UsbSerialPort {

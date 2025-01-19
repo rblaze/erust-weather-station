@@ -152,7 +152,8 @@ impl Board {
         exti.listen(Event::Gpio15);
         exti.listen(Event::LpTim2);
 
-        let usb_serial = board_usb::serial_port(dp.USB.constrain(&rcc), gpioa.pa15.into_push_pull_output());
+        let usb_serial =
+            board_usb::serial_port(dp.USB.constrain(&rcc), gpioa.pa15.into_push_pull_output());
 
         unsafe {
             NVIC::unmask(Interrupt::TIM7);
