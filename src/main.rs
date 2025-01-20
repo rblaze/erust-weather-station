@@ -17,7 +17,7 @@ use core::pin::pin;
 use async_scheduler::executor::LocalExecutor;
 use async_scheduler::mailbox::Mailbox;
 use backlight::backlight_handler;
-use board::{Joystick, JOYSTICK_EVENT};
+use board::{Joystick, CHARGER_EVENT, JOYSTICK_EVENT};
 use bq24259::BQ24259;
 use cortex_m_rt::entry;
 use embedded_hal::digital::InputPin;
@@ -127,7 +127,14 @@ fn main() -> ! {
                     }
                 }
 
-                system_time::sleep(Duration::secs(4)).await;
+                // Default charger watchdog timeout is 40 seconds.
+                if system_time::timeout(Duration::secs(37), CHARGER_EVENT.read())
+                    .await?
+                    .is_some()
+                {
+                    // Charger interrupt occurred, refresh display.
+                    display_refresh_event.post(());
+                }
             }
         }));
         let backlight_handler = pin!(panic_if_exited(backlight_handler(

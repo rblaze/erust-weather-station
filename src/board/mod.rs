@@ -124,6 +124,11 @@ impl Board {
             .modify(|_, w| w.ucpd1_strobe().set_bit().ucpd2_strobe().set_bit());
 
         let mut exti = dp.EXTI;
+
+        let mut charger_interrupt = gpiob.pb5.into_floating_input();
+        charger_interrupt.make_interrupt_source(&mut exti);
+        charger_interrupt.trigger_on_edge(SignalEdge::Falling, &mut exti);
+
         joystick.up.make_interrupt_source(&mut exti);
         joystick.up.trigger_on_edge(SignalEdge::Falling, &mut exti);
         joystick.down.make_interrupt_source(&mut exti);
@@ -147,6 +152,7 @@ impl Board {
             .select
             .trigger_on_edge(SignalEdge::Falling, &mut exti);
 
+        exti.listen(Event::Gpio5);
         exti.listen(Event::Gpio10);
         exti.listen(Event::Gpio11);
         exti.listen(Event::Gpio12);
@@ -193,29 +199,40 @@ fn on_battery() {
     board_usb::on_battery();
 }
 
+pub static CHARGER_EVENT: async_scheduler::sync::mailbox::Mailbox<()> =
+    async_scheduler::sync::mailbox::Mailbox::new();
 pub static JOYSTICK_EVENT: async_scheduler::sync::mailbox::Mailbox<()> =
     async_scheduler::sync::mailbox::Mailbox::new();
 
 #[interrupt]
 unsafe fn EXTI4_15() {
-    let exti = &(*EXTI::ptr());
+    let exti = EXTI::steal();
 
     debug_rprintln!("EXTI interrupt {:016b}", exti.fpr1().read().bits());
-    JOYSTICK_EVENT.post(());
+    if exti.is_pending(Event::Gpio5, SignalEdge::Falling) {
+        // Charger interrupt
+        CHARGER_EVENT.post(());
+        exti.unpend(Event::Gpio5);
+    }
 
-    // Clear interrupt for joystick GPIO lines
-    exti.fpr1().write(|w| {
-        w.fpif10()
-            .clear()
-            .fpif11()
-            .clear()
-            .fpif12()
-            .clear()
-            .fpif13()
-            .clear()
-            .fpif14()
-            .clear()
-            .fpif15()
-            .clear()
-    });
+    if exti.fpr1().read().bits() != 0 {
+        // Remaining lines are assigned to joystick.
+        JOYSTICK_EVENT.post(());
+
+        // Clear interrupt for joystick GPIO lines
+        exti.fpr1().write(|w| {
+            w.fpif10()
+                .clear()
+                .fpif11()
+                .clear()
+                .fpif12()
+                .clear()
+                .fpif13()
+                .clear()
+                .fpif14()
+                .clear()
+                .fpif15()
+                .clear()
+        });
+    }
 }

@@ -98,7 +98,7 @@ where
     Ok(())
 }
 
-// Update page every 2 seconds until display is turned off or error occurs.
+// Update page every 2 seconds or on event until display is turned off or error occurs.
 async fn page_loop<Bus>(
     display_bus: &mut Bus,
     event: &Mailbox<()>,
@@ -120,7 +120,12 @@ where
     while page.get() != DisplayPage::Off {
         show_page(page.get(), start_time, &mut display, charger, vbat).await?;
 
-        system_time::timeout(Duration::secs(2), event.read()).await?;
+        if page.get() == DisplayPage::ChargerRegisters {
+            // On this page, update only by charger interrupt or page change.
+            event.read().await?;
+        } else {
+            system_time::timeout(Duration::secs(2), event.read()).await?;
+        }
     }
 
     Ok(())
