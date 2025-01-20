@@ -72,6 +72,11 @@ where
         DisplayPage::ChargerRegisters => {
             let mut ch = charger.borrow_mut();
             let status = ch.status()?;
+
+            // In order to read the current fault status, the host has to read REG09 two
+            // times consecutively. The 1st reads fault register status from
+            // the last read and the 2nd reads the current fault register status.
+            ch.new_fault()?;
             let faults = ch.new_fault()?;
 
             debug_rprintln!("status {:?}", status);
