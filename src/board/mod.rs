@@ -1,17 +1,17 @@
 use core::cell::RefCell;
 
 use rtt_target::debug_rprintln;
-use stm32g0_hal::adc::Adc;
+use stm32g0_hal::adc::{Adc, AdcExt};
 use stm32g0_hal::exti::{Event, ExtiExt};
 use stm32g0_hal::gpio::gpiob::{PB10, PB11, PB12, PB13, PB14, PB15, PB2, PB6, PB7, PB8, PB9};
 use stm32g0_hal::gpio::{Alternate, Analog, GpioExt, Input, PullUp, PushPull, SignalEdge};
 use stm32g0_hal::i2c::{self, I2c, I2cExt};
 use stm32g0_hal::pac::{interrupt, Interrupt};
 use stm32g0_hal::pac::{CorePeripherals, Peripherals};
-use stm32g0_hal::pac::{EXTI, I2C3, LPTIM2, NVIC, TIM4};
+use stm32g0_hal::pac::{EXTI, I2C3, NVIC, TIM4};
 use stm32g0_hal::rcc::config::{Config, Prescaler};
 use stm32g0_hal::rcc::RccExt;
-use stm32g0_hal::timer::{LowPowerTimer, Pwm, Timer};
+use stm32g0_hal::timer::{LptimExt, Pwm, TimerExt};
 use stm32g0_hal::usb::UsbExt;
 
 use crate::error::Error;
@@ -89,8 +89,8 @@ impl Board {
         let gpioa = dp.GPIOA.split(&rcc);
         let gpiob = dp.GPIOB.split(&rcc);
 
-        let backlight_pwm = Timer::<TIM4>::new(dp.TIM4).pwm(0, u16::MAX, &rcc);
-        let mut adc = Adc::new(dp.ADC, &rcc);
+        let backlight_pwm = dp.TIM4.constrain().pwm(0, u16::MAX, &rcc);
+        let mut adc = dp.ADC.constrain(&rcc);
 
         adc.calibrate();
 
@@ -106,9 +106,9 @@ impl Board {
         let i2c_sda = gpiob.pb4.into_open_drain_output();
         let i2c_scl = gpiob.pb3.into_open_drain_output();
         let config = i2c::Config::from_cubemx(true, 0, 0x00503D58);
-        let i2c = dp.I2C3.i2c(i2c_sda, i2c_scl, &config, &rcc);
+        let i2c = dp.I2C3.constrain(i2c_sda, i2c_scl, &config, &rcc);
 
-        let system_timer = LowPowerTimer::<LPTIM2>::new(dp.LPTIM2);
+        let system_timer = dp.LPTIM2.constrain();
         let ticker = Ticker::new(system_timer, &rcc);
 
         // Upon reset, a pull-down resistor might be present on PB15, PA8, PD0, or PD2,
