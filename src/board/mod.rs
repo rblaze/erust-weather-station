@@ -3,6 +3,7 @@ use core::cell::RefCell;
 use rtt_target::debug_rprintln;
 use stm32g0_hal::adc::{Adc, AdcExt};
 use stm32g0_hal::exti::{Event, ExtiExt};
+use stm32g0_hal::gpio::gpioa::PA15;
 use stm32g0_hal::gpio::gpiob::{PB10, PB11, PB12, PB13, PB14, PB15, PB2, PB6, PB7, PB8, PB9};
 use stm32g0_hal::gpio::{Alternate, Analog, GpioExt, Input, PullUp, PushPull, SignalEdge};
 use stm32g0_hal::i2c::{self, I2c, I2cExt};
@@ -87,6 +88,8 @@ impl Board {
         let rcc = dp.RCC.constrain(clocks);
 
         let gpioa = dp.GPIOA.split(&rcc);
+        let pa15 = gpioa.pa15.into_push_pull_output();
+        let _noe: PA15<Alternate<6>> = pa15.into_alternate_function();
         let gpiob = dp.GPIOB.split(&rcc);
 
         let backlight_pwm = dp.TIM4.constrain().pwm(0, u16::MAX, &rcc);
@@ -152,8 +155,7 @@ impl Board {
         exti.listen(Event::Gpio15);
         exti.listen(Event::LpTim2);
 
-        let usb_serial =
-            board_usb::serial_port(dp.USB.constrain(&rcc), gpioa.pa15.into_push_pull_output());
+        let usb_serial = board_usb::serial_port(dp.USB.constrain(&rcc));
 
         unsafe {
             NVIC::unmask(Interrupt::TIM7);

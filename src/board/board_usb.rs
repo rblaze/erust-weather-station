@@ -2,10 +2,7 @@ use core::cell::{Cell, RefCell, UnsafeCell};
 use core::mem::MaybeUninit;
 
 use critical_section::Mutex;
-use embedded_hal::digital::OutputPin;
 use rtt_target::debug_rprintln;
-use stm32g0_hal::gpio::gpioa::PA15;
-use stm32g0_hal::gpio::{Output, PushPull};
 use stm32g0_hal::pac::interrupt;
 use usb_device::bus::UsbBusAllocator;
 use usb_device::device::{
@@ -17,22 +14,22 @@ pub type UsbBus = stm32g0_hal::usb::Bus<stm32g0_hal::pac::USB>;
 pub type CdcAcm = usbd_serial::CdcAcmClass<'static, UsbBus>;
 pub type Usb = UsbDevice<'static, UsbBus>;
 
+const CDC_MAX_PACKET_SIZE: usize = 64;
+
 struct BufferedCdcAcm {
     cdcacm: CdcAcm,
-    buffer: [u8; 64],
+    buffer: [u8; CDC_MAX_PACKET_SIZE],
     start_offset: usize,
     bytes_in_buffer: usize,
-    led: PA15<Output<PushPull>>,
 }
 
 impl BufferedCdcAcm {
-    fn new(cdcacm: CdcAcm, led: PA15<Output<PushPull>>) -> Self {
+    fn new(cdcacm: CdcAcm) -> Self {
         Self {
             cdcacm,
-            buffer: [0; 64],
+            buffer: [0; CDC_MAX_PACKET_SIZE],
             start_offset: 0,
             bytes_in_buffer: 0,
-            led,
         }
     }
 
@@ -92,17 +89,15 @@ impl BufferedCdcAcm {
     }
 
     /// Sets NACK on the rx endpoint
-    fn pause(&mut self, bus: &UsbBus) {
+    fn pause(&self, bus: &UsbBus) {
         bus.set_out_nack(self.cdcacm.read_ep(), true);
-        self.led.set_high().unwrap();
     }
 
     /// Removes NACK from the rx endpoint if buffer is empty.
-    fn unpause_if_empty(&mut self, bus: &UsbBus) {
+    fn unpause_if_empty(&self, bus: &UsbBus) {
         if self.bytes_in_buffer == 0 {
             // Buffer is empty, allow new data to come in.
             bus.set_out_nack(self.cdcacm.read_ep(), false);
-            self.led.set_low().unwrap();
         }
     }
 }
@@ -262,15 +257,15 @@ pub(super) fn on_battery() {
     });
 }
 
-pub(super) fn serial_port(usb: UsbBus, led: PA15<Output<PushPull>>) -> UsbSerialPort {
+pub(super) fn serial_port(usb: UsbBus) -> UsbSerialPort {
     let usb_bus = USB_ALLOCATOR.write(UsbBusAllocator::new(usb));
     critical_section::with(|cs| {
         USB_SERIAL.replace(
             cs,
-            Some(BufferedCdcAcm::new(
-                usbd_serial::CdcAcmClass::new(usb_bus, 64),
-                led,
-            )),
+            Some(BufferedCdcAcm::new(usbd_serial::CdcAcmClass::new(
+                usb_bus,
+                CDC_MAX_PACKET_SIZE as u16,
+            ))),
         );
         USB_DEVICE.replace(
             cs,
