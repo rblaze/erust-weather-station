@@ -13,7 +13,7 @@ use rtt_target::debug_rprintln;
 use crate::board::{DisplayPowerPin, VBat};
 use crate::error::Error;
 use crate::screen::Lcd;
-use crate::system_time::{self, Duration, Instant};
+use crate::system_time::{self, sleep, Duration, Instant};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum DisplayPage {
@@ -64,25 +64,31 @@ where
             let battery_volts = vbat.read_battery_volts();
 
             display.cls()?;
+            sleep(Duration::millis(5)).await;
+
             display.set_output_line(0)?;
             write!(display, "{:?}", status.chrg())?;
             display.set_output_line(1)?;
             write!(display, "vbat {:.2}", battery_volts)?;
         }
         DisplayPage::ChargerRegisters => {
-            let mut ch = charger.borrow_mut();
-            let status = ch.status()?;
+            let (status, faults) = {
+                let mut ch = charger.borrow_mut();
 
-            // In order to read the current fault status, the host has to read REG09 two
-            // times consecutively. The 1st reads fault register status from
-            // the last read and the 2nd reads the current fault register status.
-            ch.new_fault()?;
-            let faults = ch.new_fault()?;
+                // In order to read the current fault status, the host has to read REG09 two
+                // times consecutively. The 1st reads fault register status from
+                // the last read and the 2nd reads the current fault register status.
+                ch.new_fault()?;
+
+                (ch.status()?, ch.new_fault()?)
+            };
 
             debug_rprintln!("status {:?}", status);
             debug_rprintln!("faults {:?}", faults);
 
             display.cls()?;
+            sleep(Duration::millis(5)).await;
+
             display.set_output_line(0)?;
             write!(display, "status {:08b}", u8::from(status))?;
             display.set_output_line(1)?;
@@ -92,6 +98,8 @@ where
             let uptime: SecsDurationU64 = (system_time::now() - start_time).convert();
 
             display.cls()?;
+            sleep(Duration::millis(5)).await;
+
             display.set_output_line(0)?;
             write!(display, "uptime {}", uptime)?;
         }

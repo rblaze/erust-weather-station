@@ -90,14 +90,14 @@ impl BufferedCdcAcm {
 
     /// Sets NACK on the rx endpoint
     fn pause(&self, bus: &UsbBus) {
-        bus.set_out_nack(self.cdcacm.read_ep(), true);
+        bus.set_paused(self.cdcacm.read_ep(), true);
     }
 
     /// Removes NACK from the rx endpoint if buffer is empty.
     fn unpause_if_empty(&self, bus: &UsbBus) {
         if self.bytes_in_buffer == 0 {
             // Buffer is empty, allow new data to come in.
-            bus.set_out_nack(self.cdcacm.read_ep(), false);
+            bus.set_paused(self.cdcacm.read_ep(), false);
         }
     }
 }
