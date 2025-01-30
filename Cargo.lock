@@ -58,9 +58,23 @@ checksum = "46afbd2983a5d5a7bd740ccb198caf5b82f45c40c09c0eed36052d91cb92e719"
 
 [[package]]
 name = "bitfield"
-version = "0.17.0"
+version = "0.18.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f798d2d157e547aa99aab0967df39edd0b70307312b6f8bd2848e6abe40896e0"
+checksum = "4c7e6caee68becd795bfd65f1a026e4d00d8f0c2bc9be5eb568e1015f9ce3c34"
+dependencies = [
+ "bitfield-macros",
+]
+
+[[package]]
+name = "bitfield-macros"
+version = "0.18.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "331afbb18ce7b644c0b428726d369c5dd37ca0b815d72a459fcc2896c3c8ad32"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
 
 [[package]]
 name = "bq24259"
@@ -409,7 +423,7 @@ checksum = "a8f112729512f8e442d81f95a8a7ddf2b7c6b8a1a6f509a95864142b30cab2d3"
 [[package]]
 name = "stm32g0"
 version = "0.15.1"
-source = "git+https://github.com/stm32-rs/stm32-rs-nightlies?rev=6103c50#6103c5071f10ceaddc9c48025e72f4e46c9c9c79"
+source = "git+https://github.com/stm32-rs/stm32-rs-nightlies#8efe6e2a3dabb90e156e27f4772961a8779fd5df"
 dependencies = [
  "cortex-m",
  "cortex-m-rt",
@@ -420,9 +434,9 @@ dependencies = [
 [[package]]
 name = "stm32g0-hal"
 version = "0.1.0"
-source = "git+https://github.com/rblaze/erust-stm32g0-hal.git#3da4cf13bba6e32780db68954f89ffab9a11b7d4"
+source = "git+https://github.com/rblaze/erust-stm32g0-hal.git#f694356ab294e100244eecce6cbd50d40ac93d94"
 dependencies = [
- "bitfield 0.17.0",
+ "bitfield 0.18.1",
  "cortex-m",
  "critical-section",
  "embedded-hal 1.0.0",
@@ -453,9 +467,9 @@ checksum = "e87a2ed6b42ec5e28cc3b94c09982969e9227600b2e3dcbc1db927a84c06bd69"
 
 [[package]]
 name = "unicode-ident"
-version = "1.0.14"
+version = "1.0.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "adb9e6ca4f869e1180728b7950e35922a7fc6397f7b641499e8f3ef06e50dc83"
+checksum = "a210d160f08b701c8721ba1c726c11662f877ea6b7094007e1ca9a1041945034"
 
 [[package]]
 name = "usb-device"
