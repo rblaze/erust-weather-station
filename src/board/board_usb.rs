@@ -13,6 +13,8 @@ use usb_device::device::{
 };
 use usb_device::LangID;
 
+use crate::error::Error;
+
 pub type UsbBus = stm32g0_hal::usb::Bus<stm32g0_hal::pac::USB>;
 pub type CdcAcm = usbd_serial::CdcAcmClass<'static, UsbBus>;
 pub type Usb = UsbDevice<'static, UsbBus>;
@@ -21,74 +23,157 @@ const CDC_MAX_PACKET_SIZE: usize = 64;
 
 struct BufferedCdcAcm {
     cdcacm: CdcAcm,
-    buffer: [u8; CDC_MAX_PACKET_SIZE],
-    start_offset: usize,
-    bytes_in_buffer: usize,
+    read_buffer: [u8; CDC_MAX_PACKET_SIZE],
+    read_offset: usize,
+    read_bytes_in_buffer: usize,
+    write_buffer: [u8; CDC_MAX_PACKET_SIZE],
+    write_bytes_in_buffer: usize,
 }
 
 impl BufferedCdcAcm {
     fn new(cdcacm: CdcAcm) -> Self {
         Self {
             cdcacm,
-            buffer: [0; CDC_MAX_PACKET_SIZE],
-            start_offset: 0,
-            bytes_in_buffer: 0,
+            read_buffer: [0; CDC_MAX_PACKET_SIZE],
+            read_offset: 0,
+            read_bytes_in_buffer: 0,
+            write_buffer: [0; CDC_MAX_PACKET_SIZE],
+            write_bytes_in_buffer: 0,
         }
     }
 
     /// Reads data to internal buffer and pauses the endpoint until buffer is consumed.
-    fn poll(&mut self, bus: &UsbBus) -> Result<(), usbd_serial::UsbError> {
+    fn poll_read(&mut self, bus: &UsbBus) -> Result<(), usbd_serial::UsbError> {
         // Pause endpoint so host won't send the next packet until we have buffer space.
         self.pause(bus);
 
         let result = self
             .cdcacm
-            .read_packet(&mut self.buffer)
+            .read_packet(&mut self.read_buffer)
             .and_then(|bytes_read| {
-                if self.bytes_in_buffer == 0 || bytes_read == 0 {
+                if self.read_bytes_in_buffer == 0 || bytes_read == 0 {
                     // No buffer overrun.
                     if bytes_read > 0 {
-                        self.start_offset = 0;
-                        self.bytes_in_buffer = bytes_read;
+                        self.read_offset = 0;
+                        self.read_bytes_in_buffer = bytes_read;
                     }
 
-                    if self.bytes_in_buffer == 0 {
+                    if self.read_bytes_in_buffer == 0 {
                         Err(usbd_serial::UsbError::WouldBlock)
                     } else {
                         Ok(())
                     }
                 } else {
                     // Shouldn't happen, but handle it anyway.
-                    self.start_offset = 0;
-                    self.bytes_in_buffer = bytes_read;
+                    self.read_offset = 0;
+                    self.read_bytes_in_buffer = bytes_read;
 
                     Err(usbd_serial::UsbError::BufferOverflow)
                 }
             });
 
         self.unpause_if_empty(bus);
-        debug_rprintln!("ser poll {} {:?}", self.bytes_in_buffer, result);
+        debug_rprintln!("ser rd poll {} {:?}", self.read_bytes_in_buffer, result);
 
         result
     }
 
+    /// Writes data from internal buffer to endpoint.
+    fn poll_write(&mut self) -> Result<(), usbd_serial::UsbError> {
+        if self.write_bytes_in_buffer == 0 {
+            // Do not return Ok: it means internal buffer was freed.
+            return Err(usbd_serial::UsbError::WouldBlock);
+        }
+
+        let bytes_to_write = self.write_bytes_in_buffer;
+        let bytes_written = self
+            .cdcacm
+            .write_packet(&self.write_buffer[..bytes_to_write])?;
+
+        debug_rprintln!(
+            "ser wr poll {} {}",
+            self.write_bytes_in_buffer,
+            bytes_written
+        );
+
+        // Clear the buffer regardless of overruns.
+        self.write_bytes_in_buffer = 0;
+        if bytes_written != bytes_to_write {
+            return Err(usbd_serial::UsbError::BufferOverflow);
+        }
+
+        Ok(())
+    }
+
     /// Reads data from internal buffer.
     fn read(&mut self, bus: &UsbBus, buf: &mut [u8]) -> usize {
-        let bytes_to_copy = buf.len().min(self.bytes_in_buffer);
+        let bytes_to_copy = buf.len().min(self.read_bytes_in_buffer);
 
         if bytes_to_copy != 0 {
             buf[..bytes_to_copy].copy_from_slice(
-                &self.buffer[self.start_offset..self.start_offset + bytes_to_copy],
+                &self.read_buffer[self.read_offset..self.read_offset + bytes_to_copy],
             );
-            self.start_offset += bytes_to_copy;
-            self.bytes_in_buffer -= bytes_to_copy;
+            self.read_offset += bytes_to_copy;
+            self.read_bytes_in_buffer -= bytes_to_copy;
         }
 
         self.unpause_if_empty(bus);
 
-        debug_rprintln!("ser read {} {}", self.bytes_in_buffer, bytes_to_copy);
+        debug_rprintln!("ser read {} {}", self.read_bytes_in_buffer, bytes_to_copy);
 
         bytes_to_copy
+    }
+
+    /// Writes data to the internal buffer.
+    fn write(&mut self, buf: &[u8]) -> usize {
+        if self.write_bytes_in_buffer > 0 {
+            // Write operation in progress, just append to buffer as much as we can.
+            let bytes_to_copy = buf
+                .len()
+                .min(self.write_buffer.len() - self.write_bytes_in_buffer);
+
+            if bytes_to_copy != 0 {
+                self.write_buffer
+                    [self.write_bytes_in_buffer..self.write_bytes_in_buffer + bytes_to_copy]
+                    .copy_from_slice(&buf[..bytes_to_copy]);
+                self.write_bytes_in_buffer += bytes_to_copy;
+            }
+
+            debug_rprintln!(
+                "ser write {} + {} of {}",
+                self.write_bytes_in_buffer,
+                bytes_to_copy,
+                buf.len()
+            );
+
+            bytes_to_copy
+        } else {
+            // If the buffer is empty, our first write and poll_write() can clear it again,
+            // so we need to repeat the send.
+            let mut bytes = buf;
+            while !bytes.is_empty() && self.write_bytes_in_buffer == 0 {
+                let bytes_to_copy = bytes.len().min(self.write_buffer.len());
+
+                self.write_buffer
+                    [self.write_bytes_in_buffer..self.write_bytes_in_buffer + bytes_to_copy]
+                    .copy_from_slice(&buf[..bytes_to_copy]);
+                self.write_bytes_in_buffer += bytes_to_copy;
+                bytes = &bytes[bytes_to_copy..];
+
+                // Poke the USB device to send the data.
+                let _ = self.poll_write();
+            }
+
+            let bytes_sent = buf.len() - bytes.len();
+            debug_rprintln!(
+                "ser write {} ({}) of {}",
+                bytes_sent,
+                self.write_bytes_in_buffer,
+                buf.len()
+            );
+
+            bytes_sent
+        }
     }
 
     /// Sets NACK on the rx endpoint
@@ -98,7 +183,7 @@ impl BufferedCdcAcm {
 
     /// Removes NACK from the rx endpoint if buffer is empty.
     fn unpause_if_empty(&self, bus: &UsbBus) {
-        if self.bytes_in_buffer == 0 {
+        if self.read_bytes_in_buffer == 0 {
             // Buffer is empty, allow new data to come in.
             bus.set_paused(self.cdcacm.read_ep(), false);
         }
@@ -128,7 +213,7 @@ impl UsbSerialPort {
         }
     }
 
-    pub async fn read(&self, buf: &mut [u8]) -> Result<usize, usbd_serial::UsbError> {
+    pub async fn read(&self, buf: &mut [u8]) -> Result<usize, Error> {
         loop {
             let read_result = critical_section::with(|cs| {
                 let mut usb_device_ref = self.bus.borrow_ref_mut(cs);
@@ -146,8 +231,29 @@ impl UsbSerialPort {
                 }
             }
 
-            self.usb_event.read().await.unwrap();
+            self.usb_event.read().await?;
         }
+    }
+
+    pub async fn write(&self, buf: &[u8]) -> Result<usize, Error> {
+        let mut bytes = buf;
+        while !bytes.is_empty() {
+            let bytes_written = critical_section::with(|cs| {
+                self.port
+                    .borrow_ref_mut(cs)
+                    .as_mut()
+                    .map(|serial| serial.write(bytes))
+            })
+            .ok_or(Error::Uninitialized)?;
+
+            bytes = &bytes[bytes_written..];
+
+            if !bytes.is_empty() {
+                self.usb_event.read().await?;
+            }
+        }
+
+        Ok(buf.len())
     }
 }
 
@@ -199,15 +305,26 @@ fn UCPD1_UCPD2_USB() {
             .expect("USB interrupt with uninitialized USB device");
 
         if usb_device.poll(&mut [&mut serial.cdcacm]) {
-            match serial.poll(usb_device.bus()) {
+            match serial.poll_read(usb_device.bus()) {
                 Ok(_) => {
-                    /* Read some data, wakeup coroutine */
+                    // Read some data, wakeup coroutine.
                     USB_EVENT.post(());
                 }
                 Err(usbd_serial::UsbError::WouldBlock) => { /* false trigger, ignore */ }
                 Err(err) => {
                     // TODO: pass error to reader?
-                    debug_rprintln!("USB serial error: {:?}", err);
+                    debug_rprintln!("USB serial read error: {:?}", err);
+                }
+            }
+            match serial.poll_write() {
+                Ok(_) => {
+                    // Wrote some data, buffer is free, wakeup coroutine.
+                    USB_EVENT.post(());
+                }
+                Err(usbd_serial::UsbError::WouldBlock) => { /* false trigger, ignore */ }
+                Err(err) => {
+                    // TODO: pass error to writer?
+                    debug_rprintln!("USB serial write error: {:?}", err);
                 }
             }
         }

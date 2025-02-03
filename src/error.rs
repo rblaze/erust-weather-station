@@ -15,6 +15,7 @@ pub enum Error {
     I2c(I2cError),
     InvalidLcdLine,
     Mailbox(async_scheduler::sync::mailbox::Error),
+    Uninitialized,
 }
 
 impl From<core::fmt::Error> for Error {
