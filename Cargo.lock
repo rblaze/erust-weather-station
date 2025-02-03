@@ -422,8 +422,8 @@ checksum = "a8f112729512f8e442d81f95a8a7ddf2b7c6b8a1a6f509a95864142b30cab2d3"
 
 [[package]]
 name = "stm32g0"
-version = "0.15.1"
-source = "git+https://github.com/stm32-rs/stm32-rs-nightlies#8efe6e2a3dabb90e156e27f4772961a8779fd5df"
+version = "0.16.0"
+source = "git+https://github.com/stm32-rs/stm32-rs-nightlies#ceb869d2ca4fc7bffa454fc1709621049c2c8fac"
 dependencies = [
  "cortex-m",
  "cortex-m-rt",
@@ -434,7 +434,7 @@ dependencies = [
 [[package]]
 name = "stm32g0-hal"
 version = "0.1.0"
-source = "git+https://github.com/rblaze/erust-stm32g0-hal.git#f694356ab294e100244eecce6cbd50d40ac93d94"
+source = "git+https://github.com/rblaze/erust-stm32g0-hal.git#d3a2906ffad5a9172bc613cbe4d6cf52463041ac"
 dependencies = [
  "bitfield 0.18.1",
  "cortex-m",
@@ -450,9 +450,9 @@ dependencies = [
 
 [[package]]
 name = "syn"
-version = "2.0.96"
+version = "2.0.98"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d5d0adab1ae378d7f53bdebc67a39f1f151407ef230f0ce2883572f5d8985c80"
+checksum = "36147f1a48ae0ec2b5b3bc5b537d267457555a10dc06f3dbc8cb11ba3006d3b1"
 dependencies = [
  "proc-macro2",
  "quote",

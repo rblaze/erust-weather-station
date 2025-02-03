@@ -2,7 +2,10 @@ use core::cell::{Cell, RefCell, UnsafeCell};
 use core::mem::MaybeUninit;
 
 use critical_section::Mutex;
+use embedded_hal::digital::OutputPin;
 use rtt_target::debug_rprintln;
+use stm32g0_hal::gpio::gpioa::PA10;
+use stm32g0_hal::gpio::{Output, PushPull};
 use stm32g0_hal::pac::interrupt;
 use usb_device::bus::UsbBusAllocator;
 use usb_device::device::{
@@ -181,6 +184,10 @@ static USB_POWER: MutexWithPowerState = Mutex::new(Cell::new(PowerState::Battery
 
 #[interrupt]
 fn UCPD1_UCPD2_USB() {
+    let mut led =
+        unsafe { core::mem::MaybeUninit::<PA10<Output<PushPull>>>::uninit().assume_init() };
+    led.set_high().unwrap();
+
     debug_rprintln!("USB interrupt");
     critical_section::with(|cs| {
         let mut usb_device_ref = USB_DEVICE.borrow_ref_mut(cs);
@@ -215,6 +222,8 @@ fn UCPD1_UCPD2_USB() {
             }
         }
     });
+
+    led.set_low().unwrap();
 }
 
 fn start_usb(cs: critical_section::CriticalSection<'_>) {
@@ -276,7 +285,7 @@ pub(super) fn serial_port(usb: UsbBus) -> UsbSerialPort {
                         .manufacturer("Blaze")
                         .serial_number("unique")])
                     .expect("Failed to set strings")
-                    .device_class(usbd_serial::USB_CLASS_CDC)
+                    .composite_with_iads()
                     .device_release(0x0001)
                     .self_powered(true)
                     .build(),

@@ -1,11 +1,14 @@
 use core::cell::Cell;
 
 use critical_section::{CriticalSection, Mutex};
+use embedded_hal::digital::OutputPin;
 use fugit::{TimerDuration, TimerInstant};
 use futures::{select_biased, Future, FutureExt};
 use once_cell::sync::OnceCell;
 use rtt_target::debug_rprintln;
 
+use stm32g0_hal::gpio::gpioa::PA15;
+use stm32g0_hal::gpio::{Output, PushPull};
 use stm32g0_hal::pac::{interrupt, LPTIM2};
 use stm32g0_hal::rcc::lptim::LptimClock;
 use stm32g0_hal::rcc::{Rcc, LSI_FREQ};
@@ -192,6 +195,9 @@ static TIMER: OnceCell<SystemTimer> = OnceCell::new();
 
 #[interrupt]
 unsafe fn TIM7() {
+    let mut led = core::mem::MaybeUninit::<PA15<Output<PushPull>>>::uninit().assume_init();
+    led.set_high().unwrap();
+
     let timer = &TIMER
         .get()
         .expect("Interrupt from uninitialized timer")
@@ -209,9 +215,9 @@ unsafe fn TIM7() {
             timer.set_cmp(0);
         }
 
-        // Check ARR last in the handler. Either it is happened and will be
-        // processed now, or next interrupt will be generated when cnt
-        // reaches 0, even it happens right now in the handler.
+        // Check ARR last in the handler. Either it has happened and will be
+        // processed now, or the next interrupt will be generated when cnt
+        // reaches 0, even if it happens right now in the handler.
         if timer.is_pending(LptimEvent::ArrMatch) {
             debug_rprintln!("update event");
 
@@ -225,11 +231,8 @@ unsafe fn TIM7() {
             // Clear update event
             timer.unpend(LptimEvent::ArrMatch);
         }
-
-        // Wait for pending interrupt flag to be cleared.
-        // TODO: check if this is necessary.
-        while timer.is_pending(LptimEvent::CmpMatch) {}
     } else {
         debug_rprintln!("LPTIM interrupt without compare event");
     }
+    led.set_low().unwrap();
 }
