@@ -1,4 +1,4 @@
 (sym_lib_table
   (version 7)
-  (lib (name "Project_Components")(type "KiCad")(uri "/home/blaze/work/erust-weather-station/hardware/shared/Project_Components.kicad_sym")(options "")(descr ""))
+  (lib (name "Project_Symbols")(type "KiCad")(uri "/home/blaze/work/erust-weather-station/hardware/shared/Project_Components.kicad_sym")(options "")(descr ""))
 )
