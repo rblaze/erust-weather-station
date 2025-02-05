@@ -2974,6 +2974,12 @@
 		(uuid "3120779f-acfb-4b56-9ed4-b820ab12bc00")
 	)
 	(junction
+		(at 76.2 82.55)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "3b0ae1a1-106c-41d8-a5b9-64f49f7b8ab1")
+	)
+	(junction
 		(at 267.97 95.25)
 		(diameter 0)
 		(color 0 0 0 0)
@@ -3225,7 +3231,7 @@
 	)
 	(wire
 		(pts
-			(xy 68.58 82.55) (xy 132.08 82.55)
+			(xy 68.58 82.55) (xy 76.2 82.55)
 		)
 		(stroke
 			(width 0)
@@ -3345,7 +3351,7 @@
 	)
 	(wire
 		(pts
-			(xy 238.76 82.55) (xy 238.76 85.09)
+			(xy 238.76 82.55) (xy 238.76 83.82)
 		)
 		(stroke
 			(width 0)
@@ -3385,7 +3391,7 @@
 	)
 	(wire
 		(pts
-			(xy 238.76 92.71) (xy 238.76 95.25)
+			(xy 238.76 91.44) (xy 238.76 95.25)
 		)
 		(stroke
 			(width 0)
@@ -3825,6 +3831,16 @@
 	)
 	(wire
 		(pts
+			(xy 76.2 81.28) (xy 76.2 82.55)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "a3c7ba09-5087-4ec1-b3bb-b6e6efa6ce45")
+	)
+	(wire
+		(pts
 			(xy 196.85 95.25) (xy 196.85 92.71)
 		)
 		(stroke
@@ -4075,6 +4091,16 @@
 	)
 	(wire
 		(pts
+			(xy 76.2 82.55) (xy 132.08 82.55)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "cc160734-d169-4b09-8c51-517269a377a3")
+	)
+	(wire
+		(pts
 			(xy 44.45 120.65) (xy 44.45 123.19)
 		)
 		(stroke
@@ -4082,6 +4108,16 @@
 			(type default)
 		)
 		(uuid "ccc00c16-9b49-4521-add1-7dd8b68337ea")
+	)
+	(wire
+		(pts
+			(xy 68.58 81.28) (xy 68.58 82.55)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "d20ade27-5782-45d2-aee0-0908a4ba81e5")
 	)
 	(wire
 		(pts
@@ -4337,16 +4373,6 @@
 		)
 		(uuid "ac8183ba-dcfb-43c7-ba52-fce353464249")
 	)
-	(label "VBUS"
-		(at 76.2 82.55 0)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left bottom)
-		)
-		(uuid "b21e851f-a3a7-41dd-b012-6cbe96eed763")
-	)
 	(label "SYS"
 		(at 228.6 95.25 0)
 		(effects
@@ -4376,6 +4402,17 @@
 			(justify left bottom)
 		)
 		(uuid "fc7d12ec-15d4-4f40-a41a-403a78ed3ca6")
+	)
+	(hierarchical_label "VBUS"
+		(shape input)
+		(at 76.2 81.28 90)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left)
+		)
+		(uuid "241827e6-4121-41a3-95f7-6447e140e465")
 	)
 	(hierarchical_label "SCL"
 		(shape input)
@@ -5847,7 +5884,7 @@
 	)
 	(symbol
 		(lib_id "power:PWR_FLAG")
-		(at 68.58 82.55 0)
+		(at 68.58 81.28 0)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -5856,7 +5893,7 @@
 		(fields_autoplaced yes)
 		(uuid "4fd83b78-bb60-44b3-ba1e-1abcbbb5bd85")
 		(property "Reference" "#FLG01"
-			(at 68.58 80.645 0)
+			(at 68.58 79.375 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -5865,7 +5902,7 @@
 			)
 		)
 		(property "Value" "PWR_FLAG"
-			(at 68.58 77.47 0)
+			(at 68.58 76.2 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -5873,7 +5910,7 @@
 			)
 		)
 		(property "Footprint" ""
-			(at 68.58 82.55 0)
+			(at 68.58 81.28 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -5882,7 +5919,7 @@
 			)
 		)
 		(property "Datasheet" "~"
-			(at 68.58 82.55 0)
+			(at 68.58 81.28 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -5891,7 +5928,7 @@
 			)
 		)
 		(property "Description" "Special symbol for telling ERC where power comes from"
-			(at 68.58 82.55 0)
+			(at 68.58 81.28 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -7295,7 +7332,7 @@
 	)
 	(symbol
 		(lib_id "Device:C")
-		(at 238.76 88.9 0)
+		(at 238.76 87.63 0)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -7304,7 +7341,7 @@
 		(fields_autoplaced yes)
 		(uuid "d17edfaf-3263-44ff-9d75-3b785c6e2529")
 		(property "Reference" "C10"
-			(at 242.57 87.6299 0)
+			(at 242.57 86.3599 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -7313,7 +7350,7 @@
 			)
 		)
 		(property "Value" "1u"
-			(at 242.57 90.1699 0)
+			(at 242.57 88.8999 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -7322,7 +7359,7 @@
 			)
 		)
 		(property "Footprint" "Capacitor_SMD:C_0402_1005Metric"
-			(at 239.7252 92.71 0)
+			(at 239.7252 91.44 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -7331,7 +7368,7 @@
 			)
 		)
 		(property "Datasheet" "~"
-			(at 238.76 88.9 0)
+			(at 238.76 87.63 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -7340,7 +7377,7 @@
 			)
 		)
 		(property "Description" "Unpolarized capacitor"
-			(at 238.76 88.9 0)
+			(at 238.76 87.63 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -7349,7 +7386,7 @@
 			)
 		)
 		(property "JLCPCB" "C52923"
-			(at 238.76 88.9 0)
+			(at 238.76 87.63 0)
 			(effects
 				(font
 					(size 1.27 1.27)
