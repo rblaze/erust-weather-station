@@ -468,6 +468,16 @@
 	)
 	(wire
 		(pts
+			(xy 63.5 120.65) (xy 100.33 120.65)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "f279ce0d-1898-4d19-b0f4-df02381bbf5d")
+	)
+	(wire
+		(pts
 			(xy 93.98 118.11) (xy 100.33 118.11)
 		)
 		(stroke
@@ -685,6 +695,16 @@
 				(justify left)
 			)
 			(uuid "27aa4ffc-86d4-4ee5-8630-f80b41e70f8a")
+		)
+		(pin "VBUS" input
+			(at 100.33 120.65 180)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+			(uuid "55ec5039-ffd8-4d0b-b934-78d13203635d")
 		)
 		(instances
 			(project "main_board"
