@@ -11,7 +11,7 @@ checksum = "825297538d77367557b912770ca3083f778a196054b3ee63b22673c4a3cae0a5"
 [[package]]
 name = "async-scheduler"
 version = "0.5.0"
-source = "git+https://github.com/rblaze/rust-async-scheduler.git#dfe0a6efc79c07832258c8a07a1b0813e7327f35"
+source = "git+https://github.com/rblaze/rust-async-scheduler.git#dbe7fb76a6e013e1528fc1ef65859773b078b62e"
 dependencies = [
  "critical-section",
  "futures",
@@ -434,7 +434,7 @@ dependencies = [
 [[package]]
 name = "stm32g0-hal"
 version = "0.1.0"
-source = "git+https://github.com/rblaze/erust-stm32g0-hal.git#c571e17f58926fdbf157c9a46be653d6b5936417"
+source = "git+https://github.com/rblaze/erust-stm32g0-hal.git#2a8efb81dbcde3656d1222923ef8ec1edcd5ba21"
 dependencies = [
  "bitfield 0.19.0",
  "cortex-m",
