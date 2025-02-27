@@ -13,7 +13,7 @@ use rtt_target::debug_rprintln;
 use crate::board::{DisplayPowerPin, VBat};
 use crate::error::Error;
 use crate::screen::Lcd;
-use crate::system_time::{self, sleep, Duration, Instant};
+use crate::system_time::{self, Duration, Instant, sleep};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum DisplayPage {

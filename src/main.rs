@@ -17,7 +17,7 @@ use core::pin::pin;
 use async_scheduler::executor::LocalExecutor;
 use async_scheduler::mailbox::Mailbox;
 use backlight::backlight_handler;
-use board::{Joystick, CHARGER_EVENT, JOYSTICK_EVENT};
+use board::{CHARGER_EVENT, JOYSTICK_EVENT, Joystick};
 use bq24259::BQ24259;
 use cortex_m_rt::entry;
 use embedded_hal::digital::InputPin;

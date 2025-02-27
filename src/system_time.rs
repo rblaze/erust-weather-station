@@ -3,15 +3,15 @@ use core::cell::Cell;
 use critical_section::{CriticalSection, Mutex};
 use embedded_hal::digital::OutputPin;
 use fugit::{TimerDuration, TimerInstant};
-use futures::{select_biased, Future, FutureExt};
+use futures::{Future, FutureExt, select_biased};
 use once_cell::sync::OnceCell;
 use rtt_target::debug_rprintln;
 
 use stm32g0_hal::gpio::gpioa::PA15;
 use stm32g0_hal::gpio::{Output, PushPull};
-use stm32g0_hal::pac::{interrupt, LPTIM2};
+use stm32g0_hal::pac::{LPTIM2, interrupt};
 use stm32g0_hal::rcc::lptim::LptimClock;
-use stm32g0_hal::rcc::{Rcc, LSI_FREQ};
+use stm32g0_hal::rcc::{LSI_FREQ, Rcc};
 use stm32g0_hal::timer::{Enabled, LowPowerTimer, LptimCounter, LptimEvent, LptimPrescaler};
 
 const TIMER_FREQ: u32 = LSI_FREQ.to_Hz() / 128;
@@ -194,8 +194,10 @@ unsafe impl Sync for SystemTimer {}
 static TIMER: OnceCell<SystemTimer> = OnceCell::new();
 
 #[interrupt]
-unsafe fn TIM7() {
-    let mut led = core::mem::MaybeUninit::<PA15<Output<PushPull>>>::uninit().assume_init();
+fn TIM7() {
+    // Create debug LED from thin air.
+    let mut led =
+        unsafe { core::mem::MaybeUninit::<PA15<Output<PushPull>>>::uninit().assume_init() };
     led.set_high().unwrap();
 
     let timer = &TIMER

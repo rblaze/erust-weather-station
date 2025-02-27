@@ -1,8 +1,8 @@
 use core::cell::Cell;
 use portable_atomic::{AtomicU32, Ordering};
 
-use async_scheduler::executor::{set_environment, Environment, Executor};
-use cortex_m::peripheral::{scb::VectActive, SCB};
+use async_scheduler::executor::{Environment, Executor, set_environment};
+use cortex_m::peripheral::{SCB, scb::VectActive};
 use once_cell::sync::OnceCell;
 use rtt_target::debug_rprintln;
 

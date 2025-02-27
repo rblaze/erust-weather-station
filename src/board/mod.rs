@@ -3,14 +3,14 @@ use core::cell::RefCell;
 use rtt_target::debug_rprintln;
 use stm32g0_hal::adc::{Adc, AdcExt};
 use stm32g0_hal::exti::{Event, ExtiExt};
-use stm32g0_hal::gpio::gpiob::{PB10, PB11, PB12, PB13, PB14, PB15, PB2, PB6, PB7, PB8, PB9};
+use stm32g0_hal::gpio::gpiob::{PB2, PB6, PB7, PB8, PB9, PB10, PB11, PB12, PB13, PB14, PB15};
 use stm32g0_hal::gpio::{Alternate, Analog, GpioExt, Input, PullUp, PushPull, SignalEdge};
 use stm32g0_hal::i2c::{self, I2c, I2cExt};
-use stm32g0_hal::pac::{interrupt, Interrupt};
 use stm32g0_hal::pac::{CorePeripherals, Peripherals};
 use stm32g0_hal::pac::{EXTI, I2C3, NVIC, TIM4};
-use stm32g0_hal::rcc::config::{Config, Prescaler};
+use stm32g0_hal::pac::{Interrupt, interrupt};
 use stm32g0_hal::rcc::RccExt;
+use stm32g0_hal::rcc::config::{Config, Prescaler};
 use stm32g0_hal::timer::{LptimExt, Pwm, TimerExt};
 use stm32g0_hal::usb::UsbExt;
 
@@ -204,8 +204,8 @@ pub static JOYSTICK_EVENT: async_scheduler::sync::mailbox::Mailbox<()> =
     async_scheduler::sync::mailbox::Mailbox::new();
 
 #[interrupt]
-unsafe fn EXTI4_15() {
-    let exti = EXTI::steal();
+fn EXTI4_15() {
+    let exti = unsafe { EXTI::steal() };
 
     debug_rprintln!("EXTI interrupt {:016b}", exti.fpr1().read().bits());
     if exti.is_pending(Event::Gpio5, SignalEdge::Falling) {

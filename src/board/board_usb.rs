@@ -7,11 +7,11 @@ use rtt_target::debug_rprintln;
 use stm32g0_hal::gpio::gpioa::PA10;
 use stm32g0_hal::gpio::{Output, PushPull};
 use stm32g0_hal::pac::interrupt;
+use usb_device::LangID;
 use usb_device::bus::UsbBusAllocator;
 use usb_device::device::{
     StringDescriptors, UsbDevice, UsbDeviceBuilder, UsbDeviceState, UsbVidPid,
 };
-use usb_device::LangID;
 
 use crate::error::Error;
 
