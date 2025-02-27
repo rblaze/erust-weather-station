@@ -21,8 +21,8 @@ jobs:
       - name: "Run clippy for release build"
         run: cargo clippy --release --no-deps -- -D warnings
 
-  stm32g071:
-    name: "Build for STM32G071"
+  build:
+    name: "Debug and release builds"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
