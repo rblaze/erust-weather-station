@@ -3581,17 +3581,17 @@
 		(uuid "00ed3609-b916-47b4-b919-189ed49d972d")
 	)
 	(label "PA0"
-		(at 231.14 87.63 180)
+		(at 243.84 82.55 0)
 		(effects
 			(font
 				(size 1.27 1.27)
 			)
-			(justify right bottom)
+			(justify left bottom)
 		)
 		(uuid "11577fa8-1d10-4b50-9d29-2d57c4c644fb")
 	)
 	(label "PA8"
-		(at 243.84 92.71 0)
+		(at 243.84 95.25 0)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -3611,12 +3611,12 @@
 		(uuid "1c285b91-eadf-4d74-a114-a5714abd25a1")
 	)
 	(label "PA4"
-		(at 231.14 97.79 180)
+		(at 243.84 87.63 0)
 		(effects
 			(font
 				(size 1.27 1.27)
 			)
-			(justify right bottom)
+			(justify left bottom)
 		)
 		(uuid "29d94608-ea82-4b00-a1a0-59ad5e4f4304")
 	)
@@ -3631,7 +3631,7 @@
 		(uuid "3bad3eb4-f4bb-47ac-9293-a464650a3a4c")
 	)
 	(label "PA1"
-		(at 231.14 90.17 180)
+		(at 231.14 82.55 180)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -3641,12 +3641,12 @@
 		(uuid "3d493713-37e2-4e4a-98a3-71c6c6b16195")
 	)
 	(label "PA2"
-		(at 231.14 92.71 180)
+		(at 243.84 85.09 0)
 		(effects
 			(font
 				(size 1.27 1.27)
 			)
-			(justify right bottom)
+			(justify left bottom)
 		)
 		(uuid "43977ad1-2753-4488-b2e1-689c48b8b6d7")
 	)
@@ -3691,7 +3691,7 @@
 		(uuid "71f8b5a0-e802-4c06-b636-23725ad5fd35")
 	)
 	(label "PB0"
-		(at 243.84 102.87 0)
+		(at 243.84 92.71 0)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -3711,7 +3711,7 @@
 		(uuid "7d584b4f-3719-4ba3-a907-9cd7af264dc9")
 	)
 	(label "PA5"
-		(at 231.14 100.33 180)
+		(at 231.14 87.63 180)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -3731,32 +3731,32 @@
 		(uuid "80b22a8a-68f2-40cd-b037-915d601d7e29")
 	)
 	(label "PA6"
-		(at 231.14 102.87 180)
+		(at 243.84 90.17 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "8ca8a5d2-a870-4453-ae3b-c2ef8cacf546")
+	)
+	(label "PB1"
+		(at 231.14 92.71 180)
 		(effects
 			(font
 				(size 1.27 1.27)
 			)
 			(justify right bottom)
 		)
-		(uuid "8ca8a5d2-a870-4453-ae3b-c2ef8cacf546")
-	)
-	(label "PB1"
-		(at 243.84 105.41 0)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left bottom)
-		)
 		(uuid "a1ff4aaf-4f6c-4f9a-ab63-bd7dea7dd2fd")
 	)
 	(label "PA15"
-		(at 243.84 100.33 0)
+		(at 231.14 97.79 180)
 		(effects
 			(font
 				(size 1.27 1.27)
 			)
-			(justify left bottom)
+			(justify right bottom)
 		)
 		(uuid "af6473a5-1d8e-431f-a632-4411a0c2c47d")
 	)
@@ -3851,7 +3851,7 @@
 		(uuid "d76d6109-70c1-479e-8354-e12da44b0e28")
 	)
 	(label "PA7"
-		(at 231.14 105.41 180)
+		(at 231.14 90.17 180)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -3861,7 +3861,7 @@
 		(uuid "d8902e10-3541-4ed6-b3c7-3908047b510b")
 	)
 	(label "PA3"
-		(at 231.14 95.25 180)
+		(at 231.14 85.09 180)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -3901,18 +3901,18 @@
 		(uuid "f4098e42-d1ba-4585-b913-c9c040f8370e")
 	)
 	(label "PA9"
-		(at 243.84 95.25 0)
+		(at 231.14 95.25 180)
 		(effects
 			(font
 				(size 1.27 1.27)
 			)
-			(justify left bottom)
+			(justify right bottom)
 		)
 		(uuid "f8b343f1-c9ac-4ab3-80a2-cfb2e442b51f")
 	)
 	(hierarchical_label "DIR_C"
 		(shape bidirectional)
-		(at 109.22 128.27 0)
+		(at 109.22 133.35 0)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -3923,7 +3923,7 @@
 	)
 	(hierarchical_label "CENTER"
 		(shape bidirectional)
-		(at 109.22 133.35 0)
+		(at 109.22 130.81 0)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -3956,7 +3956,7 @@
 	)
 	(hierarchical_label "BLUE"
 		(shape bidirectional)
-		(at 109.22 118.11 0)
+		(at 109.22 113.03 0)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -3978,18 +3978,18 @@
 	)
 	(hierarchical_label "SCL"
 		(shape input)
-		(at 243.84 87.63 0)
+		(at 231.14 100.33 180)
 		(effects
 			(font
 				(size 1.27 1.27)
 			)
-			(justify left)
+			(justify right)
 		)
 		(uuid "6fc18b56-ccf5-422c-9f87-0dc62363e975")
 	)
 	(hierarchical_label "SDA"
 		(shape input)
-		(at 243.84 90.17 0)
+		(at 243.84 100.33 0)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -4033,12 +4033,12 @@
 	)
 	(hierarchical_label "VBUS"
 		(shape input)
-		(at 231.14 82.55 180)
+		(at 243.84 105.41 0)
 		(effects
 			(font
 				(size 1.27 1.27)
 			)
-			(justify right)
+			(justify left)
 		)
 		(uuid "ba1af1c0-8a9a-46c6-ae07-c4aa6e5d4734")
 	)
@@ -4077,7 +4077,7 @@
 	)
 	(hierarchical_label "DIR_A"
 		(shape bidirectional)
-		(at 109.22 123.19 0)
+		(at 109.22 128.27 0)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -4099,7 +4099,7 @@
 	)
 	(hierarchical_label "DIR_D"
 		(shape bidirectional)
-		(at 109.22 130.81 0)
+		(at 109.22 123.19 0)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -4121,7 +4121,7 @@
 	)
 	(hierarchical_label "RED"
 		(shape bidirectional)
-		(at 109.22 113.03 0)
+		(at 109.22 118.11 0)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -4154,12 +4154,12 @@
 	)
 	(hierarchical_label "3V3"
 		(shape input)
-		(at 243.84 82.55 0)
+		(at 231.14 105.41 180)
 		(effects
 			(font
 				(size 1.27 1.27)
 			)
-			(justify left)
+			(justify right)
 		)
 		(uuid "f17ff91e-6daf-4922-bb36-56f361b392c7")
 	)
@@ -4224,7 +4224,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "Resistor_SMD:R_0402_1005Metric"
 			(at 137.922 100.33 90)
 			(effects
 				(font
@@ -4276,7 +4276,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "2844ff06-49a3-4b11-a954-f9d132847d62")
-		(property "Reference" "#PWR025"
+		(property "Reference" "#PWR26"
 			(at 224.79 40.64 0)
 			(effects
 				(font
@@ -4327,7 +4327,7 @@
 		(instances
 			(project ""
 				(path "/e7586151-38a0-41a9-9cce-542cfb7665db/1a2b55f4-c1fd-4586-87d2-eefd04e93091"
-					(reference "#PWR025")
+					(reference "#PWR26")
 					(unit 1)
 				)
 			)
@@ -4335,15 +4335,16 @@
 	)
 	(symbol
 		(lib_id "power:GND")
-		(at 243.84 85.09 90)
+		(at 243.84 102.87 90)
+		(mirror x)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
 		(uuid "2a1b4fa7-03d9-4fd1-994c-5280d427f3cb")
-		(property "Reference" "#PWR027"
-			(at 250.19 85.09 0)
+		(property "Reference" "#PWR28"
+			(at 250.19 102.87 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -4352,7 +4353,7 @@
 			)
 		)
 		(property "Value" "GND"
-			(at 247.65 85.0901 90)
+			(at 247.65 102.8699 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -4361,7 +4362,7 @@
 			)
 		)
 		(property "Footprint" ""
-			(at 243.84 85.09 0)
+			(at 243.84 102.87 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -4370,7 +4371,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 243.84 85.09 0)
+			(at 243.84 102.87 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -4379,7 +4380,7 @@
 			)
 		)
 		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
-			(at 243.84 85.09 0)
+			(at 243.84 102.87 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -4393,7 +4394,7 @@
 		(instances
 			(project "main_board"
 				(path "/e7586151-38a0-41a9-9cce-542cfb7665db/1a2b55f4-c1fd-4586-87d2-eefd04e93091"
-					(reference "#PWR027")
+					(reference "#PWR28")
 					(unit 1)
 				)
 			)
@@ -4401,7 +4402,8 @@
 	)
 	(symbol
 		(lib_id "power:GND")
-		(at 231.14 85.09 270)
+		(at 231.14 102.87 270)
+		(mirror x)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -4409,8 +4411,8 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "343ca669-6c44-43c5-a0dc-42619d9077ab")
-		(property "Reference" "#PWR026"
-			(at 224.79 85.09 0)
+		(property "Reference" "#PWR27"
+			(at 224.79 102.87 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -4419,7 +4421,7 @@
 			)
 		)
 		(property "Value" "GND"
-			(at 227.33 85.0899 90)
+			(at 227.33 102.8701 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -4428,7 +4430,7 @@
 			)
 		)
 		(property "Footprint" ""
-			(at 231.14 85.09 0)
+			(at 231.14 102.87 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -4437,7 +4439,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 231.14 85.09 0)
+			(at 231.14 102.87 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -4446,7 +4448,7 @@
 			)
 		)
 		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
-			(at 231.14 85.09 0)
+			(at 231.14 102.87 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -4460,7 +4462,7 @@
 		(instances
 			(project "main_board"
 				(path "/e7586151-38a0-41a9-9cce-542cfb7665db/1a2b55f4-c1fd-4586-87d2-eefd04e93091"
-					(reference "#PWR026")
+					(reference "#PWR27")
 					(unit 1)
 				)
 			)
@@ -4476,7 +4478,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "38e17d85-e829-4152-864b-d63563fce651")
-		(property "Reference" "#PWR021"
+		(property "Reference" "#PWR22"
 			(at 78.74 20.32 0)
 			(effects
 				(font
@@ -4526,7 +4528,7 @@
 		(instances
 			(project "main_board"
 				(path "/e7586151-38a0-41a9-9cce-542cfb7665db/1a2b55f4-c1fd-4586-87d2-eefd04e93091"
-					(reference "#PWR021")
+					(reference "#PWR22")
 					(unit 1)
 				)
 			)
@@ -4542,7 +4544,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "3928fd4c-165e-4db0-b2e1-1b544313afdd")
-		(property "Reference" "#PWR020"
+		(property "Reference" "#PWR21"
 			(at 24.13 73.66 0)
 			(effects
 				(font
@@ -4592,7 +4594,7 @@
 		(instances
 			(project "main_board"
 				(path "/e7586151-38a0-41a9-9cce-542cfb7665db/1a2b55f4-c1fd-4586-87d2-eefd04e93091"
-					(reference "#PWR020")
+					(reference "#PWR21")
 					(unit 1)
 				)
 			)
@@ -4624,7 +4626,7 @@
 				)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "Project_Footprints:SAMTEC_TSM-110-01-L-DH"
 			(at 236.22 92.71 0)
 			(effects
 				(font
@@ -4730,7 +4732,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "4b20177d-0346-4b44-b67d-f3eb888d6c43")
-		(property "Reference" "#PWR022"
+		(property "Reference" "#PWR23"
 			(at 81.28 153.67 0)
 			(effects
 				(font
@@ -4780,7 +4782,7 @@
 		(instances
 			(project "main_board"
 				(path "/e7586151-38a0-41a9-9cce-542cfb7665db/1a2b55f4-c1fd-4586-87d2-eefd04e93091"
-					(reference "#PWR022")
+					(reference "#PWR23")
 					(unit 1)
 				)
 			)
@@ -4796,7 +4798,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "6367303b-8ab0-44c3-b5dc-7e6489883b87")
-		(property "Reference" "#PWR023"
+		(property "Reference" "#PWR24"
 			(at 127 85.09 0)
 			(effects
 				(font
@@ -4846,7 +4848,7 @@
 		(instances
 			(project "main_board"
 				(path "/e7586151-38a0-41a9-9cce-542cfb7665db/1a2b55f4-c1fd-4586-87d2-eefd04e93091"
-					(reference "#PWR023")
+					(reference "#PWR24")
 					(unit 1)
 				)
 			)
@@ -4948,7 +4950,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "Resistor_SMD:R_0402_1005Metric"
 			(at 158.242 105.41 90)
 			(effects
 				(font
@@ -5018,7 +5020,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "Resistor_SMD:R_0402_1005Metric"
 			(at 148.082 102.87 90)
 			(effects
 				(font
@@ -5070,7 +5072,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "98ebe9c2-314c-4ce2-bf4a-fa2cb718fe22")
-		(property "Reference" "#PWR024"
+		(property "Reference" "#PWR25"
 			(at 224.79 38.1 0)
 			(effects
 				(font
@@ -5121,7 +5123,7 @@
 		(instances
 			(project ""
 				(path "/e7586151-38a0-41a9-9cce-542cfb7665db/1a2b55f4-c1fd-4586-87d2-eefd04e93091"
-					(reference "#PWR024")
+					(reference "#PWR25")
 					(unit 1)
 				)
 			)
@@ -5155,7 +5157,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "Capacitor_SMD:C_0402_1005Metric"
 			(at 127.9652 101.6 0)
 			(effects
 				(font
@@ -5661,7 +5663,7 @@
 				)
 			)
 		)
-		(property "Footprint" "Project_Footprints:SAMTEC_FTSH-105-XX-X-DV"
+		(property "Footprint" "Project_Footprints:SAMTEC_FTSH-105-01-L-D-RA-K"
 			(at 236.22 40.64 0)
 			(effects
 				(font
