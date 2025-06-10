@@ -5700,6 +5700,15 @@
 				(hide yes)
 			)
 		)
+		(property "JLCPCB" "C7519"
+			(at 69.85 125.73 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "6"
 			(uuid "33cc606c-58ca-4b20-8cc3-cd2b06949d04")
 		)
@@ -6357,7 +6366,7 @@
 				(hide yes)
 			)
 		)
-		(property "JLCPCB" "C5142571"
+		(property "JLCPCB" "C384812"
 			(at 168.91 86.36 0)
 			(effects
 				(font

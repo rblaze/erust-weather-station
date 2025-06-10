@@ -4215,7 +4215,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "10K"
+		(property "Value" "10k"
 			(at 142.24 101.5999 0)
 			(effects
 				(font
@@ -4243,6 +4243,15 @@
 			)
 		)
 		(property "Description" "Resistor"
+			(at 139.7 100.33 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "JLCPCB" "C25744"
 			(at 139.7 100.33 0)
 			(effects
 				(font
@@ -4941,7 +4950,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "10K"
+		(property "Value" "10k"
 			(at 162.56 106.6799 0)
 			(effects
 				(font
@@ -4969,6 +4978,15 @@
 			)
 		)
 		(property "Description" "Resistor"
+			(at 160.02 105.41 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "JLCPCB" "C25744"
 			(at 160.02 105.41 0)
 			(effects
 				(font
@@ -5011,7 +5029,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "10K"
+		(property "Value" "10k"
 			(at 152.4 104.1399 0)
 			(effects
 				(font
@@ -5039,6 +5057,15 @@
 			)
 		)
 		(property "Description" "Resistor"
+			(at 149.86 102.87 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "JLCPCB" "C25744"
 			(at 149.86 102.87 0)
 			(effects
 				(font
@@ -5176,6 +5203,15 @@
 			)
 		)
 		(property "Description" "Unpolarized capacitor"
+			(at 127 97.79 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "JLCPCB" "C52923"
 			(at 127 97.79 0)
 			(effects
 				(font
@@ -5484,6 +5520,15 @@
 				(hide yes)
 			)
 		)
+		(property "JLCPCB" "C23733"
+			(at 73.66 34.29 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "1"
 			(uuid "16124d7b-4f4d-4179-a3a8-1f7c30d0c583")
 		)
@@ -5554,6 +5599,15 @@
 				(hide yes)
 			)
 		)
+		(property "JLCPCB" "C1525"
+			(at 83.82 34.29 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "1"
 			(uuid "34288725-d756-497e-a0e7-4483ffe2695c")
 		)
@@ -5614,6 +5668,15 @@
 			)
 		)
 		(property "Description" "Unpolarized capacitor, small symbol"
+			(at 34.29 73.66 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "JLCPCB" "C1525"
 			(at 34.29 73.66 0)
 			(effects
 				(font
