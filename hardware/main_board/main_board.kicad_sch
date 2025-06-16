@@ -1,7 +1,7 @@
 (kicad_sch
-	(version 20231120)
+	(version 20250114)
 	(generator "eeschema")
-	(generator_version "8.0")
+	(generator_version "9.0")
 	(uuid "e7586151-38a0-41a9-9cce-542cfb7665db")
 	(paper "A4")
 	(title_block
@@ -499,6 +499,10 @@
 	(sheet
 		(at 100.33 93.98)
 		(size 35.56 36.83)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
 		(fields_autoplaced yes)
 		(stroke
 			(width 0.1524)
@@ -528,183 +532,183 @@
 		)
 		(pin "3V3" input
 			(at 100.33 118.11 180)
+			(uuid "6147f8be-474e-4db6-bc00-3821172eb6ab")
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 				(justify left)
 			)
-			(uuid "6147f8be-474e-4db6-bc00-3821172eb6ab")
 		)
 		(pin "D-" bidirectional
 			(at 100.33 114.3 180)
+			(uuid "4e0b8906-f793-41af-9b38-8fd31141fb42")
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 				(justify left)
 			)
-			(uuid "4e0b8906-f793-41af-9b38-8fd31141fb42")
 		)
 		(pin "D+" bidirectional
 			(at 100.33 111.76 180)
+			(uuid "c981638c-30b9-432a-a9e3-4f4b738e52fa")
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 				(justify left)
 			)
-			(uuid "c981638c-30b9-432a-a9e3-4f4b738e52fa")
 		)
 		(pin "SDA" input
 			(at 100.33 106.68 180)
+			(uuid "6c504572-bb80-4d04-a586-19816b4211a6")
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 				(justify left)
 			)
-			(uuid "6c504572-bb80-4d04-a586-19816b4211a6")
 		)
 		(pin "SCL" input
 			(at 100.33 104.14 180)
+			(uuid "91e92e06-894c-4640-b2ff-79dd15369582")
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 				(justify left)
 			)
-			(uuid "91e92e06-894c-4640-b2ff-79dd15369582")
 		)
 		(pin "VBAT" input
 			(at 100.33 96.52 180)
+			(uuid "88c58982-e1d9-4a5f-9c1d-6d54575db238")
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 				(justify left)
 			)
-			(uuid "88c58982-e1d9-4a5f-9c1d-6d54575db238")
 		)
 		(pin "DIR_A" bidirectional
 			(at 135.89 97.79 0)
+			(uuid "2a46124f-3a32-425c-aeee-47688876bdbf")
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 				(justify right)
 			)
-			(uuid "2a46124f-3a32-425c-aeee-47688876bdbf")
 		)
 		(pin "DIR_B" bidirectional
 			(at 135.89 100.33 0)
+			(uuid "ede1f00d-0152-4956-89bb-5d2b4ae35189")
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 				(justify right)
 			)
-			(uuid "ede1f00d-0152-4956-89bb-5d2b4ae35189")
 		)
 		(pin "DIR_C" bidirectional
 			(at 135.89 102.87 0)
+			(uuid "7c4fc72d-bbe7-4527-b3dc-e4811ef1bde0")
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 				(justify right)
 			)
-			(uuid "7c4fc72d-bbe7-4527-b3dc-e4811ef1bde0")
 		)
 		(pin "DIR_D" bidirectional
 			(at 135.89 105.41 0)
+			(uuid "6b838d74-e9bc-4722-8dd6-0f50de1debc4")
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 				(justify right)
 			)
-			(uuid "6b838d74-e9bc-4722-8dd6-0f50de1debc4")
 		)
 		(pin "CENTER" bidirectional
 			(at 135.89 109.22 0)
+			(uuid "8f5b2a13-fe4e-4a48-866f-21a049a9e416")
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 				(justify right)
 			)
-			(uuid "8f5b2a13-fe4e-4a48-866f-21a049a9e416")
 		)
 		(pin "BUTTON" bidirectional
 			(at 135.89 111.76 0)
+			(uuid "a9ab654a-6093-4f13-8949-4055af2cd8a3")
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 				(justify right)
 			)
-			(uuid "a9ab654a-6093-4f13-8949-4055af2cd8a3")
 		)
 		(pin "GREEN" bidirectional
 			(at 135.89 124.46 0)
+			(uuid "263752b6-e02f-49be-8abc-2ba70022bcd1")
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 				(justify right)
 			)
-			(uuid "263752b6-e02f-49be-8abc-2ba70022bcd1")
 		)
 		(pin "BLUE" bidirectional
 			(at 135.89 121.92 0)
+			(uuid "84d42e27-de2e-4bf6-a8ed-71ff2feb5322")
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 				(justify right)
 			)
-			(uuid "84d42e27-de2e-4bf6-a8ed-71ff2feb5322")
 		)
 		(pin "LCD_PWR_CTL" bidirectional
 			(at 135.89 119.38 0)
+			(uuid "2bc08fd1-dd51-4e26-9f30-3a1d8bcb544e")
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 				(justify right)
 			)
-			(uuid "2bc08fd1-dd51-4e26-9f30-3a1d8bcb544e")
 		)
 		(pin "RED" bidirectional
 			(at 135.89 127 0)
+			(uuid "62ea0e5e-5409-49ed-8eba-ca742726eec0")
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 				(justify right)
 			)
-			(uuid "62ea0e5e-5409-49ed-8eba-ca742726eec0")
 		)
 		(pin "CHARGER_INT" input
 			(at 100.33 101.6 180)
+			(uuid "27aa4ffc-86d4-4ee5-8630-f80b41e70f8a")
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 				(justify left)
 			)
-			(uuid "27aa4ffc-86d4-4ee5-8630-f80b41e70f8a")
 		)
 		(pin "VBUS" input
 			(at 100.33 120.65 180)
+			(uuid "55ec5039-ffd8-4d0b-b934-78d13203635d")
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 				(justify left)
 			)
-			(uuid "55ec5039-ffd8-4d0b-b934-78d13203635d")
 		)
 		(instances
 			(project "main_board"
@@ -717,6 +721,10 @@
 	(sheet
 		(at 29.21 93.98)
 		(size 34.29 29.21)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
 		(fields_autoplaced yes)
 		(stroke
 			(width 0.1524)
@@ -746,83 +754,83 @@
 		)
 		(pin "VBAT" input
 			(at 63.5 96.52 0)
+			(uuid "77112668-ea35-4d09-ba88-de186827e556")
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 				(justify right)
 			)
-			(uuid "77112668-ea35-4d09-ba88-de186827e556")
 		)
 		(pin "INT" output
 			(at 63.5 101.6 0)
+			(uuid "8fa3919c-0ef6-4da4-bcb4-fbfd59065e20")
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 				(justify right)
 			)
-			(uuid "8fa3919c-0ef6-4da4-bcb4-fbfd59065e20")
 		)
 		(pin "SCL" input
 			(at 63.5 104.14 0)
+			(uuid "af3e0107-5306-4898-9380-9e2d67b47790")
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 				(justify right)
 			)
-			(uuid "af3e0107-5306-4898-9380-9e2d67b47790")
 		)
 		(pin "SDA" bidirectional
 			(at 63.5 106.68 0)
+			(uuid "1550a903-f23e-42ed-a3d2-ec2ff6ffd088")
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 				(justify right)
 			)
-			(uuid "1550a903-f23e-42ed-a3d2-ec2ff6ffd088")
 		)
 		(pin "3V3" input
 			(at 63.5 118.11 0)
+			(uuid "bc8b6381-7262-46d1-a1ea-d26902ad9455")
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 				(justify right)
 			)
-			(uuid "bc8b6381-7262-46d1-a1ea-d26902ad9455")
 		)
 		(pin "D+" input
 			(at 63.5 111.76 0)
+			(uuid "aab4c346-88e1-4421-a0b1-2207d806b322")
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 				(justify right)
 			)
-			(uuid "aab4c346-88e1-4421-a0b1-2207d806b322")
 		)
 		(pin "D-" input
 			(at 63.5 114.3 0)
+			(uuid "2fce2453-d9a3-41e3-ada6-d8a193c46ede")
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 				(justify right)
 			)
-			(uuid "2fce2453-d9a3-41e3-ada6-d8a193c46ede")
 		)
 		(pin "VBUS" input
 			(at 63.5 120.65 0)
+			(uuid "f9682a08-4ded-48ec-b04b-d0f4051cdfbd")
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 				(justify right)
 			)
-			(uuid "f9682a08-4ded-48ec-b04b-d0f4051cdfbd")
 		)
 		(instances
 			(project "main_board"
@@ -835,6 +843,10 @@
 	(sheet
 		(at 100.33 43.18)
 		(size 35.56 43.18)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
 		(fields_autoplaced yes)
 		(stroke
 			(width 0.1524)
@@ -864,133 +876,133 @@
 		)
 		(pin "CENTER" input
 			(at 135.89 66.04 0)
+			(uuid "c1974e8d-79a1-4d75-9976-8124d2aaaedf")
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 				(justify right)
 			)
-			(uuid "c1974e8d-79a1-4d75-9976-8124d2aaaedf")
 		)
 		(pin "DIR_B" input
 			(at 135.89 74.93 0)
+			(uuid "6467402a-736d-4cc7-9318-f5e40fea4651")
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 				(justify right)
 			)
-			(uuid "6467402a-736d-4cc7-9318-f5e40fea4651")
 		)
 		(pin "DIR_A" input
 			(at 135.89 77.47 0)
+			(uuid "ecd3cd44-9582-4a85-9468-46b10049bca3")
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 				(justify right)
 			)
-			(uuid "ecd3cd44-9582-4a85-9468-46b10049bca3")
 		)
 		(pin "DIR_C" input
 			(at 135.89 72.39 0)
+			(uuid "a69ad824-4835-4574-bd13-a5690950bbc0")
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 				(justify right)
 			)
-			(uuid "a69ad824-4835-4574-bd13-a5690950bbc0")
 		)
 		(pin "DIR_D" input
 			(at 135.89 69.85 0)
+			(uuid "f4323634-22aa-4498-bb6a-a370bcfb1d41")
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 				(justify right)
 			)
-			(uuid "f4323634-22aa-4498-bb6a-a370bcfb1d41")
 		)
 		(pin "BUTTON" input
 			(at 135.89 63.5 0)
+			(uuid "a1a75cfb-dd32-4b0f-85c4-ef83e4e10865")
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 				(justify right)
 			)
-			(uuid "a1a75cfb-dd32-4b0f-85c4-ef83e4e10865")
 		)
 		(pin "SDA" bidirectional
 			(at 100.33 67.31 180)
+			(uuid "2c7e1057-2420-41b5-8ca2-37e9ed6017c8")
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 				(justify left)
 			)
-			(uuid "2c7e1057-2420-41b5-8ca2-37e9ed6017c8")
 		)
 		(pin "SCL" input
 			(at 100.33 64.77 180)
+			(uuid "88443cbe-73b6-483d-ab27-1c936948045c")
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 				(justify left)
 			)
-			(uuid "88443cbe-73b6-483d-ab27-1c936948045c")
 		)
 		(pin "3V3" input
 			(at 100.33 83.82 180)
+			(uuid "e8ad6586-11fc-43ba-9c57-79ec59803a76")
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 				(justify left)
 			)
-			(uuid "e8ad6586-11fc-43ba-9c57-79ec59803a76")
 		)
 		(pin "PWR_CTL" input
 			(at 135.89 58.42 0)
+			(uuid "336360c7-3c74-4a86-866a-72797902c0b5")
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 				(justify right)
 			)
-			(uuid "336360c7-3c74-4a86-866a-72797902c0b5")
 		)
 		(pin "BLUE" input
 			(at 135.89 55.88 0)
+			(uuid "c3f06030-8342-483f-9030-13f01b9b6a73")
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 				(justify right)
 			)
-			(uuid "c3f06030-8342-483f-9030-13f01b9b6a73")
 		)
 		(pin "RED" input
 			(at 135.89 50.8 0)
+			(uuid "0591274a-0769-4e6e-8578-12460985c9ce")
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 				(justify right)
 			)
-			(uuid "0591274a-0769-4e6e-8578-12460985c9ce")
 		)
 		(pin "GREEN" input
 			(at 135.89 53.34 0)
+			(uuid "ed52867e-0871-4ff3-a4f8-2e7ee2ad8aaa")
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 				(justify right)
 			)
-			(uuid "ed52867e-0871-4ff3-a4f8-2e7ee2ad8aaa")
 		)
 		(instances
 			(project "main_board"
@@ -1005,4 +1017,5 @@
 			(page "1")
 		)
 	)
+	(embedded_fonts no)
 )
