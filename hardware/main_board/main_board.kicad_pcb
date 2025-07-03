@@ -47,8 +47,8 @@
 			(plot_on_all_layers_selection 0x00000000_00000000_00000000_00000000)
 			(disableapertmacros no)
 			(usegerberextensions yes)
-			(usegerberattributes yes)
-			(usegerberadvancedattributes yes)
+			(usegerberattributes no)
+			(usegerberadvancedattributes no)
 			(creategerberjobfile no)
 			(dashed_line_dash_ratio 12.000000)
 			(dashed_line_gap_ratio 3.000000)
@@ -461,7 +461,7 @@
 			(net 1 "GND")
 			(pinfunction "1")
 			(pintype "passive")
-			(uuid "46e15e90-2cb5-4a8c-a40c-834bed8e5768")
+			(uuid "16c2142b-c810-406a-b2f6-977c4138e422")
 		)
 		(pad "2" smd rect
 			(at -2.075 1.075)
@@ -479,7 +479,7 @@
 			(net 10 "/MCU/NRST")
 			(pinfunction "2")
 			(pintype "passive")
-			(uuid "33b79a51-516f-4536-a957-114be309e2c8")
+			(uuid "f4d36676-3a9b-46e1-9905-41a5a6bd9061")
 		)
 		(embedded_fonts no)
 		(model "${KICAD9_3DMODEL_DIR}/Button_Switch_SMD.3dshapes/SW_SPST_PTS810.step"
@@ -1002,7 +1002,7 @@
 			(net 1 "GND")
 			(pinfunction "1")
 			(pintype "passive")
-			(uuid "3ba286fa-e193-42fb-84e8-eea40bbdde45")
+			(uuid "5ea3e3fb-a916-4d3c-9ca5-00ce5e08bb54")
 		)
 		(pad "2" smd rect
 			(at -2.075 1.075)
@@ -1020,7 +1020,7 @@
 			(net 66 "Net-(R17-Pad1)")
 			(pinfunction "2")
 			(pintype "passive")
-			(uuid "42f3c20a-43ba-4c3d-b034-f15f6a12a7da")
+			(uuid "97b22e6f-f75b-4239-9f30-cbced3bc934c")
 		)
 		(embedded_fonts no)
 		(model "${KICAD9_3DMODEL_DIR}/Button_Switch_SMD.3dshapes/SW_SPST_PTS810.step"
@@ -1914,7 +1914,7 @@
 			(net 1 "GND")
 			(pinfunction "1")
 			(pintype "passive")
-			(uuid "bdc70195-4847-4fb6-9fc6-3ddaf3661d42")
+			(uuid "efb6271a-a607-4bc5-acb9-1423c15adae3")
 		)
 		(pad "2" smd rect
 			(at -2.075 1.075)
@@ -1932,7 +1932,7 @@
 			(net 9 "Net-(U3-EN)")
 			(pinfunction "2")
 			(pintype "passive")
-			(uuid "d61dda4e-9a9e-4c01-ae80-f7e06b6fe12c")
+			(uuid "03ea0a87-553c-4762-af7a-f4a0c1e909af")
 		)
 		(embedded_fonts no)
 		(model "${KICAD9_3DMODEL_DIR}/Button_Switch_SMD.3dshapes/SW_SPST_PTS810.step"
@@ -5173,7 +5173,7 @@
 			(size 1.5 3.4)
 			(layers "B.Cu" "B.Mask" "B.Paste")
 			(roundrect_rratio 0.166667)
-			(uuid "1bbd41a8-542d-44a7-ae6e-0e4b7608e6b0")
+			(uuid "3a65e99e-9adb-4520-bc59-c076a92017c8")
 		)
 		(embedded_fonts no)
 		(model "${KICAD9_3DMODEL_DIR}/Connector_JST.3dshapes/JST_PH_S3B-PH-SM4-TB_1x03-1MP_P2.00mm_Horizontal.step"
@@ -10383,7 +10383,7 @@
 			(net 1 "GND")
 			(pinfunction "SHIELD")
 			(pintype "passive")
-			(uuid "b97c1b36-1a8b-412e-8cdc-5ff55e81845a")
+			(uuid "8bd0040a-5df4-475b-bf1f-51e5efcfb33e")
 		)
 		(pad "S1" thru_hole oval
 			(at 4.32 -1.075 90)
@@ -10395,7 +10395,7 @@
 			(net 1 "GND")
 			(pinfunction "SHIELD")
 			(pintype "passive")
-			(uuid "b97c1b36-1a8b-412e-8cdc-5ff55e81845a")
+			(uuid "9bbc6b23-bb2d-46b6-bc31-4d366ccd76c3")
 		)
 		(pad "S1" thru_hole oval
 			(at 4.32 3.105 90)
@@ -10407,7 +10407,7 @@
 			(net 1 "GND")
 			(pinfunction "SHIELD")
 			(pintype "passive")
-			(uuid "b97c1b36-1a8b-412e-8cdc-5ff55e81845a")
+			(uuid "e02241d5-c18d-427f-98d7-342f442d7a6b")
 		)
 		(embedded_fonts no)
 		(model "${KICAD9_3DMODEL_DIR}/Connector_USB.3dshapes/USB_C_Receptacle_GCT_USB4105-xx-A_16P_TopMnt_Horizontal.step"
@@ -17741,7 +17741,7 @@
 			(remove_unused_layers no)
 			(net 1 "GND")
 			(thermal_gap 0.3)
-			(uuid "3c402cd6-5caa-4bf6-b57b-95b979475fda")
+			(uuid "cb350409-3450-4314-9e2b-ecd6809d49d2")
 		)
 		(pad "V" thru_hole circle
 			(at -0.7874 0.7874 90)
@@ -17751,7 +17751,7 @@
 			(remove_unused_layers no)
 			(net 1 "GND")
 			(thermal_gap 0.3)
-			(uuid "3c402cd6-5caa-4bf6-b57b-95b979475fda")
+			(uuid "0eb9c56c-d6a8-4ea5-bab3-ff29d90c66b8")
 		)
 		(pad "V" thru_hole circle
 			(at 0 -0.7874 90)
@@ -17761,7 +17761,7 @@
 			(remove_unused_layers no)
 			(net 1 "GND")
 			(thermal_gap 0.3)
-			(uuid "3c402cd6-5caa-4bf6-b57b-95b979475fda")
+			(uuid "e1337a6f-ef25-4e3d-9792-14a1d4168000")
 		)
 		(pad "V" thru_hole circle
 			(at 0 0 90)
@@ -17771,7 +17771,7 @@
 			(remove_unused_layers no)
 			(net 1 "GND")
 			(thermal_gap 0.3)
-			(uuid "3c402cd6-5caa-4bf6-b57b-95b979475fda")
+			(uuid "af6c3631-f345-4025-a126-318b0d91a8cd")
 		)
 		(pad "V" thru_hole circle
 			(at 0 0.7874 90)
@@ -17781,7 +17781,7 @@
 			(remove_unused_layers no)
 			(net 1 "GND")
 			(thermal_gap 0.3)
-			(uuid "3c402cd6-5caa-4bf6-b57b-95b979475fda")
+			(uuid "b736109b-4798-405b-ac4d-2fed490f8875")
 		)
 		(pad "V" thru_hole circle
 			(at 0.7874 -0.7874 90)
@@ -17791,7 +17791,7 @@
 			(remove_unused_layers no)
 			(net 1 "GND")
 			(thermal_gap 0.3)
-			(uuid "3c402cd6-5caa-4bf6-b57b-95b979475fda")
+			(uuid "501b8ec3-054a-43fd-b770-a2cc2960be08")
 		)
 		(pad "V" thru_hole circle
 			(at 0.7874 0 90)
@@ -17801,7 +17801,7 @@
 			(remove_unused_layers no)
 			(net 1 "GND")
 			(thermal_gap 0.3)
-			(uuid "3c402cd6-5caa-4bf6-b57b-95b979475fda")
+			(uuid "f7887d23-db39-4189-a3a9-e495195338d4")
 		)
 		(pad "V" thru_hole circle
 			(at 0.7874 0.7874 90)
@@ -17811,7 +17811,7 @@
 			(remove_unused_layers no)
 			(net 1 "GND")
 			(thermal_gap 0.3)
-			(uuid "3c402cd6-5caa-4bf6-b57b-95b979475fda")
+			(uuid "4d0feb43-b2c7-4be4-890f-8ab2d0189109")
 		)
 		(embedded_fonts no)
 	)
