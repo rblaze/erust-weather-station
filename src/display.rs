@@ -69,7 +69,7 @@ where
             display.set_output_line(0)?;
             write!(display, "{:?}", status.chrg())?;
             display.set_output_line(1)?;
-            write!(display, "vbat {:.2}", battery_volts)?;
+            write!(display, "vbat {battery_volts:.2}")?;
         }
         DisplayPage::ChargerRegisters => {
             let (status, faults) = {
@@ -101,7 +101,7 @@ where
             sleep(Duration::millis(5)).await;
 
             display.set_output_line(0)?;
-            write!(display, "uptime {}", uptime)?;
+            write!(display, "uptime {uptime}")?;
         }
         DisplayPage::Off => {
             unimplemented!();
