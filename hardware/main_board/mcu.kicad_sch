@@ -5729,7 +5729,7 @@
 	)
 	(symbol
 		(lib_id "Connector_Generic:Conn_02x05_Odd_Even")
-		(at 236.22 40.64 0)
+		(at 238.76 40.64 180)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -5754,7 +5754,7 @@
 			)
 		)
 		(property "Footprint" "Project_Footprints:SAMTEC_FTSH-105-01-L-D-RA-K"
-			(at 236.22 40.64 0)
+			(at 238.76 40.64 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -5763,7 +5763,7 @@
 			)
 		)
 		(property "Datasheet" "~"
-			(at 236.22 40.64 0)
+			(at 238.76 40.64 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -5772,7 +5772,7 @@
 			)
 		)
 		(property "Description" "Generic connector, double row, 02x05, odd/even pin numbering scheme (row 1 odd numbers, row 2 even numbers), script generated (kicad-library-utils/schlib/autogen/connector/)"
-			(at 236.22 40.64 0)
+			(at 238.76 40.64 0)
 			(effects
 				(font
 					(size 1.27 1.27)
