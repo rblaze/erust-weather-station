@@ -4807,12 +4807,12 @@
 	(symbol
 		(lib_id "Switch:SW_Push")
 		(at 58.42 107.95 0)
+		(mirror y)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(fields_autoplaced yes)
 		(uuid "80ab5556-ba31-4e24-8be4-e5137f9dbabd")
 		(property "Reference" "SW3"
 			(at 58.42 100.33 0)

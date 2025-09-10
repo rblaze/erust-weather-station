@@ -3951,7 +3951,7 @@
 	)
 	(hierarchical_label "CENTER"
 		(shape bidirectional)
-		(at 109.22 130.81 0)
+		(at 109.22 135.89 0)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -4094,7 +4094,7 @@
 	)
 	(hierarchical_label "DIR_B"
 		(shape bidirectional)
-		(at 109.22 125.73 0)
+		(at 109.22 130.81 0)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -4105,7 +4105,7 @@
 	)
 	(hierarchical_label "DIR_A"
 		(shape bidirectional)
-		(at 109.22 128.27 0)
+		(at 109.22 125.73 0)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -4127,7 +4127,7 @@
 	)
 	(hierarchical_label "DIR_D"
 		(shape bidirectional)
-		(at 109.22 123.19 0)
+		(at 109.22 128.27 0)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -4138,7 +4138,7 @@
 	)
 	(hierarchical_label "BUTTON"
 		(shape bidirectional)
-		(at 109.22 135.89 0)
+		(at 109.22 123.19 0)
 		(effects
 			(font
 				(size 1.27 1.27)

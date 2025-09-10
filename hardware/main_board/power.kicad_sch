@@ -3898,7 +3898,7 @@
 	)
 	(wire
 		(pts
-			(xy 59.69 127) (xy 59.69 125.73)
+			(xy 77.47 127) (xy 77.47 125.73)
 		)
 		(stroke
 			(width 0)
@@ -4088,7 +4088,7 @@
 	)
 	(wire
 		(pts
-			(xy 59.69 125.73) (xy 62.23 125.73)
+			(xy 77.47 125.73) (xy 74.93 125.73)
 		)
 		(stroke
 			(width 0)
@@ -4572,12 +4572,12 @@
 	)
 	(hierarchical_label "VBUS"
 		(shape input)
-		(at 74.93 125.73 0)
+		(at 62.23 125.73 180)
 		(effects
 			(font
 				(size 1.27 1.27)
 			)
-			(justify left)
+			(justify right)
 		)
 		(uuid "6c9d53e1-6398-4a93-a29c-a1f95661e256")
 	)
@@ -5162,7 +5162,8 @@
 	)
 	(symbol
 		(lib_id "power:GND")
-		(at 59.69 127 0)
+		(at 77.47 127 0)
+		(mirror y)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -5171,7 +5172,7 @@
 		(fields_autoplaced yes)
 		(uuid "29feb639-c3e4-4423-9d95-48108e1c2e3c")
 		(property "Reference" "#PWR3"
-			(at 59.69 133.35 0)
+			(at 77.47 133.35 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -5180,7 +5181,7 @@
 			)
 		)
 		(property "Value" "GND"
-			(at 59.69 132.08 0)
+			(at 77.47 132.08 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -5188,7 +5189,7 @@
 			)
 		)
 		(property "Footprint" ""
-			(at 59.69 127 0)
+			(at 77.47 127 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -5197,7 +5198,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 59.69 127 0)
+			(at 77.47 127 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -5206,7 +5207,7 @@
 			)
 		)
 		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
-			(at 59.69 127 0)
+			(at 77.47 127 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -5693,8 +5694,7 @@
 	)
 	(symbol
 		(lib_id "Power_Protection:USBLC6-2SC6")
-		(at 69.85 125.73 270)
-		(mirror x)
+		(at 67.31 125.73 90)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -5702,7 +5702,7 @@
 		(dnp no)
 		(uuid "404d9cd8-16d1-4f3e-8c42-e07f9483fd01")
 		(property "Reference" "U1"
-			(at 79.756 122.428 90)
+			(at 58.674 129.794 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -5710,7 +5710,7 @@
 			)
 		)
 		(property "Value" "USBLC6-2SC6"
-			(at 79.756 119.888 90)
+			(at 58.42 131.826 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -5718,7 +5718,7 @@
 			)
 		)
 		(property "Footprint" "Package_TO_SOT_SMD:SOT-23-6"
-			(at 63.5 124.46 0)
+			(at 73.66 124.46 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -5729,7 +5729,7 @@
 			)
 		)
 		(property "Datasheet" "https://www.st.com/resource/en/datasheet/usblc6-2.pdf"
-			(at 61.595 124.46 0)
+			(at 75.565 124.46 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -5739,7 +5739,7 @@
 			)
 		)
 		(property "Description" "Very low capacitance ESD protection diode, 2 data-line, SOT-23-6"
-			(at 69.85 125.73 0)
+			(at 67.31 125.73 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -5748,7 +5748,7 @@
 			)
 		)
 		(property "JLCPCB" "C7519"
-			(at 69.85 125.73 0)
+			(at 67.31 125.73 0)
 			(effects
 				(font
 					(size 1.27 1.27)
