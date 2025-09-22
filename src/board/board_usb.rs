@@ -225,10 +225,10 @@ impl UsbSerialPort {
                     .map(|(device, serial)| serial.read(device.bus(), buf))
             });
 
-            if let Some(bytes_read) = read_result {
-                if bytes_read > 0 {
-                    return Ok(bytes_read);
-                }
+            if let Some(bytes_read) = read_result
+                && bytes_read > 0
+            {
+                return Ok(bytes_read);
             }
 
             self.usb_event.read().await?;
