@@ -188,6 +188,16 @@
 	)
 	(wire
 		(pts
+			(xy 63.5 123.19) (xy 100.33 123.19)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "45efe9cd-f6f8-401b-a6e3-3b108311213c")
+	)
+	(wire
+		(pts
 			(xy 142.24 100.33) (xy 142.24 74.93)
 		)
 		(stroke
@@ -710,6 +720,16 @@
 				(justify left)
 			)
 		)
+		(pin "SYS" input
+			(at 100.33 123.19 180)
+			(uuid "2f50c244-6800-49e7-a865-e77f9db78bff")
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
 		(instances
 			(project "main_board"
 				(path "/e7586151-38a0-41a9-9cce-542cfb7665db"
@@ -720,7 +740,7 @@
 	)
 	(sheet
 		(at 29.21 93.98)
-		(size 34.29 29.21)
+		(size 34.29 33.02)
 		(exclude_from_sim no)
 		(in_bom yes)
 		(on_board yes)
@@ -744,7 +764,7 @@
 			)
 		)
 		(property "Sheetfile" "power.kicad_sch"
-			(at 29.21 123.7746 0)
+			(at 29.21 127.5846 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -825,6 +845,16 @@
 		(pin "VBUS" input
 			(at 63.5 120.65 0)
 			(uuid "f9682a08-4ded-48ec-b04b-d0f4051cdfbd")
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+		)
+		(pin "SYS" input
+			(at 63.5 123.19 0)
+			(uuid "4ff4eb0f-24cb-4d2d-b223-8157f156954a")
 			(effects
 				(font
 					(size 1.27 1.27)

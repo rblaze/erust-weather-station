@@ -4037,6 +4037,17 @@
 		)
 		(uuid "8cc70ee1-b8bd-44a4-b535-7c7881b869a2")
 	)
+	(hierarchical_label "SYS"
+		(shape input)
+		(at 231.14 105.41 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "9277f92c-6c0c-4209-9ef0-185104c4273b")
+	)
 	(hierarchical_label "LCD_PWR_CTL"
 		(shape bidirectional)
 		(at 109.22 120.65 0)
@@ -4432,73 +4443,6 @@
 			(project "main_board"
 				(path "/e7586151-38a0-41a9-9cce-542cfb7665db/1a2b55f4-c1fd-4586-87d2-eefd04e93091"
 					(reference "#PWR28")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "power:GND")
-		(at 231.14 105.41 270)
-		(mirror x)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(uuid "343ca669-6c44-43c5-a0dc-42619d9077ab")
-		(property "Reference" "#PWR27"
-			(at 224.79 105.41 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Value" "GND"
-			(at 227.33 105.4101 90)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify right)
-			)
-		)
-		(property "Footprint" ""
-			(at 231.14 105.41 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" ""
-			(at 231.14 105.41 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
-			(at 231.14 105.41 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "1"
-			(uuid "49d09a3f-1b4b-423a-8d75-1d1280026aa8")
-		)
-		(instances
-			(project "main_board"
-				(path "/e7586151-38a0-41a9-9cce-542cfb7665db/1a2b55f4-c1fd-4586-87d2-eefd04e93091"
-					(reference "#PWR27")
 					(unit 1)
 				)
 			)

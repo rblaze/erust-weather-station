@@ -3095,6 +3095,12 @@
 		(uuid "50bb3ff1-3d16-46dc-aad3-4f223e5d667b")
 	)
 	(junction
+		(at 207.01 95.25)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "51ba1c23-7698-4eb6-b80a-3cd225160006")
+	)
+	(junction
 		(at 59.69 95.25)
 		(diameter 0)
 		(color 0 0 0 0)
@@ -3348,7 +3354,7 @@
 	)
 	(wire
 		(pts
-			(xy 198.12 95.25) (xy 220.98 95.25)
+			(xy 198.12 95.25) (xy 207.01 95.25)
 		)
 		(stroke
 			(width 0)
@@ -3448,6 +3454,16 @@
 	)
 	(wire
 		(pts
+			(xy 207.01 95.25) (xy 207.01 97.79)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "22671b7c-1294-4583-bdc3-bf2b95e671c4")
+	)
+	(wire
+		(pts
 			(xy 185.42 111.76) (xy 185.42 113.03)
 		)
 		(stroke
@@ -3515,6 +3531,16 @@
 			(type default)
 		)
 		(uuid "2c87f72d-637f-487e-bd7d-11bbcce211a3")
+	)
+	(wire
+		(pts
+			(xy 207.01 95.25) (xy 220.98 95.25)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "2ceeff18-b255-4dfd-ad12-e326413be881")
 	)
 	(wire
 		(pts
@@ -4496,16 +4522,6 @@
 		)
 		(uuid "ac8183ba-dcfb-43c7-ba52-fce353464249")
 	)
-	(label "SYS"
-		(at 210.82 95.25 0)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left bottom)
-		)
-		(uuid "e15859c7-92e8-4386-96f8-41c17b9f47b4")
-	)
 	(label "BATTERY"
 		(at 191.77 102.87 0)
 		(effects
@@ -4602,6 +4618,17 @@
 			(justify right)
 		)
 		(uuid "83041585-36cd-4b17-bc2d-4b46a2efd553")
+	)
+	(hierarchical_label "SYS"
+		(shape input)
+		(at 207.01 97.79 270)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "b628ca9e-3b0f-40ff-a6da-e8184ab52c05")
 	)
 	(hierarchical_label "D-"
 		(shape input)
