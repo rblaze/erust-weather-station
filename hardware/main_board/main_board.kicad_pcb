@@ -4500,7 +4500,7 @@
 		(property "Reference" "J5"
 			(at -10.191666 -0.0525 270)
 			(layer "B.SilkS")
-			(uuid "9fab7405-badf-4498-a98c-9aa62b640319")
+			(uuid "6bedc0ed-ea0b-413b-9bdd-de5150e235a8")
 			(effects
 				(font
 					(size 1 1)
@@ -4512,7 +4512,7 @@
 		(property "Value" "Conn_02x10_Odd_Even"
 			(at -1.635 -7.705 270)
 			(layer "B.Fab")
-			(uuid "3e88119d-9ccd-4aa2-95e8-906c6be9e335")
+			(uuid "ff66db65-761f-41fd-85a3-ab6c9051f228")
 			(effects
 				(font
 					(size 1 1)
@@ -4525,7 +4525,7 @@
 			(at 0 0 270)
 			(layer "B.Fab")
 			(hide yes)
-			(uuid "c3053d6f-740e-4691-b9f7-6ac2ac3d4fd6")
+			(uuid "7456ad7b-8eed-43a6-9689-cc6dbb126611")
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -4538,7 +4538,7 @@
 			(at 0 0 270)
 			(layer "B.Fab")
 			(hide yes)
-			(uuid "25f9bfcc-f8be-4957-af1f-c5e27d7738f6")
+			(uuid "29897a8d-8245-4683-9fad-b772b023b986")
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -19913,6 +19913,78 @@
 				(thickness 0.15)
 			)
 			(justify left bottom)
+		)
+	)
+	(gr_text "SCL"
+		(at 119.65 66.26175 0)
+		(layer "B.SilkS")
+		(uuid "077806dc-ec55-45b0-bef6-bd90cb6f0f10")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+			(justify left bottom mirror)
+		)
+	)
+	(gr_text "SDA"
+		(at 124.3 66.26175 0)
+		(layer "B.SilkS")
+		(uuid "1da16e50-5907-44dd-8e29-1a1ad7f154c0")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+			(justify left bottom mirror)
+		)
+	)
+	(gr_text "3V3"
+		(at 119.65 45.94175 0)
+		(layer "B.SilkS")
+		(uuid "2c423b83-2fc1-4850-bffe-e7861e9e9893")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+			(justify left bottom mirror)
+		)
+	)
+	(gr_text "SYS"
+		(at 119.65 68.80175 0)
+		(layer "B.SilkS")
+		(uuid "5bb7d2c5-76a1-4635-9f49-867a39f49dd8")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+			(justify left bottom mirror)
+		)
+	)
+	(gr_text "GND"
+		(at 124.3 45.94175 0)
+		(layer "B.SilkS")
+		(uuid "d4ace398-3e1f-48aa-97a2-0264f79a5427")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+			(justify left bottom mirror)
+		)
+	)
+	(gr_text "VBUS"
+		(at 124.3 68.80175 0)
+		(layer "B.SilkS")
+		(uuid "eae979ae-be6c-4e18-927d-21be8fd99923")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+			(justify left bottom mirror)
 		)
 	)
 	(gr_text "Battery"
