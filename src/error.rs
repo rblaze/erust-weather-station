@@ -2,44 +2,24 @@
 
 use core::convert::Infallible;
 
-use stm32g0_hal::i2c::Error as I2cError;
+use thiserror::Error;
 
-#[allow(unused)] // TODO: check why some errors are considered unused
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Error)]
 pub enum Error {
+    #[error("peripherals already initialized")]
     AlreadyTaken,
-    CoreFmt,
-    #[allow(unused)]
-    Environment(async_scheduler::executor::EnvError),
-    #[allow(unused)]
-    I2c(I2cError),
+    #[error("LCD coordinates out of range")]
     InvalidLcdLine,
-    Mailbox(async_scheduler::sync::mailbox::Error),
+    #[error("board not initialized")]
     Uninitialized,
-}
-
-impl From<core::fmt::Error> for Error {
-    fn from(_error: core::fmt::Error) -> Self {
-        Error::CoreFmt
-    }
-}
-
-impl From<async_scheduler::executor::EnvError> for Error {
-    fn from(error: async_scheduler::executor::EnvError) -> Self {
-        Error::Environment(error)
-    }
-}
-
-impl From<async_scheduler::mailbox::Error> for Error {
-    fn from(error: async_scheduler::mailbox::Error) -> Self {
-        Error::Mailbox(error)
-    }
-}
-
-impl From<I2cError> for Error {
-    fn from(error: I2cError) -> Self {
-        Error::I2c(error)
-    }
+    #[error(transparent)]
+    Mailbox(#[from] async_scheduler::mailbox::Error),
+    #[error(transparent)]
+    CoreFmt(#[from] core::fmt::Error),
+    #[error(transparent)]
+    Environment(#[from] async_scheduler::executor::EnvError),
+    #[error(transparent)]
+    I2c(#[from] stm32g0_hal::i2c::Error),
 }
 
 impl From<Infallible> for Error {

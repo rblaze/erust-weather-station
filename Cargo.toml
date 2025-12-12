@@ -30,6 +30,7 @@ stm32g0-hal = { git = "https://github.com/rblaze/erust-stm32g0-hal.git", feature
     "stm32g0b1",
 ] }
 # stm32g0-hal = { path = "../erust-stm32g0-hal/", features = ["stm32g0b1"] }
+thiserror = { version = "2", default-features = false }
 usb-device = "0.3"
 usbd-serial = "0.2"
 
