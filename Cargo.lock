@@ -288,7 +288,7 @@ dependencies = [
 [[package]]
 name = "lcd"
 version = "0.1.0"
-source = "git+https://github.com/rblaze/erust-lcd.git#acf31f12fa99afe0da07ec47c3fa8035435c2784"
+source = "git+https://github.com/rblaze/erust-lcd.git#810ffac5b9cbe57f2e67d41ff6dc216220aab72e"
 
 [[package]]
 name = "nb"
