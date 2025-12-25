@@ -94,8 +94,6 @@ fn main() -> ! {
 
         let mut board = board::Board::new()?;
 
-        env::init_env(board.ticker)?;
-
         let backlight_event = Mailbox::<()>::new();
         let backlight = Cell::new(DisplayBacklight::Off);
         let display_refresh_event = Mailbox::<()>::new();
@@ -159,13 +157,16 @@ fn main() -> ! {
         )));
         let usb = pin!(panic_if_exited(usb::task(board.usb_serial)));
 
-        LocalExecutor::new().run([
+        let env = env::Env::new(board.ticker);
+        LocalExecutor::new(&env).run([
             LocalFutureObj::new(charger_watchdog),
             LocalFutureObj::new(navigation),
             LocalFutureObj::new(display_handler),
             LocalFutureObj::new(backlight_handler),
             LocalFutureObj::new(usb),
         ]);
+
+        // Tasks are running forever.
         unreachable!();
     }()
     .expect("error in main");

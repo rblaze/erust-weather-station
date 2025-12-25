@@ -95,7 +95,7 @@ where
             write!(display, "faults {:08b}", u8::from(faults))?;
         }
         DisplayPage::SystemStatus => {
-            let uptime: SecsDurationU64 = (system_time::now() - start_time).convert();
+            let uptime: SecsDurationU64 = (system_time::now().await - start_time).convert();
 
             display.cls()?;
             sleep(Duration::millis(5)).await;
@@ -157,7 +157,7 @@ where
     Bus: embedded_hal::i2c::I2c,
     Error: From<Bus::Error>,
 {
-    let start_time = system_time::now();
+    let start_time = system_time::now().await;
 
     loop {
         let result = page_loop(

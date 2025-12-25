@@ -20,6 +20,7 @@ type TimerTicks = u64;
 pub type Instant = TimerInstant<TimerTicks, TIMER_FREQ>;
 pub type Duration = TimerDuration<TimerTicks, TIMER_FREQ>;
 
+#[derive(Debug)]
 pub struct Ticker {
     timer: &'static SystemTimer,
 }
@@ -162,7 +163,7 @@ where
 /// Sleeps for the specified duration.
 /// Clamps at Duration::MAX for u64->i64 conversion.
 pub async fn sleep(duration: Duration) {
-    async_scheduler::executor::sleep(duration.ticks().try_into().map_or(
+    async_scheduler::sleep(duration.ticks().try_into().map_or(
         async_scheduler::time::Duration::MAX,
         async_scheduler::time::Duration::new,
     ))
@@ -170,8 +171,8 @@ pub async fn sleep(duration: Duration) {
 }
 
 /// Returns current time.
-pub fn now() -> Instant {
-    Instant::from_ticks(async_scheduler::executor::now().ticks().clamp(0, i64::MAX) as u64)
+pub async fn now() -> Instant {
+    Instant::from_ticks(async_scheduler::now().await.ticks().clamp(0, i64::MAX) as u64)
 }
 
 #[derive(Clone, Copy, Debug)]

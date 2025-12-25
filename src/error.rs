@@ -17,8 +17,6 @@ pub enum Error {
     #[error(transparent)]
     CoreFmt(#[from] core::fmt::Error),
     #[error(transparent)]
-    Environment(#[from] async_scheduler::executor::EnvError),
-    #[error(transparent)]
     I2c(#[from] stm32g0_hal::i2c::Error),
 }
 
