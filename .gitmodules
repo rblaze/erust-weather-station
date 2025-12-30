@@ -1,0 +1,3 @@
+[submodule "hardware/Libraries"]
+	path = hardware/Libraries
+	url = git@github.com:rblaze/kicad_libraries.git
