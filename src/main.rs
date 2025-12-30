@@ -105,6 +105,7 @@ fn main() -> ! {
         let charger = RefCell::new(BQ24259::new(RefCellDevice::new(&board.i2c)));
         let mut voc_sensor = SGP40::new(RefCellDevice::new(&board.i2c));
         let co2_sensor = SCD4x::new(RefCellDevice::new(&board.i2c));
+        let co2_data = Cell::new(sensirion::scd4x::Measurement::default());
 
         match voc_sensor.get_serial_number() {
             Ok(serial) => debug_rprintln!("SGP40 serial {}", serial),
@@ -154,6 +155,7 @@ fn main() -> ! {
             display_bus,
             &display_refresh_event,
             &display_page,
+            &co2_data,
             &charger,
             &mut board.vbat,
             &mut board.display_power,
@@ -166,7 +168,11 @@ fn main() -> ! {
             &mut board.joystick
         )));
         let usb = pin!(panic_if_exited(usb::task(board.usb_serial)));
-        let co2_reader = pin!(panic_if_exited(co2::task(co2_sensor, board.delay)));
+        let co2_reader = pin!(panic_if_exited(co2::task(
+            co2_sensor,
+            board.delay,
+            &co2_data
+        )));
 
         let env = env::Env::new(board.ticker);
         LocalExecutor::new(&env).run([

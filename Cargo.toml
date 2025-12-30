@@ -20,6 +20,7 @@ futures = { version = "0.3", default-features = false, features = [
     "async-await",
 ] }
 lcd = { git = "https://github.com/rblaze/erust-lcd.git" }
+# lcd = { path = "../erust-lcd/" }
 once_cell = { version = "1", default-features = false, features = [
     "critical-section",
 ] }

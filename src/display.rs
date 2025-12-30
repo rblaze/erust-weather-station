@@ -9,6 +9,7 @@ use embedded_hal::digital::OutputPin;
 use fugit::SecsDurationU64;
 use lcd::screen::Screen;
 use rtt_target::debug_rprintln;
+use sensirion::scd4x;
 
 use crate::board::{DisplayPowerPin, VBat};
 use crate::error::Error;
@@ -50,6 +51,7 @@ async fn show_page<Bus>(
     page: DisplayPage,
     start_time: Instant,
     display: &mut Lcd<'_, Bus>,
+    co2_data: &Cell<scd4x::Measurement>,
     charger: &RefCell<BQ24259<Bus>>,
     vbat: &mut VBat,
 ) -> Result<(), Error>
@@ -96,12 +98,19 @@ where
         }
         DisplayPage::SystemStatus => {
             let uptime: SecsDurationU64 = (system_time::now().await - start_time).convert();
+            let scd_data = co2_data.get();
 
             display.cls()?;
             sleep(Duration::millis(5)).await;
 
             display.set_output_line(0)?;
             write!(display, "uptime {uptime}")?;
+            display.set_output_line(1)?;
+            write!(
+                display,
+                "{} ppm {:.0}\u{df}C {:.0}% RH",
+                scd_data.co2_ppm, scd_data.temp_celsius, scd_data.humidity_percent
+            )?;
         }
         DisplayPage::Off => {
             unimplemented!();
@@ -116,6 +125,7 @@ async fn page_loop<Bus>(
     display_bus: &mut Bus,
     event: &Mailbox<()>,
     page: &Cell<DisplayPage>,
+    co2_data: &Cell<scd4x::Measurement>,
     charger: &RefCell<BQ24259<Bus>>,
     vbat: &mut VBat,
     display_power: &mut DisplayPowerPin,
@@ -131,7 +141,15 @@ where
 
     let mut display = Lcd::new(display_bus)?;
     while page.get() != DisplayPage::Off {
-        show_page(page.get(), start_time, &mut display, charger, vbat).await?;
+        show_page(
+            page.get(),
+            start_time,
+            &mut display,
+            co2_data,
+            charger,
+            vbat,
+        )
+        .await?;
 
         if page.get() == DisplayPage::ChargerRegisters {
             // On this page, update only by charger interrupt or page change.
@@ -149,6 +167,7 @@ pub async fn task<Bus>(
     mut display_bus: Bus,
     event: &Mailbox<()>,
     page: &Cell<DisplayPage>,
+    co2_data: &Cell<scd4x::Measurement>,
     charger: &RefCell<BQ24259<Bus>>,
     vbat: &mut VBat,
     display_power: &mut DisplayPowerPin,
@@ -164,6 +183,7 @@ where
             &mut display_bus,
             event,
             page,
+            co2_data,
             charger,
             vbat,
             display_power,

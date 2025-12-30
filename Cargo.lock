@@ -297,7 +297,7 @@ dependencies = [
 [[package]]
 name = "lcd"
 version = "0.1.0"
-source = "git+https://github.com/rblaze/erust-lcd.git#810ffac5b9cbe57f2e67d41ff6dc216220aab72e"
+source = "git+https://github.com/rblaze/erust-lcd.git#74bbc112a845d879fea9bd8a1aa354d9fed1d716"
 
 [[package]]
 name = "nb"
@@ -431,7 +431,7 @@ checksum = "388a1df253eca08550bef6c72392cfe7c30914bf41df5269b68cbd6ff8f570a3"
 [[package]]
 name = "sensirion"
 version = "0.1.0"
-source = "git+https://github.com/rblaze/erust-sensirion.git#375d591dcb55e5632fe778820b6fede3f2ddae11"
+source = "git+https://github.com/rblaze/erust-sensirion.git#df975ef609c23090b381e9346dc6f5ba4d7eeba8"
 dependencies = [
  "embedded-hal 1.0.0",
  "embedded-hal-async",
