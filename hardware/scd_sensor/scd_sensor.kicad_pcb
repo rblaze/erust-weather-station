@@ -69,7 +69,7 @@
 			(hidednponfab no)
 			(sketchdnponfab yes)
 			(crossoutdnponfab yes)
-			(subtractmaskfromsilk no)
+			(subtractmaskfromsilk yes)
 			(outputformat 1)
 			(mirror no)
 			(drillshape 0)
@@ -2736,7 +2736,7 @@
 		(descr "Through hole straight pin header, 2x10, 2.54mm pitch, double rows")
 		(tags "Through hole pin header THT 2x10 2.54mm double row")
 		(property "Reference" "J5"
-			(at 5.44 0.77 0)
+			(at 1.245175 -11.43 0)
 			(layer "B.SilkS")
 			(uuid "f77b510b-c8ab-4ff6-8ae9-c6a0c546fe6b")
 			(effects
@@ -3216,6 +3216,30 @@
 		(layer "Edge.Cuts")
 		(uuid "c573ace0-35ed-421d-8e2f-4cdfad5a46c1")
 	)
+	(gr_text "SYS"
+		(at 142 118 0)
+		(layer "B.SilkS")
+		(uuid "20e7597c-61c1-4f0f-b424-acf4c56a54ed")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.1)
+			)
+			(justify left bottom mirror)
+		)
+	)
+	(gr_text "x|PWR_EN"
+		(at 142 107.5 0)
+		(layer "B.SilkS")
+		(uuid "4cbb5d7b-c2c0-4796-92d0-150212dc2d52")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.1)
+			)
+			(justify left bottom mirror)
+		)
+	)
 	(gr_text "CO2 Sensor\n"
 		(at 132 99.5 90)
 		(layer "B.SilkS")
@@ -3229,7 +3253,7 @@
 		)
 	)
 	(gr_text "SCD4x"
-		(at 138 111.5 90)
+		(at 134 110.5 90)
 		(layer "B.SilkS")
 		(uuid "88e3aa8b-5b2a-440d-97cd-72dd0ea31647")
 		(effects
@@ -3240,14 +3264,38 @@
 			(justify left bottom mirror)
 		)
 	)
+	(gr_text "3V3|GND"
+		(at 142 94 0)
+		(layer "B.SilkS")
+		(uuid "b7ca2416-78cb-4136-bf4c-e53e617b0772")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.1)
+			)
+			(justify left bottom mirror)
+		)
+	)
 	(gr_text "SGP40"
-		(at 138 93 90)
+		(at 134 95.5 90)
 		(layer "B.SilkS")
 		(uuid "e1a2987d-94b1-4b84-af32-f48e58ac7b3a")
 		(effects
 			(font
 				(size 1.5 1.5)
 				(thickness 0.1875)
+			)
+			(justify left bottom mirror)
+		)
+	)
+	(gr_text "SCL|SDA"
+		(at 142 115.5 0)
+		(layer "B.SilkS")
+		(uuid "eb59e40c-84ae-44ca-bd0a-36b4c3e47dc8")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.1)
 			)
 			(justify left bottom mirror)
 		)
