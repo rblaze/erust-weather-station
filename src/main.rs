@@ -3,6 +3,7 @@
 
 mod backlight;
 mod board;
+mod co2;
 mod display;
 mod env;
 mod error;
@@ -26,6 +27,8 @@ use futures::task::LocalFutureObj;
 use rtt_target::debug_rprintln;
 #[cfg(debug_assertions)]
 use rtt_target::rtt_init_print;
+use sensirion::scd4x::SCD4x;
+use sensirion::sgp40::SGP40;
 use system_time::Duration;
 
 use crate::backlight::DisplayBacklight;
@@ -100,6 +103,13 @@ fn main() -> ! {
         let display_page = Cell::new(DisplayPage::BatteryStatus);
         let display_bus = RefCellDevice::new(&board.i2c);
         let charger = RefCell::new(BQ24259::new(RefCellDevice::new(&board.i2c)));
+        let mut voc_sensor = SGP40::new(RefCellDevice::new(&board.i2c));
+        let co2_sensor = SCD4x::new(RefCellDevice::new(&board.i2c));
+
+        match voc_sensor.get_serial_number() {
+            Ok(serial) => debug_rprintln!("SGP40 serial {}", serial),
+            Err(error) => debug_rprintln!("SGP40 error: {}", error),
+        }
 
         let charger_watchdog = pin!(panic_if_exited(async {
             let mut last_power_state = charger.borrow_mut().status()?.pg();
@@ -156,6 +166,7 @@ fn main() -> ! {
             &mut board.joystick
         )));
         let usb = pin!(panic_if_exited(usb::task(board.usb_serial)));
+        let co2_reader = pin!(panic_if_exited(co2::task(co2_sensor, board.delay)));
 
         let env = env::Env::new(board.ticker);
         LocalExecutor::new(&env).run([
@@ -164,6 +175,7 @@ fn main() -> ! {
             LocalFutureObj::new(display_handler),
             LocalFutureObj::new(backlight_handler),
             LocalFutureObj::new(usb),
+            LocalFutureObj::new(co2_reader),
         ]);
 
         // Tasks are running forever.

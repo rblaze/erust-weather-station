@@ -1,5 +1,6 @@
 use core::cell::RefCell;
 
+use embedded_hal::digital::OutputPin;
 use rtt_target::debug_rprintln;
 use stm32g0_hal::adc::{Adc, AdcExt};
 use stm32g0_hal::exti::{Event, ExtiExt};
@@ -15,7 +16,7 @@ use stm32g0_hal::timer::{LptimExt, Pwm, TimerExt};
 use stm32g0_hal::usb::UsbExt;
 
 use crate::error::Error;
-use crate::system_time::Ticker;
+use crate::system_time::{self, Ticker};
 
 mod board_usb;
 pub use board_usb::*;
@@ -57,6 +58,7 @@ pub type DisplayPowerPin = PB9<stm32g0_hal::gpio::Output<PushPull>>;
 
 pub struct Board {
     pub ticker: Ticker,
+    pub delay: system_time::Delay,
     pub i2c: RefCell<BoardI2c>,
     pub backlight: Backlight,
     pub vbat: VBat,
@@ -90,6 +92,9 @@ impl Board {
         let _pa10 = gpioa.pa10.into_push_pull_output();
         let _pa15 = gpioa.pa15.into_push_pull_output();
         let gpiob = dp.GPIOB.split(&rcc);
+
+        let mut pwrctl = gpiob.pb0.into_push_pull_output();
+        pwrctl.set_high()?;
 
         let backlight_pwm = dp.TIM4.constrain().pwm(0, u16::MAX, &rcc);
         let mut adc = dp.ADC.constrain(&rcc);
@@ -170,6 +175,7 @@ impl Board {
 
         Ok(Self {
             ticker,
+            delay: system_time::Delay::new(rcc.sysclk().convert()),
             i2c: RefCell::new(i2c),
             joystick,
             vbat: VBat {

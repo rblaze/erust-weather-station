@@ -2,7 +2,7 @@ use core::cell::Cell;
 
 use critical_section::{CriticalSection, Mutex};
 use embedded_hal::digital::OutputPin;
-use fugit::{TimerDuration, TimerInstant};
+use fugit::{HertzU32, TimerDuration, TimerInstant};
 use futures::{Future, FutureExt, select_biased};
 use once_cell::sync::OnceCell;
 use rtt_target::debug_rprintln;
@@ -173,6 +173,39 @@ pub async fn sleep(duration: Duration) {
 /// Returns current time.
 pub async fn now() -> Instant {
     Instant::from_ticks(async_scheduler::now().await.ticks().clamp(0, i64::MAX) as u64)
+}
+
+/// HAL interface to sync and async sleep.
+#[derive(Clone, Copy, Debug)]
+pub struct Delay {
+    sysclk: HertzU32,
+}
+
+impl Delay {
+    pub fn new(sysclk: HertzU32) -> Self {
+        Self { sysclk }
+    }
+}
+
+impl embedded_hal::delay::DelayNs for Delay {
+    fn delay_ns(&mut self, ns: u32) {
+        let ticks = self.sysclk / HertzU32::nanos(ns);
+        cortex_m::asm::delay(ticks);
+    }
+}
+
+impl embedded_hal_async::delay::DelayNs for Delay {
+    async fn delay_ns(&mut self, ns: u32) {
+        let duration = Duration::nanos(ns.into());
+        if duration.is_zero() {
+            // Wait time is shorter than one LPTIM tick.
+            // Fallback to busyloop.
+            embedded_hal::delay::DelayNs::delay_ns(self, 0);
+        } else {
+            // Use normal sleep
+            sleep(duration).await;
+        }
+    }
 }
 
 #[derive(Clone, Copy, Debug)]

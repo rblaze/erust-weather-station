@@ -18,6 +18,8 @@ pub enum Error {
     CoreFmt(#[from] core::fmt::Error),
     #[error(transparent)]
     I2c(#[from] stm32g0_hal::i2c::Error),
+    #[error(transparent)]
+    Sensirion(#[from] sensirion::Error<stm32g0_hal::i2c::Error>),
 }
 
 impl From<Infallible> for Error {
