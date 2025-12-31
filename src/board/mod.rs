@@ -20,8 +20,8 @@ use stm32g0_hal::usb::UsbExt;
 use crate::error::Error;
 use crate::system_time::{self, Ticker};
 
-mod board_usb;
-pub use board_usb::*;
+mod usb;
+pub use usb::UsbSerialPort;
 
 pub type BoardI2c = I2c<I2C3>;
 
@@ -167,7 +167,7 @@ impl Board {
         exti.listen(Event::Gpio15);
         exti.listen(Event::LpTim2);
 
-        let usb_serial = board_usb::serial_port(dp.USB.constrain(&rcc));
+        let usb_serial = usb::serial_port(dp.USB.constrain(&rcc));
 
         unsafe {
             NVIC::unmask(Interrupt::TIM7);
@@ -199,11 +199,11 @@ impl Board {
 }
 
 fn on_external_power() {
-    board_usb::on_external_power();
+    usb::on_external_power();
 }
 
 fn on_battery() {
-    board_usb::on_battery();
+    usb::on_battery();
 }
 
 pub static CHARGER_EVENT: async_scheduler::sync::mailbox::Mailbox<()> =
