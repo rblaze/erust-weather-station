@@ -1,5 +1,3 @@
-#![deny(unsafe_code)]
-
 use crate::error::Error;
 use embedded_hal::i2c::{self};
 use lcd::hd44780::*;

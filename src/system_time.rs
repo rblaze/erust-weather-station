@@ -1,3 +1,5 @@
+#![allow(unsafe_code)]
+
 use core::cell::Cell;
 
 use critical_section::{CriticalSection, Mutex};

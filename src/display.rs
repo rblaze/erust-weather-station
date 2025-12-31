@@ -1,5 +1,3 @@
-#![deny(unsafe_code)]
-
 use core::cell::{Cell, RefCell};
 use core::fmt::Write;
 

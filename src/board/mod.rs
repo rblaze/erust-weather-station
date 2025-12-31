@@ -1,3 +1,5 @@
+#![allow(unsafe_code)]
+
 use core::cell::RefCell;
 
 use embedded_hal::digital::OutputPin;

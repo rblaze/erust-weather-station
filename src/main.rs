@@ -1,5 +1,6 @@
 #![no_std]
 #![no_main]
+#![deny(unsafe_code)]
 
 mod backlight;
 mod board;

@@ -1,5 +1,3 @@
-#![deny(unsafe_code)]
-
 use core::convert::Infallible;
 
 use thiserror::Error;

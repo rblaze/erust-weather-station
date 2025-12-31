@@ -1,5 +1,3 @@
-#![deny(unsafe_code)]
-
 use core::cell::Cell;
 
 use async_scheduler::mailbox::Mailbox;
