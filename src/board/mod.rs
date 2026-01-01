@@ -28,11 +28,11 @@ pub type BoardI2c = I2c<I2C3>;
 #[allow(unused)]
 pub struct Joystick {
     pub up: PB13<Input<PullUp>>,
-    pub down: PB12<Input<PullUp>>,
+    pub down: PB14<Input<PullUp>>,
     pub left: PB11<Input<PullUp>>,
-    pub right: PB10<Input<PullUp>>,
+    pub right: PB12<Input<PullUp>>,
     pub select: PB15<Input<PullUp>>,
-    pub button: PB14<Input<PullUp>>,
+    pub button: PB10<Input<PullUp>>,
 }
 
 pub struct VBat {
@@ -105,11 +105,11 @@ impl Board {
 
         let mut joystick = Joystick {
             up: gpiob.pb13.into_pullup_input(),
-            down: gpiob.pb12.into_pullup_input(),
+            down: gpiob.pb14.into_pullup_input(),
             left: gpiob.pb11.into_pullup_input(),
-            right: gpiob.pb10.into_pullup_input(),
+            right: gpiob.pb12.into_pullup_input(),
             select: gpiob.pb15.into_pullup_input(),
-            button: gpiob.pb14.into_pullup_input(),
+            button: gpiob.pb10.into_pullup_input(),
         };
 
         let i2c_sda = gpiob.pb4.into_open_drain_output();
