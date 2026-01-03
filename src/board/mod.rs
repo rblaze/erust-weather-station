@@ -93,7 +93,7 @@ impl Board {
             dp.RCC.ahbenr().modify(|_, w| w.dma1en().set_bit());
         }
 
-        // Set clock to 4MHz (HSI speed is 16MHz).
+        // Set clock to 16MHz.
         // Check I2C clock requirements (RM0444 32.4.4) before lowering.
         let clocks = Config::sysclk_hsi(Prescaler::Div1).enable_lsi();
         let rcc = dp.RCC.constrain(clocks);
