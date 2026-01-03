@@ -4,6 +4,7 @@
 
 mod backlight;
 mod board;
+mod charger;
 mod co2;
 mod display;
 mod env;
@@ -19,7 +20,7 @@ use core::pin::pin;
 use async_scheduler::executor::LocalExecutor;
 use async_scheduler::mailbox::Mailbox;
 use backlight::backlight_handler;
-use board::{CHARGER_EVENT, JOYSTICK_EVENT, Joystick};
+use board::{JOYSTICK_EVENT, Joystick};
 use bq24259::BQ24259;
 use cortex_m_rt::entry;
 use embedded_hal::digital::InputPin;
@@ -30,7 +31,6 @@ use rtt_target::debug_rprintln;
 use rtt_target::rtt_init_print;
 use sensirion::scd4x::SCD4x;
 use sensirion::sgp40::SGP40;
-use system_time::Duration;
 
 use crate::backlight::DisplayBacklight;
 use crate::display::DisplayPage;
@@ -113,40 +113,10 @@ fn main() -> ! {
             Err(error) => debug_rprintln!("SGP40 error: {}", error),
         }
 
-        let charger_watchdog = pin!(panic_if_exited(async {
-            let mut last_power_state = charger.borrow_mut().status()?.pg();
-            if last_power_state {
-                (board.on_external_power)();
-            } else {
-                (board.on_battery)();
-            }
-
-            loop {
-                debug_rprintln!("watchdog");
-                // Application is single-threaded and charger can't be borrowed
-                // by another coroutine.
-                charger.borrow_mut().reset_watchdog()?;
-
-                let power_state = charger.borrow_mut().status()?.pg();
-                if power_state != last_power_state {
-                    last_power_state = power_state;
-                    if last_power_state {
-                        (board.on_external_power)();
-                    } else {
-                        (board.on_battery)();
-                    }
-                }
-
-                // Default charger watchdog timeout is 40 seconds.
-                if system_time::timeout(Duration::secs(37), CHARGER_EVENT.read())
-                    .await?
-                    .is_some()
-                {
-                    // Charger interrupt occurred, refresh display.
-                    display_refresh_event.post(());
-                }
-            }
-        }));
+        let charger_watchdog = pin!(panic_if_exited(charger::task(
+            &charger,
+            &display_refresh_event
+        )));
         let backlight_handler = pin!(panic_if_exited(backlight_handler(
             board.backlight,
             &backlight,

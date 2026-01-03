@@ -23,7 +23,7 @@ use crate::system_time::{self, Ticker};
 mod usb;
 pub use usb::UsbSerialPort;
 
-pub type BoardI2c = I2c<I2C3>;
+pub type I2cBus = I2c<I2C3>;
 
 #[allow(unused)]
 pub struct Joystick {
@@ -61,14 +61,22 @@ pub type DisplayPowerPin = PB9<stm32g0_hal::gpio::Output<PushPull>>;
 pub struct Board {
     pub ticker: Ticker,
     pub delay: system_time::Delay,
-    pub i2c: RefCell<BoardI2c>,
+    pub i2c: RefCell<I2cBus>,
     pub backlight: Backlight,
     pub vbat: VBat,
     pub joystick: Joystick,
     pub display_power: DisplayPowerPin,
     pub usb_serial: UsbSerialPort,
-    pub on_external_power: fn(),
-    pub on_battery: fn(),
+}
+
+impl Board {
+    pub fn on_external_power() {
+        usb::on_external_power();
+    }
+
+    pub fn on_battery() {
+        usb::on_battery();
+    }
 }
 
 impl Board {
@@ -192,18 +200,8 @@ impl Board {
             },
             display_power: gpiob.pb9.into_push_pull_output(),
             usb_serial,
-            on_external_power,
-            on_battery,
         })
     }
-}
-
-fn on_external_power() {
-    usb::on_external_power();
-}
-
-fn on_battery() {
-    usb::on_battery();
 }
 
 pub static CHARGER_EVENT: async_scheduler::sync::mailbox::Mailbox<()> =
