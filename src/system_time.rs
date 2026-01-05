@@ -3,14 +3,11 @@
 use core::cell::Cell;
 
 use critical_section::{CriticalSection, Mutex};
-use embedded_hal::digital::OutputPin;
-use fugit::{HertzU32, TimerDuration, TimerInstant};
+use fugit::{TimerDuration, TimerInstant};
 use futures::{Future, FutureExt, select_biased};
 use once_cell::sync::OnceCell;
 use rtt_target::debug_rprintln;
 
-use stm32g0_hal::gpio::gpioa::PA15;
-use stm32g0_hal::gpio::{Output, PushPull};
 use stm32g0_hal::pac::{LPTIM2, interrupt};
 use stm32g0_hal::rcc::lptim::LptimClock;
 use stm32g0_hal::rcc::{LSI_FREQ, Rcc};
@@ -177,39 +174,6 @@ pub async fn now() -> Instant {
     Instant::from_ticks(async_scheduler::now().await.ticks().clamp(0, i64::MAX) as u64)
 }
 
-/// HAL interface to sync and async sleep.
-#[derive(Clone, Copy, Debug)]
-pub struct Delay {
-    sysclk: HertzU32,
-}
-
-impl Delay {
-    pub fn new(sysclk: HertzU32) -> Self {
-        Self { sysclk }
-    }
-}
-
-impl embedded_hal::delay::DelayNs for Delay {
-    fn delay_ns(&mut self, ns: u32) {
-        let ticks = self.sysclk / HertzU32::nanos(ns);
-        cortex_m::asm::delay(ticks);
-    }
-}
-
-impl embedded_hal_async::delay::DelayNs for Delay {
-    async fn delay_ns(&mut self, ns: u32) {
-        let duration = Duration::nanos(ns.into());
-        if duration.is_zero() {
-            // Wait time is shorter than one LPTIM tick.
-            // Fallback to busyloop.
-            embedded_hal::delay::DelayNs::delay_ns(self, 0);
-        } else {
-            // Use normal sleep
-            sleep(duration).await;
-        }
-    }
-}
-
 #[derive(Clone, Copy, Debug)]
 struct TickerState {
     /// Number of times counter wrapped.
@@ -231,11 +195,6 @@ static TIMER: OnceCell<SystemTimer> = OnceCell::new();
 
 #[interrupt]
 fn TIM7() {
-    // Create debug LED from thin air.
-    let mut led =
-        unsafe { core::mem::MaybeUninit::<PA15<Output<PushPull>>>::uninit().assume_init() };
-    led.set_high().unwrap();
-
     let timer = &TIMER
         .get()
         .expect("Interrupt from uninitialized timer")
@@ -272,5 +231,4 @@ fn TIM7() {
     } else {
         debug_rprintln!("LPTIM interrupt without compare event");
     }
-    led.set_low().unwrap();
 }

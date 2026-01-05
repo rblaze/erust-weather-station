@@ -3,7 +3,6 @@
 use core::cell::RefCell;
 
 use embedded_hal::digital::OutputPin;
-use rtt_target::debug_rprintln;
 use stm32g0_hal::adc::{Adc, AdcExt};
 use stm32g0_hal::exti::{Event, ExtiExt};
 use stm32g0_hal::gpio::gpiob::{PB2, PB6, PB7, PB8, PB9, PB10, PB11, PB12, PB13, PB14, PB15};
@@ -18,14 +17,14 @@ use stm32g0_hal::timer::{LptimExt, Pwm, TimerExt};
 use stm32g0_hal::usb::UsbExt;
 
 use crate::error::Error;
-use crate::system_time::{self, Ticker};
+use crate::system_time::Ticker;
 
 mod usb;
 pub use usb::UsbSerialPort;
 
 pub type I2cBus = I2c<I2C3>;
+pub type SharedI2cBus<'a> = embedded_hal_bus::i2c::RefCellDevice<'a, I2cBus>;
 
-#[allow(unused)]
 pub struct Joystick {
     pub up: PB13<Input<PullUp>>,
     pub down: PB14<Input<PullUp>>,
@@ -41,11 +40,14 @@ pub struct VBat {
 }
 
 impl VBat {
-    const VBAT_MULTIPLIER: f32 = 1.622;
+    // Ratio of the voltage divider on the board.
+    const VBAT_NUMERATOR: u32 = 1622;
+    const VBAT_DENOMINATOR: u32 = 1000;
 
-    pub fn read_battery_volts(&mut self) -> f32 {
-        let battery_mv = self.adc.read_voltage(&mut self.vbat);
-        battery_mv as f32 / 1000.0 * Self::VBAT_MULTIPLIER
+    pub fn read_battery_millivolts(&mut self) -> u16 {
+        let adc_mv = self.adc.read_voltage(&mut self.vbat);
+        let battery_mv = adc_mv as u32 * Self::VBAT_NUMERATOR / Self::VBAT_DENOMINATOR;
+        battery_mv as u16
     }
 }
 
@@ -60,7 +62,6 @@ pub type DisplayPowerPin = PB9<stm32g0_hal::gpio::Output<PushPull>>;
 
 pub struct Board {
     pub ticker: Ticker,
-    pub delay: system_time::Delay,
     pub i2c: RefCell<I2cBus>,
     pub backlight: Backlight,
     pub vbat: VBat,
@@ -185,7 +186,6 @@ impl Board {
 
         Ok(Self {
             ticker,
-            delay: system_time::Delay::new(rcc.sysclk().convert()),
             i2c: RefCell::new(i2c),
             joystick,
             vbat: VBat {
@@ -213,7 +213,6 @@ pub static JOYSTICK_EVENT: async_scheduler::sync::mailbox::Mailbox<()> =
 fn EXTI4_15() {
     let exti = unsafe { EXTI::steal() };
 
-    debug_rprintln!("EXTI interrupt {:016b}", exti.fpr1().read().bits());
     if exti.is_pending(Event::Gpio5, SignalEdge::Falling) {
         // Charger interrupt
         CHARGER_EVENT.post(());

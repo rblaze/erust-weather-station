@@ -1,11 +1,10 @@
 use core::cell::{Cell, RefCell, UnsafeCell};
 use core::mem::MaybeUninit;
 
+use async_scheduler::sync::mailbox::Mailbox;
 use critical_section::Mutex;
-use embedded_hal::digital::OutputPin;
 use rtt_target::debug_rprintln;
-use stm32g0_hal::gpio::gpioa::PA10;
-use stm32g0_hal::gpio::{Output, PushPull};
+use scopeguard::defer;
 use stm32g0_hal::pac::interrupt;
 use usb_device::LangID;
 use usb_device::bus::UsbBusAllocator;
@@ -73,7 +72,6 @@ impl BufferedCdcAcm {
             });
 
         self.unpause_if_empty(bus);
-        debug_rprintln!("ser rd poll {} {:?}", self.read_bytes_in_buffer, result);
 
         result
     }
@@ -89,12 +87,6 @@ impl BufferedCdcAcm {
         let bytes_written = self
             .cdcacm
             .write_packet(&self.write_buffer[..bytes_to_write])?;
-
-        debug_rprintln!(
-            "ser wr poll {} {}",
-            self.write_bytes_in_buffer,
-            bytes_written
-        );
 
         // Clear the buffer regardless of overruns.
         self.write_bytes_in_buffer = 0;
@@ -197,24 +189,39 @@ type MutexWithPowerState = Mutex<Cell<PowerState>>;
 pub struct UsbSerialPort {
     port: &'static MutexWithSerialPort,
     bus: &'static MutexWithUsbDevice,
-    usb_event: &'static async_scheduler::sync::mailbox::Mailbox<()>,
+    read_in_progress: Cell<bool>,
+    read_event: &'static Mailbox<()>,
+    write_in_progress: Cell<bool>,
+    write_event: &'static Mailbox<()>,
 }
 
 impl UsbSerialPort {
     fn new(
         port: &'static MutexWithSerialPort,
         bus: &'static MutexWithUsbDevice,
-        usb_event: &'static async_scheduler::sync::mailbox::Mailbox<()>,
+        read_event: &'static Mailbox<()>,
+        write_event: &'static Mailbox<()>,
     ) -> Self {
         Self {
             port,
             bus,
-            usb_event,
+            read_in_progress: Cell::new(false),
+            read_event,
+            write_in_progress: Cell::new(false),
+            write_event,
         }
     }
 
-    pub async fn read(&self, buf: &mut [u8]) -> Result<usize, Error> {
-        loop {
+    #[allow(unused)]
+    pub async fn async_read(&self, buf: &mut [u8]) -> Result<usize, Error> {
+        if self.read_in_progress.replace(true) {
+            return Err(Error::Busy);
+        }
+        defer! {
+            self.read_in_progress.set(false);
+        }
+
+        let bytes_read = loop {
             let read_result = critical_section::with(|cs| {
                 let mut usb_device_ref = self.bus.borrow_ref_mut(cs);
                 let mut serial_ref = self.port.borrow_ref_mut(cs);
@@ -228,14 +235,24 @@ impl UsbSerialPort {
             if let Some(bytes_read) = read_result
                 && bytes_read > 0
             {
-                return Ok(bytes_read);
+                break bytes_read;
             }
 
-            self.usb_event.read().await?;
-        }
+            self.read_event.read().await?;
+        };
+
+        Ok(bytes_read)
     }
 
-    pub async fn write(&self, buf: &[u8]) -> Result<usize, Error> {
+    #[allow(unused)]
+    pub async fn async_write(&self, buf: &[u8]) -> Result<usize, Error> {
+        if self.write_in_progress.replace(true) {
+            return Err(Error::Busy);
+        }
+        defer! {
+            self.write_in_progress.set(false);
+        }
+
         let mut bytes = buf;
         while !bytes.is_empty() {
             let bytes_written = critical_section::with(|cs| {
@@ -249,11 +266,29 @@ impl UsbSerialPort {
             bytes = &bytes[bytes_written..];
 
             if !bytes.is_empty() {
-                self.usb_event.read().await?;
+                self.write_event.read().await?;
             }
         }
 
         Ok(buf.len())
+    }
+
+    /// Synchronously writes to port as much as possible and does not block.
+    pub fn write(&self, buf: &[u8]) -> Result<usize, Error> {
+        if self.write_in_progress.replace(true) {
+            return Err(Error::Busy);
+        }
+        defer! {
+            self.write_in_progress.set(false);
+        }
+
+        critical_section::with(|cs| {
+            self.port
+                .borrow_ref_mut(cs)
+                .as_mut()
+                .map(|serial| serial.write(buf))
+        })
+        .ok_or(Error::Uninitialized)
     }
 }
 
@@ -284,16 +319,12 @@ static USB_ALLOCATOR: SafelyInitializedStatic<UsbBusAllocator<UsbBus>> =
     SafelyInitializedStatic::new();
 static USB_SERIAL: MutexWithSerialPort = Mutex::new(RefCell::new(None));
 static USB_DEVICE: MutexWithUsbDevice = Mutex::new(RefCell::new(None));
-static USB_EVENT: async_scheduler::sync::mailbox::Mailbox<()> =
-    async_scheduler::sync::mailbox::Mailbox::new();
+static USB_READ_EVENT: Mailbox<()> = Mailbox::new();
+static USB_WRITE_EVENT: Mailbox<()> = Mailbox::new();
 static USB_POWER: MutexWithPowerState = Mutex::new(Cell::new(PowerState::Battery));
 
 #[interrupt]
 fn UCPD1_UCPD2_USB() {
-    let mut led =
-        unsafe { core::mem::MaybeUninit::<PA10<Output<PushPull>>>::uninit().assume_init() };
-    led.set_high().unwrap();
-
     debug_rprintln!("USB interrupt");
     critical_section::with(|cs| {
         let mut usb_device_ref = USB_DEVICE.borrow_ref_mut(cs);
@@ -308,7 +339,7 @@ fn UCPD1_UCPD2_USB() {
             match serial.poll_read(usb_device.bus()) {
                 Ok(_) => {
                     // Read some data, wakeup coroutine.
-                    USB_EVENT.post(());
+                    USB_READ_EVENT.post(());
                 }
                 Err(usbd_serial::UsbError::WouldBlock) => { /* false trigger, ignore */ }
                 Err(err) => {
@@ -319,7 +350,7 @@ fn UCPD1_UCPD2_USB() {
             match serial.poll_write() {
                 Ok(_) => {
                     // Wrote some data, buffer is free, wakeup coroutine.
-                    USB_EVENT.post(());
+                    USB_WRITE_EVENT.post(());
                 }
                 Err(usbd_serial::UsbError::WouldBlock) => { /* false trigger, ignore */ }
                 Err(err) => {
@@ -339,8 +370,6 @@ fn UCPD1_UCPD2_USB() {
             }
         }
     });
-
-    led.set_low().unwrap();
 }
 
 fn start_usb(cs: critical_section::CriticalSection<'_>) {
@@ -366,19 +395,24 @@ fn shutdown_usb(cs: critical_section::CriticalSection<'_>) {
 
 pub(super) fn on_external_power() {
     critical_section::with(|cs| {
-        USB_POWER.borrow(cs).set(PowerState::ExternalPower);
-        start_usb(cs);
+        let prev_state = USB_POWER.borrow(cs).replace(PowerState::ExternalPower);
+        if prev_state != PowerState::ExternalPower {
+            start_usb(cs);
+        }
     });
 }
 
 pub(super) fn on_battery() {
     critical_section::with(|cs| {
-        USB_POWER.borrow(cs).set(PowerState::Battery);
-        // If bus is already in suspend, turn off USB
-        let borrow = USB_DEVICE.borrow_ref(cs);
-        if borrow.as_ref().unwrap().state() == UsbDeviceState::Suspend {
-            drop(borrow);
-            shutdown_usb(cs);
+        let prev_state = USB_POWER.borrow(cs).replace(PowerState::Battery);
+
+        if prev_state != PowerState::Battery {
+            // If bus is already in suspend, turn off USB
+            let borrow = USB_DEVICE.borrow_ref(cs);
+            if borrow.as_ref().unwrap().state() == UsbDeviceState::Suspend {
+                drop(borrow);
+                shutdown_usb(cs);
+            }
         }
     });
 }
@@ -410,5 +444,5 @@ pub(super) fn serial_port(usb: UsbBus) -> UsbSerialPort {
         );
     });
 
-    UsbSerialPort::new(&USB_SERIAL, &USB_DEVICE, &USB_EVENT)
+    UsbSerialPort::new(&USB_SERIAL, &USB_DEVICE, &USB_READ_EVENT, &USB_WRITE_EVENT)
 }

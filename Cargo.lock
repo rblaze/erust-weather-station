@@ -11,7 +11,7 @@ checksum = "c858caffa49edfc4ecc45a4bec37abd3e88041a2903816f10f990b7b41abc281"
 [[package]]
 name = "async-scheduler"
 version = "0.7.0"
-source = "git+https://github.com/rblaze/rust-async-scheduler.git#d84eead16b20e45cebe2ea0300dafd7a86410470"
+source = "git+https://github.com/rblaze/rust-async-scheduler.git#8e8d7f52451feb43860391532e3c839ee3b1c0fc"
 dependencies = [
  "critical-section",
  "futures",
@@ -80,7 +80,7 @@ dependencies = [
 [[package]]
 name = "bq24259"
 version = "0.1.0"
-source = "git+https://github.com/rblaze/erust-bq24259.git#127db452c2e3fa342f7b3ed6195bb0414ef891a8"
+source = "git+https://github.com/rblaze/erust-bq24259.git#00410e5213b547b149b667acb6a2192852b12855"
 dependencies = [
  "bilge",
  "embedded-hal 1.0.0",
@@ -431,10 +431,9 @@ checksum = "388a1df253eca08550bef6c72392cfe7c30914bf41df5269b68cbd6ff8f570a3"
 [[package]]
 name = "sensirion"
 version = "0.1.0"
-source = "git+https://github.com/rblaze/erust-sensirion.git#df975ef609c23090b381e9346dc6f5ba4d7eeba8"
+source = "git+https://github.com/rblaze/erust-sensirion.git#8fa1938b3e1185b08a631067a78eeafc088f126e"
 dependencies = [
  "embedded-hal 1.0.0",
- "embedded-hal-async",
  "thiserror",
 ]
 
@@ -447,7 +446,7 @@ checksum = "6ce2be8dc25455e1f91df71bfa12ad37d7af1092ae736f3a6cd0e37bc7810596"
 [[package]]
 name = "stm32g0"
 version = "0.16.0"
-source = "git+https://github.com/stm32-rs/stm32-rs-nightlies#395b24c4ff3882690259c0c9c0d44f48f8af9f66"
+source = "git+https://github.com/stm32-rs/stm32-rs-nightlies#423e6799641df9791bc54ecd1661062361315a42"
 dependencies = [
  "cortex-m",
  "cortex-m-rt",
@@ -458,7 +457,7 @@ dependencies = [
 [[package]]
 name = "stm32g0-hal"
 version = "0.2.0"
-source = "git+https://github.com/rblaze/erust-stm32g0-hal.git#1098afd4444b4a549e6a7e0db33428e6232beb42"
+source = "git+https://github.com/rblaze/erust-stm32g0-hal.git#c3880fc946e98446f455f9c2eb803765d3a99a89"
 dependencies = [
  "bitfield 0.19.4",
  "cortex-m",
@@ -476,9 +475,9 @@ dependencies = [
 
 [[package]]
 name = "syn"
-version = "2.0.111"
+version = "2.0.113"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "390cc9a294ab71bdb1aa2e99d13be9c753cd2d7bd6560c77118597410c4d2e87"
+checksum = "678faa00651c9eb72dd2020cbdf275d92eccb2400d568e419efdd64838145cb4"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -578,6 +577,7 @@ dependencies = [
  "once_cell",
  "portable-atomic",
  "rtt-target",
+ "scopeguard",
  "sensirion",
  "stm32g0-hal",
  "thiserror",

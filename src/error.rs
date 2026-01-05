@@ -10,6 +10,8 @@ pub enum Error {
     InvalidLcdLine,
     #[error("board not initialized")]
     Uninitialized,
+    #[error("device busy")]
+    Busy,
     #[error(transparent)]
     Mailbox(#[from] async_scheduler::mailbox::Error),
     #[error(transparent)]

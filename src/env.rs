@@ -31,7 +31,7 @@ impl Environment for Env {
         event: &AtomicBool,
         tick: Option<async_scheduler::time::Instant>,
     ) {
-        debug_rprintln!("waiting for event, timeout {:?}", tick);
+        debug_rprintln!("waiting for event, deadline {:?}", tick);
         debug_assert!(
             in_thread_mode(),
             "calling wait_for_event_with_timeout() in interrupt handler"
