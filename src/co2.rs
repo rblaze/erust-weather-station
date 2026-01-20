@@ -62,14 +62,22 @@ pub async fn task(
     let voc_self_test_result = voc_sensor.read_self_test_result()?;
     debug_rprintln!(
         "SGP40 self test {}",
-        if voc_self_test_result { "passed" } else { "failed" }
+        if voc_self_test_result {
+            "passed"
+        } else {
+            "failed"
+        }
     );
 
     sleep(Duration::secs(10)).await;
     let co2_self_test_result = co2_sensor.read_self_test_result()?;
     debug_rprintln!(
         "SCD4x self test {}",
-        if co2_self_test_result { "passed" } else { "failed" }
+        if co2_self_test_result {
+            "passed"
+        } else {
+            "failed"
+        }
     );
 
     co2_sensor.start_low_power_periodic_measurement()?;
