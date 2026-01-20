@@ -1,6 +1,7 @@
 use core::fmt::Write;
 use rtt_target::debug_rprintln;
 use sensirion::scd4x::SCD4x;
+use sensirion::sgp40::SGP40;
 
 use crate::board::{SharedI2cBus, UsbSerialPort};
 use crate::error::Error;
@@ -41,31 +42,42 @@ impl<const N: usize> Write for PrintBuf<N> {
 }
 
 pub async fn task(
-    mut sensor: SCD4x<SharedI2cBus<'_>>,
+    mut co2_sensor: SCD4x<SharedI2cBus<'_>>,
+    mut voc_sensor: SGP40<SharedI2cBus<'_>>,
     serial: &UsbSerialPort,
     system_data: &StationData,
 ) -> Result<(), Error> {
     // Reset sensor.
-    sensor.stop_periodic_measurement()?;
+    co2_sensor.stop_periodic_measurement()?;
     sleep(Duration::secs(1)).await;
 
-    debug_rprintln!("SCD4x serial {}", sensor.get_serial_number()?);
-    debug_rprintln!("SCD4x type {}", sensor.get_sensor_variant()?);
+    debug_rprintln!("SCD4x serial {}", co2_sensor.get_serial_number()?);
+    debug_rprintln!("SCD4x type {}", co2_sensor.get_sensor_variant()?);
+    debug_rprintln!("SGP40 serial {}", voc_sensor.get_serial_number()?);
 
-    sensor.start_self_test()?;
-    sleep(Duration::secs(10)).await;
-    let self_test_result = sensor.read_self_test_result()?;
+    voc_sensor.start_self_test()?;
+    co2_sensor.start_self_test()?;
+
+    sleep(Duration::millis(350)).await;
+    let voc_self_test_result = voc_sensor.read_self_test_result()?;
     debug_rprintln!(
-        "SCD4x self test {}",
-        if self_test_result { "passed" } else { "failed" }
+        "SGP40 self test {}",
+        if voc_self_test_result { "passed" } else { "failed" }
     );
 
-    sensor.start_low_power_periodic_measurement()?;
+    sleep(Duration::secs(10)).await;
+    let co2_self_test_result = co2_sensor.read_self_test_result()?;
+    debug_rprintln!(
+        "SCD4x self test {}",
+        if co2_self_test_result { "passed" } else { "failed" }
+    );
+
+    co2_sensor.start_low_power_periodic_measurement()?;
 
     loop {
         sleep(Duration::secs(30)).await;
-        if sensor.get_data_ready_status()? {
-            let measurement = sensor.read_measurement()?;
+        if co2_sensor.get_data_ready_status()? {
+            let measurement = co2_sensor.read_measurement()?;
             debug_rprintln!("{}", measurement);
             system_data.set_sgp4x_data(&measurement);
 

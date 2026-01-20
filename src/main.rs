@@ -25,7 +25,7 @@ use rtt_target::debug_rprintln;
 #[cfg(debug_assertions)]
 use rtt_target::rtt_init_print;
 use sensirion::scd4x::SCD4x;
-// use sensirion::sgp40::SGP40;
+use sensirion::sgp40::SGP40;
 
 use crate::error::Error;
 use crate::station_data::StationData;
@@ -62,6 +62,7 @@ fn main() -> ! {
         let mut lcd_view = ui::View::new(&mut lcd, board.display_power, board.backlight);
 
         let charger = BQ24259::new(RefCellDevice::new(&board.i2c));
+        let voc_sensor = SGP40::new(RefCellDevice::new(&board.i2c));
         let co2_sensor = SCD4x::new(RefCellDevice::new(&board.i2c));
 
         let env = env::Env::new(board.ticker);
@@ -76,6 +77,7 @@ fn main() -> ! {
             )))),
             LocalFutureObj::new(pin!(panic_if_exited(co2::task(
                 co2_sensor,
+                voc_sensor,
                 &board.usb_serial,
                 &station_data
             )))),
