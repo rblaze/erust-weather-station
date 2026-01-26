@@ -431,7 +431,7 @@ checksum = "388a1df253eca08550bef6c72392cfe7c30914bf41df5269b68cbd6ff8f570a3"
 [[package]]
 name = "sensirion"
 version = "0.1.0"
-source = "git+https://github.com/rblaze/erust-sensirion.git#51ef48b9b050af001d4694d7de8910d8d06ffa3c"
+source = "git+https://github.com/rblaze/erust-sensirion.git#4611a71472e2dafac0eea2c9033628e44e432285"
 dependencies = [
  "embedded-hal 1.0.0",
  "thiserror",
