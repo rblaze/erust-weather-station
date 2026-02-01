@@ -509,7 +509,7 @@
       "plot": "plots/",
       "pos_files": "plots/",
       "specctra_dsn": "",
-      "step": "main_board.step",
+      "step": "../../../../../../mnt/dual_boot_data/Projects/mainboard.step",
       "svg": "",
       "vrml": ""
     },
