@@ -139,24 +139,17 @@ impl<'a> View<'a> {
             data.co2_ppm, data.temp_celsius, data.humidity_percent
         )?;
 
+        self.display.set_output_line(1)?;
+        match data.voc_index {
+            Some(voc_index) => write!(self.display, "VOC {}", voc_index)?,
+            None => write!(self.display, "no VOC")?,
+        }
+
         let uptime_secs = crate::system_time::now()
             .await
             .duration_since_epoch()
             .to_secs();
-        let days = uptime_secs / 86400;
-        let hours = (uptime_secs % 86400) / 3600;
-        let minutes = (uptime_secs % 3600) / 60;
-        let seconds = uptime_secs % 60;
-
-        self.display.set_output_line(1)?;
-        write!(self.display, "uptime ")?;
-        if days > 0 {
-            write!(self.display, "{}d ", days)?;
-        }
-        if days > 0 || hours > 0 {
-            write!(self.display, "{}h ", hours)?;
-        }
-        write!(self.display, "{}m {}s", minutes, seconds)?;
+        write!(self.display, " up {}", uptime_secs)?;
 
         Ok(())
     }

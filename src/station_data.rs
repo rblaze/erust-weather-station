@@ -9,6 +9,7 @@ pub struct SensorData {
     pub co2_ppm: u16,
     pub temp_celsius: f32,
     pub humidity_percent: f32,
+    pub voc_index: Option<i32>,
     pub battery_millivolts: u16,
     pub charger_status: bq24259::registers::SystemStatus,
     pub charger_faults: bq24259::registers::NewFault,
@@ -27,6 +28,7 @@ impl StationData {
                 co2_ppm: 0,
                 temp_celsius: 0.0,
                 humidity_percent: 0.0,
+                voc_index: None,
                 battery_millivolts: 0,
                 charger_status: bq24259::registers::SystemStatus::from(0),
                 charger_faults: bq24259::registers::NewFault::from(0),
@@ -72,7 +74,11 @@ impl StationData {
         });
     }
 
-    pub fn set_sgp4x_data(&self, measurement: &sensirion::scd4x::Measurement) {
+    pub fn set_sgp4x_data(
+        &self,
+        measurement: &sensirion::scd4x::Measurement,
+        voc_index: Option<i32>,
+    ) {
         self.sensor_data.update(|data| {
             if data.co2_ppm != measurement.co2_ppm
                 || data.temp_celsius != measurement.temp_celsius
@@ -85,6 +91,7 @@ impl StationData {
                 co2_ppm: measurement.co2_ppm,
                 temp_celsius: measurement.temp_celsius,
                 humidity_percent: measurement.humidity_percent,
+                voc_index,
                 ..data
             }
         });

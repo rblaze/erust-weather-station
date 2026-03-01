@@ -2,6 +2,7 @@ use core::fmt::Write;
 use rtt_target::debug_rprintln;
 use sensirion::scd4x::SCD4x;
 use sensirion::sgp40::SGP40;
+use sensirion_gas_index_algorithm_rs::{AlgorithmType, GasIndexAlgorithm};
 
 use crate::board::{SharedI2cBus, UsbSerialPort};
 use crate::error::Error;
@@ -40,6 +41,8 @@ impl<const N: usize> Write for PrintBuf<N> {
         Ok(())
     }
 }
+
+const SAMPLING_INTERVAL: Duration = Duration::secs(30);
 
 pub async fn task(
     mut co2_sensor: SCD4x<SharedI2cBus<'_>>,
@@ -82,16 +85,31 @@ pub async fn task(
 
     co2_sensor.start_low_power_periodic_measurement()?;
 
+    let mut voc_alg = GasIndexAlgorithm::with_sampling_interval(
+        AlgorithmType::Voc,
+        SAMPLING_INTERVAL.to_secs() as f32,
+    );
+
     loop {
-        sleep(Duration::secs(30)).await;
+        sleep(SAMPLING_INTERVAL).await;
         if co2_sensor.get_data_ready_status()? {
-            let measurement = co2_sensor.read_measurement()?;
-            debug_rprintln!("{}", measurement);
-            system_data.set_sgp4x_data(&measurement);
+            let co2_measurement = co2_sensor.read_measurement()?;
+            debug_rprintln!("{:?}", co2_measurement);
+
+            voc_sensor.start_measure_raw_signal_with_ticks(
+                co2_measurement.humidity_raw,
+                co2_measurement.temp_raw,
+            )?;
+            sleep(Duration::millis(30)).await;
+            let voc_measurement = voc_sensor.read_measure_raw_signal_result()?;
+            let voc_index = voc_alg.process(voc_measurement);
+            debug_rprintln!("VOC index: {:?}, raw {}", voc_index, voc_measurement);
+
+            system_data.set_sgp4x_data(&co2_measurement, voc_index);
 
             // Send data to USB serial port
             let mut buf = PrintBuf::<128>::new();
-            write!(buf, "{}\r\n", measurement)?;
+            write!(buf, "{}\r\n", co2_measurement)?;
             serial.write(buf.as_slice())?;
         }
     }
