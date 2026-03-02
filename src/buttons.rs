@@ -1,20 +1,17 @@
-use embedded_hal::digital::InputPin;
-
-use crate::board::{JOYSTICK_EVENT, Joystick};
-use crate::error::Error;
+use crate::types::{EventWaiter, Joystick};
 use crate::ui::DisplayData;
 
-pub async fn task(mut joystick: Joystick, state: &DisplayData) -> Result<(), Error> {
+pub async fn task<J: Joystick + EventWaiter>(mut joystick: J, state: &DisplayData) -> () {
     loop {
-        JOYSTICK_EVENT.read().await?;
+        joystick.wait().await;
 
-        if joystick.button.is_low()? {
+        if joystick.button() {
             state.flip_display_power();
-        } else if joystick.right.is_low()? {
+        } else if joystick.right() {
             state.show_next_page();
-        } else if joystick.left.is_low()? {
+        } else if joystick.left() {
             state.show_prev_page();
-        } else if joystick.select.is_low()? {
+        } else if joystick.select() {
             state.set_next_backlight_mode();
         }
     }

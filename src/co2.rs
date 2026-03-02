@@ -1,13 +1,14 @@
 use core::fmt::Write;
+use embedded_hal::i2c::{ErrorType, I2c};
 use rtt_target::debug_rprintln;
 use sensirion::scd4x::SCD4x;
 use sensirion::sgp40::SGP40;
 use sensirion_gas_index_algorithm_rs::{AlgorithmType, GasIndexAlgorithm};
 
-use crate::board::{SharedI2cBus, UsbSerialPort};
 use crate::error::Error;
 use crate::station_data::StationData;
 use crate::system_time::{Duration, sleep};
+use crate::types::UsbSerial;
 
 #[derive(Debug, Clone, Copy)]
 struct PrintBuf<const N: usize> {
@@ -44,12 +45,17 @@ impl<const N: usize> Write for PrintBuf<N> {
 
 const SAMPLING_INTERVAL: Duration = Duration::secs(30);
 
-pub async fn task(
-    mut co2_sensor: SCD4x<SharedI2cBus<'_>>,
-    mut voc_sensor: SGP40<SharedI2cBus<'_>>,
+pub async fn task<I2cBus, UsbSerialPort>(
+    mut co2_sensor: SCD4x<I2cBus>,
+    mut voc_sensor: SGP40<I2cBus>,
     serial: &UsbSerialPort,
     system_data: &StationData,
-) -> Result<(), Error> {
+) -> Result<(), Error>
+where
+    I2cBus: I2c,
+    Error: core::convert::From<sensirion::Error<<I2cBus as ErrorType>::Error>>,
+    UsbSerialPort: UsbSerial,
+{
     // Reset sensor.
     co2_sensor.stop_periodic_measurement()?;
     sleep(Duration::secs(1)).await;

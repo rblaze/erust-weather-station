@@ -1,5 +1,6 @@
-use core::cell::{Cell, RefCell, UnsafeCell};
-use core::mem::MaybeUninit;
+#![allow(unsafe_code)]
+
+use core::cell::{Cell, RefCell};
 
 use async_scheduler::sync::mailbox::Mailbox;
 use critical_section::Mutex;
@@ -14,11 +15,42 @@ use usb_device::device::{
 
 use crate::error::Error;
 
+use super::statics::SafelyInitializedStatic;
+
 pub type UsbBus = stm32g0_hal::usb::Bus<stm32g0_hal::pac::USB>;
 pub type CdcAcm = usbd_serial::CdcAcmClass<'static, UsbBus>;
 pub type Usb = UsbDevice<'static, UsbBus>;
 
 const CDC_MAX_PACKET_SIZE: usize = 64;
+
+pub struct UsbPowerControl;
+
+impl crate::types::OnOff for UsbPowerControl {
+    fn on(&mut self) {
+        critical_section::with(|cs| {
+            let prev_state = USB_POWER.borrow(cs).replace(PowerState::ExternalPower);
+
+            if prev_state != PowerState::ExternalPower {
+                start_usb(cs);
+            }
+        });
+    }
+
+    fn off(&mut self) {
+        critical_section::with(|cs| {
+            let prev_state = USB_POWER.borrow(cs).replace(PowerState::Battery);
+
+            if prev_state != PowerState::Battery {
+                // If bus is already in suspend, turn off USB
+                let borrow = USB_DEVICE.borrow_ref(cs);
+                if borrow.as_ref().unwrap().state() == UsbDeviceState::Suspend {
+                    drop(borrow);
+                    stop_usb(cs);
+                }
+            }
+        });
+    }
+}
 
 struct BufferedCdcAcm {
     cdcacm: CdcAcm,
@@ -272,9 +304,10 @@ impl UsbSerialPort {
 
         Ok(buf.len())
     }
+}
 
-    /// Synchronously writes to port as much as possible and does not block.
-    pub fn write(&self, buf: &[u8]) -> Result<usize, Error> {
+impl crate::types::UsbSerial for UsbSerialPort {
+    fn write(&self, buf: &[u8]) -> Result<usize, Error> {
         if self.write_in_progress.replace(true) {
             return Err(Error::Busy);
         }
@@ -296,23 +329,6 @@ impl UsbSerialPort {
 enum PowerState {
     ExternalPower,
     Battery,
-}
-
-/// Wrapper for statics initialized in Board::new and used later.
-struct SafelyInitializedStatic<T>(UnsafeCell<MaybeUninit<T>>);
-unsafe impl<T> Sync for SafelyInitializedStatic<T> {}
-
-impl<T> SafelyInitializedStatic<T> {
-    /// Constructs a new instance of the wrapper.
-    const fn new() -> Self {
-        Self(UnsafeCell::new(MaybeUninit::uninit()))
-    }
-
-    /// Initialize the value.
-    #[allow(clippy::mut_from_ref)]
-    fn write(&self, value: T) -> &mut T {
-        unsafe { &mut *self.0.get() }.write(value)
-    }
 }
 
 static USB_ALLOCATOR: SafelyInitializedStatic<UsbBusAllocator<UsbBus>> =
@@ -366,7 +382,7 @@ fn UCPD1_UCPD2_USB() {
                 drop(usb_device_ref);
                 drop(serial_ref);
 
-                shutdown_usb(cs);
+                stop_usb(cs);
             }
         }
     });
@@ -382,7 +398,7 @@ fn start_usb(cs: critical_section::CriticalSection<'_>) {
     bus.enable_interrupts();
 }
 
-fn shutdown_usb(cs: critical_section::CriticalSection<'_>) {
+fn stop_usb(cs: critical_section::CriticalSection<'_>) {
     debug_rprintln!("shutting down USB");
 
     let borrow = USB_DEVICE.borrow_ref(cs);
@@ -391,30 +407,6 @@ fn shutdown_usb(cs: critical_section::CriticalSection<'_>) {
     bus.power_down();
 
     // TODO: turn off USB clock and peripheral
-}
-
-pub(super) fn on_external_power() {
-    critical_section::with(|cs| {
-        let prev_state = USB_POWER.borrow(cs).replace(PowerState::ExternalPower);
-        if prev_state != PowerState::ExternalPower {
-            start_usb(cs);
-        }
-    });
-}
-
-pub(super) fn on_battery() {
-    critical_section::with(|cs| {
-        let prev_state = USB_POWER.borrow(cs).replace(PowerState::Battery);
-
-        if prev_state != PowerState::Battery {
-            // If bus is already in suspend, turn off USB
-            let borrow = USB_DEVICE.borrow_ref(cs);
-            if borrow.as_ref().unwrap().state() == UsbDeviceState::Suspend {
-                drop(borrow);
-                shutdown_usb(cs);
-            }
-        }
-    });
 }
 
 pub(super) fn serial_port(usb: UsbBus) -> UsbSerialPort {

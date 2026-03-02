@@ -1,39 +1,80 @@
 use bq24259::BQ24259;
+use embedded_hal::i2c::{ErrorType, I2c};
+use futures::FutureExt;
 use rtt_target::debug_rprintln;
 
-use crate::board::{SharedI2cBus, VBat};
 use crate::error::Error;
 use crate::station_data::StationData;
 use crate::system_time::{Duration, timeout};
+use crate::types::{EventWaiter, OnOff, VoltageReader};
 
-struct Charger<'a> {
-    charger: BQ24259<SharedI2cBus<'a>>,
+pub struct Charger<'a, I2cBus, ChargerEvent, VBat, UsbPower> {
+    charger: BQ24259<I2cBus>,
+    charger_event: ChargerEvent,
     vbat: VBat,
+    usb_power: UsbPower,
     system_data: &'a StationData,
     power_good: bool,
 }
 
-impl<'a> Charger<'a> {
-    fn new(
-        mut charger: BQ24259<SharedI2cBus<'a>>,
+impl<'a, I2cBus, ChargerEvent, VBat, UsbPower> Charger<'a, I2cBus, ChargerEvent, VBat, UsbPower>
+where
+    I2cBus: I2c,
+    Error: core::convert::From<<I2cBus as ErrorType>::Error>,
+    ChargerEvent: EventWaiter,
+    VBat: VoltageReader,
+    UsbPower: OnOff,
+{
+    pub fn new(
+        charger: BQ24259<I2cBus>,
+        charger_event: ChargerEvent,
         vbat: VBat,
+        usb_power: UsbPower,
         system_data: &'a StationData,
-    ) -> Result<Self, Error> {
-        charger.reset_watchdog()?;
-
-        Ok(Self {
+    ) -> Self {
+        Self {
             charger,
+            charger_event,
             vbat,
+            usb_power,
             system_data,
             power_good: false,
-        })
+        }
     }
 
-    fn report_power_state(&self) {
+    pub async fn task(&mut self) -> Result<(), Error> {
+        self.charger.reset_watchdog()?;
+
+        self.update_battery_state();
+        self.power_good = self.update_charger_state()?;
+        self.report_power_state();
+
+        loop {
+            // Default charger watchdog timeout is 40 seconds.
+            let power_event = timeout(Duration::secs(37), self.charger_event.wait().map(Ok))
+                .await?
+                .is_some();
+
+            debug_rprintln!("charger watchdog reset");
+
+            self.charger.reset_watchdog()?;
+            self.update_battery_state();
+
+            if power_event {
+                let power_good = self.update_charger_state()?;
+                if power_good != self.power_good {
+                    self.power_good = power_good;
+                    self.report_power_state();
+                }
+            }
+        }
+    }
+
+    fn report_power_state(&mut self) {
         if self.power_good {
-            crate::board::Board::on_external_power();
+            self.usb_power.on();
         } else {
-            crate::board::Board::on_battery();
+            self.usb_power.off();
         }
     }
 
@@ -52,44 +93,6 @@ impl<'a> Charger<'a> {
 
     fn update_battery_state(&mut self) {
         self.system_data
-            .set_battery_millivolts(self.vbat.read_battery_millivolts());
-    }
-
-    fn do_work(&mut self, power_event: bool) -> Result<(), Error> {
-        debug_rprintln!("charger watchdog reset");
-
-        self.charger.reset_watchdog()?;
-        self.update_battery_state();
-
-        if power_event {
-            let power_good = self.update_charger_state()?;
-            if power_good != self.power_good {
-                self.power_good = power_good;
-                self.report_power_state();
-            }
-        }
-
-        Ok(())
-    }
-}
-
-pub async fn task(
-    charger: BQ24259<SharedI2cBus<'_>>,
-    vbat: VBat,
-    system_data: &StationData,
-) -> Result<(), Error> {
-    let mut ch = Charger::new(charger, vbat, system_data)?;
-
-    ch.update_battery_state();
-    ch.power_good = ch.update_charger_state()?;
-    ch.report_power_state();
-
-    loop {
-        // Default charger watchdog timeout is 40 seconds.
-        let power_event = timeout(Duration::secs(37), crate::board::CHARGER_EVENT.read())
-            .await?
-            .is_some();
-
-        ch.do_work(power_event)?;
+            .set_battery_millivolts(self.vbat.millivolts());
     }
 }

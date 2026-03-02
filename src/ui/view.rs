@@ -1,61 +1,67 @@
 use core::fmt::Write;
 use core::pin::pin;
 
-use embedded_hal::digital::OutputPin;
+use embedded_hal::i2c::I2c;
 use embedded_hal::pwm::SetDutyCycle;
 use futures::{FutureExt, select_biased};
 use lcd::screen::Screen;
 use rtt_target::debug_rprintln;
-use stm32g0_hal::pac::TIM4;
-use stm32g0_hal::timer::{Channel1, Channel2, Channel3, PwmPin};
 
 use super::state::{DisplayData, DisplayPage, DisplayState, Power};
-use crate::board::{Backlight, DisplayPowerPin};
 use crate::error::Error;
 use crate::screen::Lcd;
 use crate::station_data::{SensorData, StationData};
 use crate::system_time::{Duration, sleep};
+use crate::types::{Backlight, OnOff};
 
-pub struct View<'a> {
+pub struct View<'a, I2cBus, DisplayPowerPin, R: SetDutyCycle, G: SetDutyCycle, B: SetDutyCycle> {
     current_state: DisplayState,
-    display: &'a mut Lcd<'a>,
+    display: Lcd<I2cBus>,
     power_pin: DisplayPowerPin,
-    backlight: Option<Backlight>,
+    backlight: Backlight<R, G, B>,
+    state: &'a DisplayData,
+    data: &'a StationData,
 }
 
-struct Leds<'a> {
-    red: PwmPin<'a, TIM4, Channel1>,
-    green: PwmPin<'a, TIM4, Channel2>,
-    blue: PwmPin<'a, TIM4, Channel3>,
-}
-
-impl<'a> View<'a> {
-    pub fn new(display: &'a mut Lcd<'a>, power_pin: DisplayPowerPin, backlight: Backlight) -> Self {
+impl<'a, I2cBus, DisplayPowerPin, R, G, B> View<'a, I2cBus, DisplayPowerPin, R, G, B>
+where
+    I2cBus: I2c,
+    Error: core::convert::From<<I2cBus as embedded_hal::i2c::ErrorType>::Error>,
+    DisplayPowerPin: OnOff,
+    R: SetDutyCycle,
+    G: SetDutyCycle,
+    B: SetDutyCycle,
+    Error: core::convert::From<<R as embedded_hal::pwm::ErrorType>::Error>,
+    Error: core::convert::From<<G as embedded_hal::pwm::ErrorType>::Error>,
+    Error: core::convert::From<<B as embedded_hal::pwm::ErrorType>::Error>,
+{
+    pub fn new(
+        display: Lcd<I2cBus>,
+        backlight: Backlight<R, G, B>,
+        power_pin: DisplayPowerPin,
+        state: &'a DisplayData,
+        data: &'a StationData,
+    ) -> Self {
         Self {
             current_state: DisplayState::default(),
             display,
             power_pin,
-            backlight: Some(backlight),
+            backlight,
+            state,
+            data,
         }
     }
 
-    pub async fn task(&mut self, state: &DisplayData, data: &StationData) -> Result<(), Error> {
-        let backlight = self.backlight.take().unwrap();
-        let mut leds = Leds {
-            red: backlight.pwm.bind_pin(backlight.red),
-            green: backlight.pwm.bind_pin(backlight.green),
-            blue: backlight.pwm.bind_pin(backlight.blue),
-        };
-
+    pub async fn task(&mut self) -> Result<(), Error> {
         loop {
-            let state_waiter = pin!(state.wait_for_update());
-            let data_waiter = pin!(data.wait_for_update());
+            let state_waiter = pin!(self.state.wait_for_update());
+            let data_waiter = pin!(self.data.wait_for_update());
 
             select_biased! {
                 v = state_waiter.fuse() => {
                     match v? {
-                        Some(new_state) => self.update_state(&mut leds, &new_state, &data.get()).await?,
-                        None => self.update_display(&data.get()).await?,
+                        Some(new_state) => self.update_state(&new_state).await?,
+                        None => self.update_display(&self.data.get()).await?,
                     }
                 },
                 v = data_waiter.fuse() => self.update_display(&v?).await?,
@@ -63,24 +69,19 @@ impl<'a> View<'a> {
         }
     }
 
-    async fn update_state(
-        &mut self,
-        leds: &mut Leds<'_>,
-        state: &DisplayState,
-        data: &SensorData,
-    ) -> Result<(), Error> {
+    async fn update_state(&mut self, state: &DisplayState) -> Result<(), Error> {
         let mut update_display = self.current_state.page != state.page;
 
         if state.power != self.current_state.power {
             if state.power == Power::On {
                 // Turn on display
-                self.power_pin.set_low()?;
+                self.power_pin.on();
                 sleep(Duration::millis(200)).await;
                 self.display.reset()?;
                 update_display = true;
             } else {
                 // Turn off display
-                self.power_pin.set_high()?;
+                self.power_pin.off();
             }
         }
 
@@ -88,19 +89,19 @@ impl<'a> View<'a> {
             debug_rprintln!("backlight {}%", state.backlight.brightness_pct);
             match state.backlight.brightness_pct {
                 0 => {
-                    leds.red.set_duty_cycle_fully_off()?;
-                    leds.green.set_duty_cycle_fully_off()?;
-                    leds.blue.set_duty_cycle_fully_off()?;
+                    self.backlight.red.set_duty_cycle_fully_off()?;
+                    self.backlight.green.set_duty_cycle_fully_off()?;
+                    self.backlight.blue.set_duty_cycle_fully_off()?;
                 }
                 100 => {
-                    leds.red.set_duty_cycle_fully_on()?;
-                    leds.green.set_duty_cycle_fully_on()?;
-                    leds.blue.set_duty_cycle_fully_on()?;
+                    self.backlight.red.set_duty_cycle_fully_on()?;
+                    self.backlight.green.set_duty_cycle_fully_on()?;
+                    self.backlight.blue.set_duty_cycle_fully_on()?;
                 }
                 pct => {
-                    leds.red.set_duty_cycle_percent(pct)?;
-                    leds.green.set_duty_cycle_percent(pct)?;
-                    leds.blue.set_duty_cycle_percent(pct)?;
+                    self.backlight.red.set_duty_cycle_percent(pct)?;
+                    self.backlight.green.set_duty_cycle_percent(pct)?;
+                    self.backlight.blue.set_duty_cycle_percent(pct)?;
                 }
             }
         }
@@ -109,7 +110,7 @@ impl<'a> View<'a> {
         self.current_state = *state;
 
         if update_display {
-            self.update_display(data).await?;
+            self.update_display(&self.data.get()).await?;
         }
 
         Ok(())

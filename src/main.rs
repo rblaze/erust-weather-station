@@ -6,11 +6,11 @@ mod board;
 mod buttons;
 mod charger;
 mod co2;
-mod env;
 mod error;
 mod screen;
 mod station_data;
 mod system_time;
+mod types;
 mod ui;
 
 use core::panic::PanicInfo;
@@ -51,40 +51,44 @@ fn main() -> ! {
 
         debug_rprintln!("starting");
 
-        let board = board::Board::new()?;
+        let (env, board) = board::init()?;
 
         let station_data = StationData::new();
         let screen_state = DisplayData::new();
 
         screen_state.set_display_power(Power::On);
 
-        let mut lcd = screen::Lcd::new(RefCellDevice::new(&board.i2c));
-        let mut lcd_view = ui::View::new(&mut lcd, board.display_power, board.backlight);
+        let lcd = screen::Lcd::new(RefCellDevice::new(&board.i2c));
+        let mut lcd_view = ui::View::new(
+            lcd,
+            board.backlight,
+            board.display_power,
+            &screen_state,
+            &station_data,
+        );
 
-        let charger = BQ24259::new(RefCellDevice::new(&board.i2c));
+        let charger_device = BQ24259::new(RefCellDevice::new(&board.i2c));
+        let mut charger = charger::Charger::new(
+            charger_device,
+            board.charger_event,
+            board.vbat,
+            board.usb_power,
+            &station_data,
+        );
+
         let voc_sensor = SGP40::new(RefCellDevice::new(&board.i2c));
         let co2_sensor = SCD4x::new(RefCellDevice::new(&board.i2c));
 
-        let env = env::Env::new(board.ticker);
         LocalExecutor::new(&env).run([
-            LocalFutureObj::new(pin!(panic_if_exited(
-                lcd_view.task(&screen_state, &station_data)
-            ))),
-            LocalFutureObj::new(pin!(panic_if_exited(charger::task(
-                charger,
-                board.vbat,
-                &station_data
-            )))),
+            LocalFutureObj::new(pin!(panic_if_exited(lcd_view.task()))),
+            LocalFutureObj::new(pin!(panic_if_exited(charger.task()))),
             LocalFutureObj::new(pin!(panic_if_exited(co2::task(
                 co2_sensor,
                 voc_sensor,
                 &board.usb_serial,
                 &station_data
             )))),
-            LocalFutureObj::new(pin!(panic_if_exited(buttons::task(
-                board.joystick,
-                &screen_state
-            )))),
+            LocalFutureObj::new(pin!(buttons::task(board.joystick, &screen_state))),
         ]);
 
         // Tasks are running forever.

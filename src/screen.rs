@@ -1,9 +1,8 @@
-use embedded_hal::i2c::I2c;
+use embedded_hal::i2c::{ErrorType, I2c};
 use lcd::hd44780::*;
 use lcd::screen::Screen;
 use lcd::st7036::*;
 
-use crate::board::SharedI2cBus;
 use crate::error::Error;
 
 enum TransactionMode {
@@ -11,16 +10,20 @@ enum TransactionMode {
     Data = 0b0100_0000,
 }
 
-pub struct Lcd<'a> {
-    i2c: SharedI2cBus<'a>,
+const I2C_ADDR: u8 = 0x3C;
+const WIDTH: usize = 20;
+const HEIGHT: usize = 2;
+
+pub struct Lcd<I2cBus> {
+    i2c: I2cBus,
 }
 
-impl<'a> Lcd<'a> {
-    const I2C_ADDR: u8 = 0x3C;
-    const WIDTH: usize = 20;
-    const HEIGHT: usize = 2;
-
-    pub fn new(i2c: SharedI2cBus<'a>) -> Self {
+impl<I2cBus> Lcd<I2cBus>
+where
+    I2cBus: I2c,
+    Error: core::convert::From<<I2cBus as ErrorType>::Error>,
+{
+    pub fn new(i2c: I2cBus) -> Self {
         Self { i2c }
     }
 
@@ -42,28 +45,31 @@ impl<'a> Lcd<'a> {
     }
 }
 
-impl Screen<{ Lcd::WIDTH }, { Lcd::HEIGHT }, crate::error::Error> for Lcd<'_> {
+impl<I2cBus> Screen<WIDTH, HEIGHT, crate::error::Error> for Lcd<I2cBus>
+where
+    I2cBus: I2c,
+    Error: core::convert::From<<I2cBus as ErrorType>::Error>,
+{
     fn send_command(&mut self, command: u8) -> Result<(), Error> {
         self.i2c
-            .write(Self::I2C_ADDR, &[TransactionMode::Command as u8, command])?;
+            .write(I2C_ADDR, &[TransactionMode::Command as u8, command])?;
         Ok(())
     }
 
     fn send_data(&mut self, data: u8) -> Result<(), crate::error::Error> {
         self.i2c
-            .write(Self::I2C_ADDR, &[TransactionMode::Data as u8, data])?;
+            .write(I2C_ADDR, &[TransactionMode::Data as u8, data])?;
         Ok(())
     }
 
     fn send_data_bytes(&mut self, data: &[u8]) -> Result<(), Error> {
-        if data.len() > 1 && data.len() <= Self::WIDTH {
+        if data.len() > 1 && data.len() <= WIDTH {
             // Fast path. Copying a few bytes in the memory is faster
             // than repeating I2C transactions.
-            // TODO: consider using uninit after maybe_uninit_write_slice stabilized.
-            let mut buf = [0; Self::WIDTH + 1];
+            let mut buf = [0; WIDTH + 1];
             buf[0] = TransactionMode::Data as u8;
             buf[1..data.len() + 1].copy_from_slice(data);
-            self.i2c.write(Self::I2C_ADDR, &buf[..data.len() + 1])?;
+            self.i2c.write(I2C_ADDR, &buf[..data.len() + 1])?;
         } else {
             // Slow path.
             for byte in data {
@@ -74,7 +80,11 @@ impl Screen<{ Lcd::WIDTH }, { Lcd::HEIGHT }, crate::error::Error> for Lcd<'_> {
     }
 }
 
-impl core::fmt::Write for Lcd<'_> {
+impl<I2cBus> core::fmt::Write for Lcd<I2cBus>
+where
+    I2cBus: I2c,
+    Error: core::convert::From<<I2cBus as ErrorType>::Error>,
+{
     fn write_str(&mut self, s: &str) -> core::fmt::Result {
         self.write(s).map_err(|_| core::fmt::Error)
     }
