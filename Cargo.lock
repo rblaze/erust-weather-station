@@ -10,8 +10,8 @@ checksum = "993a810118f8f37e9c4411c86f1c4c940a09a7ab34b7bf2d88d06f50c553fab7"
 
 [[package]]
 name = "async-scheduler"
-version = "0.7.0"
-source = "git+https://github.com/rblaze/rust-async-scheduler.git#8e8d7f52451feb43860391532e3c839ee3b1c0fc"
+version = "0.8.0"
+source = "git+https://github.com/rblaze/rust-async-scheduler.git#0f511f570b9f44bf3f383c8dcef72115a19d75a0"
 dependencies = [
  "critical-section",
  "futures",
@@ -379,9 +379,9 @@ dependencies = [
 
 [[package]]
 name = "quote"
-version = "1.0.44"
+version = "1.0.45"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "21b2ebcf727b7760c461f091f9f0f539b77b8e87f2fd88131e7f1b433b3cece4"
+checksum = "41f2619966050689382d2b44f664f4bc593e129785a36d6ee376ddf37259b924"
 dependencies = [
  "proc-macro2",
 ]
@@ -464,7 +464,7 @@ dependencies = [
 [[package]]
 name = "stm32g0-hal"
 version = "0.2.0"
-source = "git+https://github.com/rblaze/erust-stm32g0-hal.git#c3880fc946e98446f455f9c2eb803765d3a99a89"
+source = "git+https://github.com/rblaze/erust-stm32g0-hal.git#4240feaa102cc7c367e94732550d7c8618cda038"
 dependencies = [
  "bitfield 0.19.4",
  "cortex-m",
