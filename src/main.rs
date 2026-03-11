@@ -39,7 +39,7 @@ fn panic(info: &PanicInfo) -> ! {
     cortex_m::asm::udf();
 }
 
-async fn panic_if_exited<F: core::future::Future<Output = Result<(), Error>>>(f: F) {
+async fn panic_if_exited<F: core::future::Future<Output: core::fmt::Debug>>(f: F) {
     panic!("future exited with {:?}", f.await)
 }
 
@@ -88,7 +88,10 @@ fn main() -> ! {
                 &board.usb_serial,
                 &station_data
             )))),
-            LocalFutureObj::new(pin!(buttons::task(board.joystick, &screen_state))),
+            LocalFutureObj::new(pin!(panic_if_exited(buttons::task(
+                board.joystick,
+                &screen_state
+            )))),
         ]);
 
         // Tasks are running forever.
