@@ -14,6 +14,10 @@ pub trait OnOff {
     fn off(&mut self);
 }
 
+pub trait Watchdog {
+    fn feed(&self);
+}
+
 pub trait Joystick {
     #[allow(unused)]
     fn up(&mut self) -> bool;
@@ -47,6 +51,7 @@ pub struct Board<
     U: UsbSerial,
     P: OnOff,
     C: EventWaiter,
+    W: Watchdog,
     I2cBus: I2c,
     R: SetDutyCycle,
     G: SetDutyCycle,
@@ -60,4 +65,5 @@ pub struct Board<
     pub usb_power: P,
     pub charger_event: C,
     pub i2c: RefCell<I2cBus>,
+    pub watchdog: W,
 }

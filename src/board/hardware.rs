@@ -8,6 +8,7 @@ use stm32g0_hal::exti::{Event, ExtiExt};
 use stm32g0_hal::gpio::gpiob::{PB2, PB9, PB10, PB11, PB12, PB13, PB14, PB15};
 use stm32g0_hal::gpio::{Analog, GpioExt, Input, PullUp, PushPull, SignalEdge};
 use stm32g0_hal::i2c::{self, I2c, I2cExt};
+use stm32g0_hal::iwdg::{Iwdg, IwdgPrescaler};
 use stm32g0_hal::pac::{CorePeripherals, Peripherals};
 use stm32g0_hal::pac::{EXTI, I2C3, NVIC, TIM4};
 use stm32g0_hal::pac::{Interrupt, interrupt};
@@ -122,6 +123,14 @@ impl crate::types::EventWaiter for EventWaiter {
     }
 }
 
+pub struct Watchdog(Iwdg);
+
+impl crate::types::Watchdog for Watchdog {
+    fn feed(&self) {
+        self.0.feed();
+    }
+}
+
 pub type Board = crate::types::Board<
     Joystick,
     VBat,
@@ -129,6 +138,7 @@ pub type Board = crate::types::Board<
     UsbSerialPort,
     UsbPowerControl,
     EventWaiter,
+    Watchdog,
     I2cBus,
     PwmPin<'static, TIM4, Channel1>,
     PwmPin<'static, TIM4, Channel2>,
@@ -238,6 +248,9 @@ pub fn init() -> Result<(super::env::Env, Board), Error> {
         NVIC::unmask(Interrupt::UCPD1_UCPD2_USB);
     }
 
+    let iwdg = Iwdg::new(dp.IWDG);
+    iwdg.start(IwdgPrescaler::Div256, 0xFFF);
+
     Ok((
         super::env::Env::new(ticker),
         Board {
@@ -256,6 +269,7 @@ pub fn init() -> Result<(super::env::Env, Board), Error> {
             usb_power: UsbPowerControl,
             charger_event: EventWaiter::new(&CHARGER_EVENT),
             i2c: RefCell::new(i2c),
+            watchdog: Watchdog(iwdg),
         },
     ))
 }

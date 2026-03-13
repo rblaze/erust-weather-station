@@ -73,6 +73,7 @@ fn main() -> ! {
             board.charger_event,
             board.vbat,
             board.usb_power,
+            board.watchdog,
             &station_data,
         );
 

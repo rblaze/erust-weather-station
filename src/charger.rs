@@ -6,30 +6,34 @@ use rtt_target::debug_rprintln;
 use crate::error::Error;
 use crate::station_data::StationData;
 use crate::system_time::{Duration, timeout};
-use crate::types::{EventWaiter, OnOff, VoltageReader};
+use crate::types::{EventWaiter, OnOff, VoltageReader, Watchdog};
 
-pub struct Charger<'a, I2cBus, ChargerEvent, VBat, UsbPower> {
+pub struct Charger<'a, I2cBus, ChargerEvent, VBat, UsbPower, Wd> {
     charger: BQ24259<I2cBus>,
     charger_event: ChargerEvent,
     vbat: VBat,
     usb_power: UsbPower,
+    watchdog: Wd,
     system_data: &'a StationData,
     power_good: bool,
 }
 
-impl<'a, I2cBus, ChargerEvent, VBat, UsbPower> Charger<'a, I2cBus, ChargerEvent, VBat, UsbPower>
+impl<'a, I2cBus, ChargerEvent, VBat, UsbPower, Wd>
+    Charger<'a, I2cBus, ChargerEvent, VBat, UsbPower, Wd>
 where
     I2cBus: I2c,
     Error: core::convert::From<<I2cBus as ErrorType>::Error>,
     ChargerEvent: EventWaiter,
     VBat: VoltageReader,
     UsbPower: OnOff,
+    Wd: Watchdog,
 {
     pub fn new(
         charger: BQ24259<I2cBus>,
         charger_event: ChargerEvent,
         vbat: VBat,
         usb_power: UsbPower,
+        watchdog: Wd,
         system_data: &'a StationData,
     ) -> Self {
         Self {
@@ -37,12 +41,14 @@ where
             charger_event,
             vbat,
             usb_power,
+            watchdog,
             system_data,
             power_good: false,
         }
     }
 
     pub async fn task(&mut self) -> Result<(), Error> {
+        self.watchdog.feed();
         self.charger.reset_watchdog()?;
 
         self.update_battery_state();
@@ -51,12 +57,14 @@ where
 
         loop {
             // Default charger watchdog timeout is 40 seconds.
-            let power_event = timeout(Duration::secs(37), self.charger_event.wait().map(Ok))
+            // Watchdog timeout is 32.7 seconds.
+            let power_event = timeout(Duration::secs(31), self.charger_event.wait().map(Ok))
                 .await?
                 .is_some();
 
             debug_rprintln!("charger watchdog reset");
 
+            self.watchdog.feed();
             self.charger.reset_watchdog()?;
             self.update_battery_state();
 
