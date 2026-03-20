@@ -13,6 +13,7 @@ use stm32g0_hal::rcc::lptim::LptimClock;
 use stm32g0_hal::rcc::{LSI_FREQ, Rcc};
 use stm32g0_hal::timer::{Enabled, LowPowerTimer, LptimCounter, LptimEvent, LptimPrescaler};
 
+// 128 is the LSI prescaler, see LptimPrescaler::Div128 below.
 const TIMER_FREQ: u32 = LSI_FREQ.to_Hz() / 128;
 
 type TimerTicks = u64;
