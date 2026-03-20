@@ -1,0 +1,54 @@
+[package]
+name = "weather-station"
+version = "0.1.0"
+edition = "2024"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+async-scheduler = { git = "https://github.com/rblaze/rust-async-scheduler.git" }
+# async-scheduler = { path = "../rust-async-scheduler/" }
+bq24259 = { git = "https://github.com/rblaze/erust-bq24259.git" }
+cortex-m = { version = "0.7", features = [
+    "critical-section-single-core",
+    "inline-asm",
+] }
+cortex-m-rt = "0.7"
+critical-section = "1"
+embedded-hal = "1"
+embedded-hal-async = "1"
+embedded-hal-bus = "0.3"
+fugit = "0.3"
+futures = { version = "0.3", default-features = false, features = [
+    "async-await",
+] }
+lcd = { git = "https://github.com/rblaze/erust-lcd.git" }
+# lcd = { path = "../erust-lcd/" }
+once_cell = { version = "1", default-features = false, features = [
+    "critical-section",
+] }
+portable-atomic = { version = "1", default-features = false, features = [
+    "unsafe-assume-single-core",
+] }
+rtt-target = "0.6"
+scopeguard = { version = "1", default-features = false }
+sensirion = { git = "https://github.com/rblaze/erust-sensirion.git" }
+# sensirion = { path = "../erust-sensirion/" }
+sensirion-gas-index-algorithm-rs = { git = "https://github.com/Sensirion/gas-index-algorithm.git", default-features = false }
+# sensirion-gas-index-algorithm-rs = { path = "../gas-index-algorithm/sensirion-gas-index-algorithm-rs", default-features = false }
+stm32g0-hal = { git = "https://github.com/rblaze/erust-stm32g0-hal.git", features = [
+    "stm32g0b1",
+] }
+# stm32g0-hal = { path = "../erust-stm32g0-hal/", features = ["stm32g0b1"] }
+thiserror = { version = "2", default-features = false }
+usb-device = "0.3"
+usbd-serial = "0.2"
+
+[features]
+usb_debug = ["stm32g0-hal/usb_debug"]
+
+[[bin]]
+name = "weather-station"
+test = false
+bench = false
+doctest = false

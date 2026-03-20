@@ -15,11 +15,11 @@ jobs:
           sudo apt-get update
           sudo apt-get install libclang-dev llvm-dev gcc-arm-none-eabi
       - name: "Check formatting in root"
-        run: cargo fmt --all --check
+        run: cd cross/app && cargo fmt --all --check
       - name: "Run clippy for debug build"
-        run: cargo clippy --no-deps -- -D warnings
+        run: cd cross/app && cargo clippy --no-deps -- -D warnings
       - name: "Run clippy for release build"
-        run: cargo clippy --release --no-deps -- -D warnings
+        run: cd cross/app && cargo clippy --release --no-deps -- -D warnings
 
   build:
     name: "Debug and release builds"
@@ -33,6 +33,6 @@ jobs:
           sudo apt-get update
           sudo apt-get install libclang-dev llvm-dev gcc-arm-none-eabi
       - name: "Debug build"
-        run: cargo build
+        run: cd cross/app && cargo build
       - name: "Release build"
-        run: cargo build --release
+        run: cd cross/app && cargo build --release
