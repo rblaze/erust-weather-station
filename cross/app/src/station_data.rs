@@ -1,9 +1,8 @@
 use core::cell::{Cell, RefCell};
 
-use async_scheduler::mailbox::Mailbox;
+use async_scheduler::mailbox::{Error, Mailbox};
 use rtt_target::debug_rprintln;
 
-use crate::error::Error;
 use crate::system_time::{Duration, Instant};
 
 #[derive(Debug, Clone, Copy)]

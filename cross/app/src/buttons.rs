@@ -1,4 +1,5 @@
-use crate::types::{EventWaiter, Joystick};
+use firmware::types::{EventWaiter, Joystick};
+
 use crate::ui::DisplayData;
 
 pub async fn task<J: Joystick + EventWaiter>(mut joystick: J, state: &DisplayData) -> () {

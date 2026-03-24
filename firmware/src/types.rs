@@ -1,11 +1,13 @@
 use core::cell::RefCell;
+use core::marker::PhantomData;
 
 use embedded_hal::i2c::I2c;
 use embedded_hal::pwm::SetDutyCycle;
 
-use crate::error::Error;
+// use crate::error::Error;
 
 pub trait EventWaiter {
+    #[allow(async_fn_in_trait)]
     async fn wait(&self);
 }
 
@@ -33,7 +35,7 @@ pub trait VoltageReader {
     fn millivolts(&mut self) -> u16;
 }
 
-pub trait UsbSerial {
+pub trait UsbSerial<Error> {
     /// Synchronously writes to port as much as possible and does not block.
     fn write(&self, buf: &[u8]) -> Result<usize, Error>;
 }
@@ -45,10 +47,11 @@ pub struct Backlight<R: SetDutyCycle, G: SetDutyCycle, B: SetDutyCycle> {
 }
 
 pub struct Board<
+    E,
     J: Joystick + EventWaiter,
     V: VoltageReader,
     D: OnOff,
-    U: UsbSerial,
+    U: UsbSerial<E>,
     P: OnOff,
     C: EventWaiter,
     W: Watchdog,
@@ -66,4 +69,5 @@ pub struct Board<
     pub charger_event: C,
     pub i2c: RefCell<I2cBus>,
     pub watchdog: W,
+    pub _phantom: PhantomData<E>,
 }

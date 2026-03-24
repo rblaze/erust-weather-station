@@ -1,12 +1,13 @@
 use bq24259::BQ24259;
-use embedded_hal::i2c::{ErrorType, I2c};
+use embedded_hal::i2c::I2c;
 use futures::FutureExt;
 use rtt_target::debug_rprintln;
 
-use crate::error::Error;
+use firmware::error::{Error, I2cError};
+use firmware::types::{EventWaiter, OnOff, VoltageReader, Watchdog};
+
 use crate::station_data::StationData;
 use crate::system_time::{Duration, timeout};
-use crate::types::{EventWaiter, OnOff, VoltageReader, Watchdog};
 
 pub struct Charger<'a, I2cBus, ChargerEvent, VBat, UsbPower, Wd> {
     charger: BQ24259<I2cBus>,
@@ -22,7 +23,6 @@ impl<'a, I2cBus, ChargerEvent, VBat, UsbPower, Wd>
     Charger<'a, I2cBus, ChargerEvent, VBat, UsbPower, Wd>
 where
     I2cBus: I2c,
-    Error: core::convert::From<<I2cBus as ErrorType>::Error>,
     ChargerEvent: EventWaiter,
     VBat: VoltageReader,
     UsbPower: OnOff,
@@ -47,9 +47,9 @@ where
         }
     }
 
-    pub async fn task(&mut self) -> Result<(), Error> {
+    pub async fn task(&mut self) -> Result<(), Error<I2cBus::Error>> {
         self.watchdog.feed();
-        self.charger.reset_watchdog()?;
+        self.charger.reset_watchdog().map_err(I2cError)?;
 
         self.update_battery_state();
         self.power_good = self.update_charger_state()?;
@@ -58,14 +58,19 @@ where
         loop {
             // Default charger watchdog timeout is 40 seconds.
             // Watchdog timeout is 32.7 seconds.
-            let power_event = timeout(Duration::secs(31), self.charger_event.wait().map(Ok))
-                .await?
-                .is_some();
+            let power_event = timeout(
+                Duration::secs(31),
+                self.charger_event
+                    .wait()
+                    .map(Ok::<(), Error<I2cBus::Error>>),
+            )
+            .await?
+            .is_some();
 
             debug_rprintln!("charger watchdog reset");
 
             self.watchdog.feed();
-            self.charger.reset_watchdog()?;
+            self.charger.reset_watchdog().map_err(I2cError)?;
             self.update_battery_state();
 
             if power_event {
@@ -86,7 +91,7 @@ where
         }
     }
 
-    fn update_charger_state(&mut self) -> Result<bool, Error> {
+    fn update_charger_state(&mut self) -> Result<bool, I2cError<I2cBus::Error>> {
         let charger_status = self.charger.status()?;
         self.system_data.set_charger_status(charger_status);
 

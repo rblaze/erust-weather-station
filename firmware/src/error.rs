@@ -3,7 +3,10 @@ use core::convert::Infallible;
 use thiserror::Error;
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Error)]
-pub enum Error {
+pub struct I2cError<Err: embedded_hal::i2c::Error>(#[from] pub Err);
+
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Error)]
+pub enum Error<I2cErr: embedded_hal::i2c::Error> {
     #[error("peripherals already initialized")]
     AlreadyTaken,
     #[error("LCD coordinates out of range")]
@@ -17,12 +20,12 @@ pub enum Error {
     #[error(transparent)]
     CoreFmt(#[from] core::fmt::Error),
     #[error(transparent)]
-    I2c(#[from] stm32g0_hal::i2c::Error),
+    I2c(#[from] I2cError<I2cErr>),
     #[error(transparent)]
-    Sensirion(#[from] sensirion::Error<stm32g0_hal::i2c::Error>),
+    Sensirion(#[from] sensirion::Error<I2cErr>),
 }
 
-impl From<Infallible> for Error {
+impl<I2cError: embedded_hal::i2c::Error> From<Infallible> for Error<I2cError> {
     fn from(_error: Infallible) -> Self {
         unreachable!()
     }

@@ -6,6 +6,8 @@ edition = "2024"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+firmware = { path = "../../firmware" }
+
 async-scheduler = { git = "https://github.com/rblaze/rust-async-scheduler.git" }
 # async-scheduler = { path = "../rust-async-scheduler/" }
 bq24259 = { git = "https://github.com/rblaze/erust-bq24259.git" }

@@ -1,0 +1,10 @@
+[package]
+name = "firmware"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+async-scheduler = { git = "https://github.com/rblaze/rust-async-scheduler.git" }
+embedded-hal = "1"
+sensirion = { git = "https://github.com/rblaze/erust-sensirion.git" }
+thiserror = { version = "2", default-features = false }

@@ -1,6 +1,7 @@
 #![allow(unsafe_code)]
 
 use core::cell::RefCell;
+use core::marker::PhantomData;
 
 use embedded_hal::digital::{InputPin, OutputPin};
 use stm32g0_hal::adc::{Adc, AdcExt};
@@ -17,13 +18,14 @@ use stm32g0_hal::rcc::config::{Config, Prescaler};
 use stm32g0_hal::timer::{Channel1, Channel2, Channel3, LptimExt, Pwm, PwmPin, TimerExt};
 use stm32g0_hal::usb::UsbExt;
 
-use crate::error::Error;
-use crate::system_time::Ticker;
+use firmware::error::Error;
 
 use super::statics::SafelyInitializedStatic;
 use super::usb::{UsbPowerControl, UsbSerialPort};
+use crate::system_time::Ticker;
 
 pub type I2cBus = I2c<I2C3>;
+pub type I2cError = <I2cBus as embedded_hal::i2c::ErrorType>::Error;
 
 pub struct Joystick {
     up: PB13<Input<PullUp>>,
@@ -34,7 +36,7 @@ pub struct Joystick {
     button: PB10<Input<PullUp>>,
 }
 
-impl crate::types::Joystick for Joystick {
+impl firmware::types::Joystick for Joystick {
     fn up(&mut self) -> bool {
         self.up.is_low().expect("use into_ok()")
     }
@@ -60,7 +62,7 @@ impl crate::types::Joystick for Joystick {
     }
 }
 
-impl crate::types::EventWaiter for Joystick {
+impl firmware::types::EventWaiter for Joystick {
     async fn wait(&self) {
         JOYSTICK_EVENT.read().await.expect("use into_ok()");
     }
@@ -77,7 +79,7 @@ impl VBat {
     const VBAT_DENOMINATOR: u32 = 1000;
 }
 
-impl crate::types::VoltageReader for VBat {
+impl firmware::types::VoltageReader for VBat {
     fn millivolts(&mut self) -> u16 {
         let adc_mv = self.adc.read_voltage(&mut self.vbat);
         let battery_mv = adc_mv as u32 * Self::VBAT_NUMERATOR / Self::VBAT_DENOMINATOR;
@@ -85,7 +87,7 @@ impl crate::types::VoltageReader for VBat {
     }
 }
 
-pub type Backlight = crate::types::Backlight<
+pub type Backlight = firmware::types::Backlight<
     PwmPin<'static, TIM4, Channel1>,
     PwmPin<'static, TIM4, Channel2>,
     PwmPin<'static, TIM4, Channel3>,
@@ -99,7 +101,7 @@ impl DisplayPowerPin {
     }
 }
 
-impl crate::types::OnOff for DisplayPowerPin {
+impl firmware::types::OnOff for DisplayPowerPin {
     fn on(&mut self) {
         self.0.set_low().expect("use into_ok()");
     }
@@ -117,7 +119,7 @@ impl EventWaiter {
     }
 }
 
-impl crate::types::EventWaiter for EventWaiter {
+impl firmware::types::EventWaiter for EventWaiter {
     async fn wait(&self) {
         self.0.read().await.expect("Error waiting for event")
     }
@@ -125,13 +127,14 @@ impl crate::types::EventWaiter for EventWaiter {
 
 pub struct Watchdog(Iwdg);
 
-impl crate::types::Watchdog for Watchdog {
+impl firmware::types::Watchdog for Watchdog {
     fn feed(&self) {
         self.0.feed();
     }
 }
 
-pub type Board = crate::types::Board<
+pub type Board = firmware::types::Board<
+    Error<I2cError>,
     Joystick,
     VBat,
     DisplayPowerPin,
@@ -145,7 +148,7 @@ pub type Board = crate::types::Board<
     PwmPin<'static, TIM4, Channel3>,
 >;
 
-pub fn init() -> Result<(super::env::Env, Board), Error> {
+pub fn init() -> Result<(super::env::Env, Board), Error<I2cError>> {
     let _cp = CorePeripherals::take().ok_or(Error::AlreadyTaken)?;
     let dp = Peripherals::take().ok_or(Error::AlreadyTaken)?;
 
@@ -270,6 +273,7 @@ pub fn init() -> Result<(super::env::Env, Board), Error> {
             charger_event: EventWaiter::new(&CHARGER_EVENT),
             i2c: RefCell::new(i2c),
             watchdog: Watchdog(iwdg),
+            _phantom: PhantomData,
         },
     ))
 }

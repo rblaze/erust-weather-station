@@ -7,12 +7,13 @@ use futures::{FutureExt, select_biased};
 use lcd::screen::Screen;
 use rtt_target::debug_rprintln;
 
+use firmware::error::Error;
+use firmware::types::{Backlight, OnOff};
+
 use super::state::{DisplayData, DisplayPage, DisplayState, Power};
-use crate::error::Error;
 use crate::screen::Lcd;
 use crate::station_data::{SensorData, StationData};
 use crate::system_time::{Duration, sleep};
-use crate::types::{Backlight, OnOff};
 
 pub struct View<'a, I2cBus, DisplayPowerPin, R: SetDutyCycle, G: SetDutyCycle, B: SetDutyCycle> {
     current_state: DisplayState,
@@ -26,14 +27,13 @@ pub struct View<'a, I2cBus, DisplayPowerPin, R: SetDutyCycle, G: SetDutyCycle, B
 impl<'a, I2cBus, DisplayPowerPin, R, G, B> View<'a, I2cBus, DisplayPowerPin, R, G, B>
 where
     I2cBus: I2c,
-    Error: core::convert::From<<I2cBus as embedded_hal::i2c::ErrorType>::Error>,
     DisplayPowerPin: OnOff,
     R: SetDutyCycle,
     G: SetDutyCycle,
     B: SetDutyCycle,
-    Error: core::convert::From<<R as embedded_hal::pwm::ErrorType>::Error>,
-    Error: core::convert::From<<G as embedded_hal::pwm::ErrorType>::Error>,
-    Error: core::convert::From<<B as embedded_hal::pwm::ErrorType>::Error>,
+    Error<I2cBus::Error>: core::convert::From<<R as embedded_hal::pwm::ErrorType>::Error>,
+    Error<I2cBus::Error>: core::convert::From<<G as embedded_hal::pwm::ErrorType>::Error>,
+    Error<I2cBus::Error>: core::convert::From<<B as embedded_hal::pwm::ErrorType>::Error>,
 {
     pub fn new(
         display: Lcd<I2cBus>,
@@ -52,7 +52,7 @@ where
         }
     }
 
-    pub async fn task(&mut self) -> Result<(), Error> {
+    pub async fn task(&mut self) -> Result<(), Error<I2cBus::Error>> {
         loop {
             let state_waiter = pin!(self.state.wait_for_update());
             let data_waiter = pin!(self.data.wait_for_update());
@@ -69,7 +69,7 @@ where
         }
     }
 
-    async fn update_state(&mut self, state: &DisplayState) -> Result<(), Error> {
+    async fn update_state(&mut self, state: &DisplayState) -> Result<(), Error<I2cBus::Error>> {
         let mut update_display = self.current_state.page != state.page;
 
         if state.power != self.current_state.power {
@@ -116,7 +116,7 @@ where
         Ok(())
     }
 
-    async fn update_display(&mut self, data: &SensorData) -> Result<(), Error> {
+    async fn update_display(&mut self, data: &SensorData) -> Result<(), Error<I2cBus::Error>> {
         if self.current_state.power == Power::Off {
             // No update needed
             return Ok(());
@@ -132,7 +132,7 @@ where
         }
     }
 
-    async fn show_air_data(&mut self, data: &SensorData) -> Result<(), Error> {
+    async fn show_air_data(&mut self, data: &SensorData) -> Result<(), Error<I2cBus::Error>> {
         self.display.set_output_line(0)?;
         write!(
             self.display,
@@ -155,7 +155,7 @@ where
         Ok(())
     }
 
-    async fn show_battery_status(&mut self, data: &SensorData) -> Result<(), Error> {
+    async fn show_battery_status(&mut self, data: &SensorData) -> Result<(), Error<I2cBus::Error>> {
         self.display.set_output_line(0)?;
         write!(self.display, "{:?}", data.charger_status.chrg())?;
         self.display.set_output_line(1)?;
@@ -169,7 +169,7 @@ where
         Ok(())
     }
 
-    async fn show_charger_status(&mut self, data: &SensorData) -> Result<(), Error> {
+    async fn show_charger_status(&mut self, data: &SensorData) -> Result<(), Error<I2cBus::Error>> {
         self.display.set_output_line(0)?;
         write!(self.display, "status {:08b}", u8::from(data.charger_status))?;
 

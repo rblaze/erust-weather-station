@@ -1,8 +1,7 @@
 use core::cell::Cell;
 
-use async_scheduler::mailbox::Mailbox;
+use async_scheduler::mailbox::{Error, Mailbox};
 
-use crate::error::Error;
 use crate::system_time::{Duration, timeout};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]

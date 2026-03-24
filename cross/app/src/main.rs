@@ -6,11 +6,9 @@ mod board;
 mod buttons;
 mod charger;
 mod co2;
-mod error;
 mod screen;
 mod station_data;
 mod system_time;
-mod types;
 mod ui;
 
 use core::panic::PanicInfo;
@@ -27,7 +25,8 @@ use rtt_target::rtt_init_print;
 use sensirion::scd4x::SCD4x;
 use sensirion::sgp40::SGP40;
 
-use crate::error::Error;
+use firmware::error::Error;
+
 use crate::station_data::StationData;
 use crate::ui::{DisplayData, Power};
 
@@ -45,7 +44,7 @@ async fn panic_if_exited<F: core::future::Future<Output: core::fmt::Debug>>(f: F
 
 #[entry]
 fn main() -> ! {
-    move || -> Result<(), Error> {
+    move || -> Result<(), Error<board::I2cError>> {
         #[cfg(debug_assertions)]
         rtt_init_print!(rtt_target::ChannelMode::NoBlockSkip, 4096);
 

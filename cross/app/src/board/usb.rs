@@ -13,8 +13,9 @@ use usb_device::device::{
     StringDescriptors, UsbDevice, UsbDeviceBuilder, UsbDeviceState, UsbVidPid,
 };
 
-use crate::error::Error;
+use firmware::error::Error;
 
+use super::hardware::I2cError;
 use super::statics::SafelyInitializedStatic;
 
 pub type UsbBus = stm32g0_hal::usb::Bus<stm32g0_hal::pac::USB>;
@@ -25,7 +26,7 @@ const CDC_MAX_PACKET_SIZE: usize = 64;
 
 pub struct UsbPowerControl;
 
-impl crate::types::OnOff for UsbPowerControl {
+impl firmware::types::OnOff for UsbPowerControl {
     fn on(&mut self) {
         critical_section::with(|cs| {
             let prev_state = USB_POWER.borrow(cs).replace(PowerState::ExternalPower);
@@ -245,7 +246,7 @@ impl UsbSerialPort {
     }
 
     #[allow(unused)]
-    pub async fn async_read(&self, buf: &mut [u8]) -> Result<usize, Error> {
+    pub async fn async_read(&self, buf: &mut [u8]) -> Result<usize, Error<I2cError>> {
         if self.read_in_progress.replace(true) {
             return Err(Error::Busy);
         }
@@ -277,7 +278,7 @@ impl UsbSerialPort {
     }
 
     #[allow(unused)]
-    pub async fn async_write(&self, buf: &[u8]) -> Result<usize, Error> {
+    pub async fn async_write(&self, buf: &[u8]) -> Result<usize, Error<I2cError>> {
         if self.write_in_progress.replace(true) {
             return Err(Error::Busy);
         }
@@ -306,8 +307,8 @@ impl UsbSerialPort {
     }
 }
 
-impl crate::types::UsbSerial for UsbSerialPort {
-    fn write(&self, buf: &[u8]) -> Result<usize, Error> {
+impl firmware::types::UsbSerial<Error<I2cError>> for UsbSerialPort {
+    fn write(&self, buf: &[u8]) -> Result<usize, Error<I2cError>> {
         if self.write_in_progress.replace(true) {
             return Err(Error::Busy);
         }
