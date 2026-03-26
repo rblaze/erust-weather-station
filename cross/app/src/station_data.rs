@@ -3,7 +3,7 @@ use core::cell::{Cell, RefCell};
 use async_scheduler::mailbox::{Error, Mailbox};
 use rtt_target::debug_rprintln;
 
-use crate::system_time::{Duration, Instant};
+use firmware::types::{Duration, Instant};
 
 #[derive(Debug, Clone, Copy)]
 pub struct SensorData {

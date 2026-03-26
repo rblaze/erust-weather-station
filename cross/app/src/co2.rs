@@ -6,10 +6,10 @@ use sensirion::sgp40::SGP40;
 use sensirion_gas_index_algorithm_rs::{AlgorithmType, GasIndexAlgorithm};
 
 use firmware::error::Error;
-use firmware::types::UsbSerial;
+use firmware::types::{Duration, UsbSerial};
 
 use crate::station_data::StationData;
-use crate::system_time::{Duration, sleep};
+use crate::system_time::sleep;
 
 #[derive(Debug, Clone, Copy)]
 struct PrintBuf<const N: usize> {

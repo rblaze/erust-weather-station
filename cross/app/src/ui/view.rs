@@ -8,12 +8,12 @@ use lcd::screen::Screen;
 use rtt_target::debug_rprintln;
 
 use firmware::error::Error;
-use firmware::types::{Backlight, OnOff};
+use firmware::types::{Backlight, Duration, OnOff};
 
 use super::state::{DisplayData, DisplayPage, DisplayState, Power};
 use crate::screen::Lcd;
 use crate::station_data::{SensorData, StationData};
-use crate::system_time::{Duration, sleep};
+use crate::system_time::sleep;
 
 pub struct View<'a, I2cBus, DisplayPowerPin, R: SetDutyCycle, G: SetDutyCycle, B: SetDutyCycle> {
     current_state: DisplayState,

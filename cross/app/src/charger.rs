@@ -4,10 +4,10 @@ use futures::FutureExt;
 use rtt_target::debug_rprintln;
 
 use firmware::error::{Error, I2cError};
-use firmware::types::{EventWaiter, OnOff, VoltageReader, Watchdog};
+use firmware::types::{Duration, EventWaiter, OnOff, VoltageReader, Watchdog};
 
 use crate::station_data::StationData;
-use crate::system_time::{Duration, timeout};
+use crate::system_time::timeout;
 
 pub struct Charger<'a, I2cBus, ChargerEvent, VBat, UsbPower, Wd> {
     charger: BQ24259<I2cBus>,

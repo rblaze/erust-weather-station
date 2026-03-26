@@ -4,7 +4,9 @@ use async_scheduler::executor::Environment;
 use cortex_m::peripheral::{SCB, scb::VectActive};
 use rtt_target::debug_rprintln;
 
-use crate::system_time::{Instant, Ticker};
+use firmware::types::Instant;
+
+use crate::system_time::Ticker;
 
 fn in_thread_mode() -> bool {
     match SCB::vect_active() {

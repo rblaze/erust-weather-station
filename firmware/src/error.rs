@@ -2,6 +2,8 @@ use core::convert::Infallible;
 
 use thiserror::Error;
 
+// Workaround for compiler concerns about possible
+// `impl embedded_hal::i2c::Error for async_scheduler::mailbox::Error`
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Error)]
 pub struct I2cError<Err: embedded_hal::i2c::Error>(#[from] pub Err);
 
