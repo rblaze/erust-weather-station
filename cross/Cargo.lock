@@ -183,8 +183,10 @@ name = "firmware"
 version = "0.1.0"
 dependencies = [
  "async-scheduler",
+ "bq24259",
  "embedded-hal 1.0.0",
  "fugit",
+ "rtt-target",
  "sensirion",
  "thiserror",
 ]

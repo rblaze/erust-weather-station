@@ -3,7 +3,7 @@ use core::cell::{Cell, RefCell};
 use async_scheduler::mailbox::{Error, Mailbox};
 use rtt_target::debug_rprintln;
 
-use firmware::types::{Duration, Instant};
+use crate::types::{Duration, Instant};
 
 #[derive(Debug, Clone, Copy)]
 pub struct SensorData {
@@ -72,6 +72,12 @@ pub struct StationData {
     sensor_data: Cell<SensorData>,
     update_event: Mailbox<()>,
     history: RefCell<HistoryBuffer>,
+}
+
+impl Default for StationData {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl StationData {

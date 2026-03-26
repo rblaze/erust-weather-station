@@ -5,8 +5,8 @@ use rtt_target::debug_rprintln;
 
 use firmware::error::{Error, I2cError};
 use firmware::types::{Duration, EventWaiter, OnOff, VoltageReader, Watchdog};
+use firmware::station_data::StationData;
 
-use crate::station_data::StationData;
 use crate::system_time::timeout;
 
 pub struct Charger<'a, I2cBus, ChargerEvent, VBat, UsbPower, Wd> {

@@ -7,7 +7,6 @@ mod buttons;
 mod charger;
 mod co2;
 mod screen;
-mod station_data;
 mod system_time;
 mod ui;
 
@@ -26,8 +25,8 @@ use sensirion::scd4x::SCD4x;
 use sensirion::sgp40::SGP40;
 
 use firmware::error::Error;
+use firmware::station_data::StationData;
 
-use crate::station_data::StationData;
 use crate::ui::{DisplayData, Power};
 
 #[panic_handler]

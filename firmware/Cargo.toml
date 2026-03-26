@@ -5,7 +5,9 @@ edition = "2024"
 
 [dependencies]
 async-scheduler = { git = "https://github.com/rblaze/rust-async-scheduler.git" }
+bq24259 = { git = "https://github.com/rblaze/erust-bq24259.git" }
 embedded-hal = "1"
 fugit = "0.3"
+rtt-target = "0.6"
 sensirion = { git = "https://github.com/rblaze/erust-sensirion.git" }
 thiserror = { version = "2", default-features = false }
