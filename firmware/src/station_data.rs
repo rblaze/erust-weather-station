@@ -65,6 +65,13 @@ impl HistoryBuffer {
         self.head = (self.head + 1) % HISTORY_SIZE;
         self.last_recorded = Some(entry.timestamp);
     }
+
+    fn get_at(&self, timestamp: Instant) -> Option<HistoryEntry> {
+        (0..HISTORY_SIZE)
+            .map(|i| self.entries[(self.head + HISTORY_SIZE - 1 - i) % HISTORY_SIZE])
+            .take_while(|entry| entry.timestamp.ticks() != 0)
+            .find(|entry| entry.timestamp <= timestamp)
+    }
 }
 
 #[derive(Debug)]
@@ -132,28 +139,13 @@ impl StationData {
         };
 
         history.push(entry);
-        debug_rprintln!("recorded history entry at {}s", timestamp);
+        debug_rprintln!("recorded history entry at {}", timestamp);
     }
 
     /// Returns latest history entry with a timestamp less or equal to the provided one.
     #[allow(unused)]
     pub fn get_history_at(&self, timestamp: Instant) -> Option<HistoryEntry> {
-        let history = self.history.borrow();
-
-        // Search backwards from the most recent entry.
-        for i in 0..HISTORY_SIZE {
-            let index = (history.head + HISTORY_SIZE - 1 - i) % HISTORY_SIZE;
-            let entry = history.entries[index];
-            if entry.timestamp.ticks() == 0 {
-                // We reached an unused entry, no need to search further.
-                break;
-            }
-            if entry.timestamp <= timestamp {
-                return Some(entry);
-            }
-        }
-
-        None
+        self.history.borrow().get_at(timestamp)
     }
 
     pub fn set_charger_status(&self, status: bq24259::registers::SystemStatus) {
@@ -216,5 +208,101 @@ impl StationData {
                 ..data
             }
         });
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn create_entry(ticks: u64) -> HistoryEntry {
+        HistoryEntry {
+            timestamp: Instant::from_ticks(ticks),
+            ..HistoryEntry::default()
+        }
+    }
+
+    #[test]
+    fn test_history_buffer_empty() {
+        let buffer = HistoryBuffer::new();
+        assert!(buffer.get_at(Instant::from_ticks(100)).is_none());
+    }
+
+    #[test]
+    fn test_history_buffer_push_and_get_exact() {
+        let mut buffer = HistoryBuffer::new();
+        let entry = create_entry(100);
+        buffer.push(entry);
+
+        let retrieved = buffer.get_at(Instant::from_ticks(100)).unwrap();
+        assert_eq!(retrieved.timestamp.ticks(), 100);
+    }
+
+    #[test]
+    fn test_history_buffer_get_latest_before() {
+        let mut buffer = HistoryBuffer::new();
+        buffer.push(create_entry(100));
+        buffer.push(create_entry(200));
+        buffer.push(create_entry(300));
+
+        // Exactly at 200
+        assert_eq!(
+            buffer
+                .get_at(Instant::from_ticks(200))
+                .unwrap()
+                .timestamp
+                .ticks(),
+            200
+        );
+        // Between 200 and 300
+        assert_eq!(
+            buffer
+                .get_at(Instant::from_ticks(250))
+                .unwrap()
+                .timestamp
+                .ticks(),
+            200
+        );
+        // Before 100
+        assert!(buffer.get_at(Instant::from_ticks(50)).is_none());
+        // After 300
+        assert_eq!(
+            buffer
+                .get_at(Instant::from_ticks(400))
+                .unwrap()
+                .timestamp
+                .ticks(),
+            300
+        );
+    }
+
+    #[test]
+    fn test_history_buffer_wrap_around() {
+        let mut buffer = HistoryBuffer::new();
+        // Fill the buffer and wrap around by 10 entries
+        for i in 1..=(HISTORY_SIZE + 10) {
+            buffer.push(create_entry(i as u64 * 100));
+        }
+
+        // Latest
+        assert_eq!(
+            buffer
+                .get_at(Instant::from_ticks(20000))
+                .unwrap()
+                .timestamp
+                .ticks(),
+            13000
+        );
+        // Oldest still in buffer
+        assert_eq!(
+            buffer
+                .get_at(Instant::from_ticks(1100))
+                .unwrap()
+                .timestamp
+                .ticks(),
+            1100
+        );
+        // Just before the oldest
+        assert!(buffer.get_at(Instant::from_ticks(1099)).is_none());
     }
 }
