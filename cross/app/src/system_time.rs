@@ -186,8 +186,7 @@ fn TIM7() {
             debug_rprintln!("update event");
 
             critical_section::with(|cs| {
-                let state = TICKS.borrow(cs).get();
-                TICKS.borrow(cs).set(TickerState {
+                TICKS.borrow(cs).update(|state| TickerState {
                     num_full_cycles: state.num_full_cycles + 1,
                 });
             });
