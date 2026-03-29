@@ -4,8 +4,8 @@ use futures::FutureExt;
 use rtt_target::debug_rprintln;
 
 use firmware::error::{Error, I2cError};
-use firmware::types::{Duration, EventWaiter, OnOff, VoltageReader, Watchdog};
 use firmware::station_data::StationData;
+use firmware::types::{Duration, EventWaiter, OnOff, VoltageReader, Watchdog};
 
 use crate::system_time::timeout;
 

@@ -6,6 +6,9 @@
 version: 2
 updates:
   - package-ecosystem: "cargo" # See documentation for possible values
-    directory: "/cross/app" # Location of package manifests
+    directories:  # Location of package manifests
+      - "/cross/app"
+      - "/firmware"
+      - "/"
     schedule:
       interval: "weekly"
