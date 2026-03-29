@@ -19,9 +19,7 @@ pub trait Watchdog {
 }
 
 pub trait Joystick {
-    #[allow(unused)]
     fn up(&mut self) -> bool;
-    #[allow(unused)]
     fn down(&mut self) -> bool;
     fn left(&mut self) -> bool;
     fn right(&mut self) -> bool;

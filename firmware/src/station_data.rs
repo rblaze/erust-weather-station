@@ -18,7 +18,6 @@ pub struct SensorData {
 
 pub const HISTORY_SIZE: usize = 120;
 
-#[allow(unused)]
 #[derive(Debug, Clone, Copy)]
 pub struct HistoryEntry {
     pub timestamp: Instant,
@@ -143,7 +142,6 @@ impl StationData {
     }
 
     /// Returns latest history entry with a timestamp less or equal to the provided one.
-    #[allow(unused)]
     pub fn get_history_at(&self, timestamp: Instant) -> Option<HistoryEntry> {
         self.history.borrow().get_at(timestamp)
     }
