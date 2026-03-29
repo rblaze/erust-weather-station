@@ -3,7 +3,6 @@
 #![deny(unsafe_code)]
 
 mod board;
-mod buttons;
 mod system_time;
 
 use core::panic::PanicInfo;
@@ -20,6 +19,7 @@ use rtt_target::rtt_init_print;
 use sensirion::scd4x::SCD4x;
 use sensirion::sgp40::SGP40;
 
+use firmware::buttons;
 use firmware::charger::Charger;
 use firmware::co2;
 use firmware::error::Error;
