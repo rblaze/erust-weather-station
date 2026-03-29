@@ -3,10 +3,10 @@ use embedded_hal::i2c::I2c;
 use futures::FutureExt;
 use rtt_target::debug_rprintln;
 
-use firmware::error::{Error, I2cError};
-use firmware::station_data::StationData;
-use firmware::time::{Duration, timeout};
-use firmware::types::{EventWaiter, OnOff, VoltageReader, Watchdog};
+use crate::error::{Error, I2cError};
+use crate::station_data::StationData;
+use crate::time::{Duration, timeout};
+use crate::types::{EventWaiter, OnOff, VoltageReader, Watchdog};
 
 pub struct Charger<'a, I2cBus, ChargerEvent, VBat, UsbPower, Wd> {
     charger: BQ24259<I2cBus>,

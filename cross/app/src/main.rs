@@ -4,7 +4,6 @@
 
 mod board;
 mod buttons;
-mod charger;
 mod co2;
 mod screen;
 mod system_time;
@@ -24,6 +23,7 @@ use rtt_target::rtt_init_print;
 use sensirion::scd4x::SCD4x;
 use sensirion::sgp40::SGP40;
 
+use firmware::charger::Charger;
 use firmware::error::Error;
 use firmware::station_data::StationData;
 
@@ -66,7 +66,7 @@ fn main() -> ! {
         );
 
         let charger_device = BQ24259::new(RefCellDevice::new(&board.i2c));
-        let mut charger = charger::Charger::new(
+        let mut charger = Charger::new(
             charger_device,
             board.charger_event,
             board.vbat,
