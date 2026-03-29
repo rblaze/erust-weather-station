@@ -7,9 +7,8 @@ use sensirion_gas_index_algorithm_rs::{AlgorithmType, GasIndexAlgorithm};
 
 use firmware::error::Error;
 use firmware::station_data::StationData;
-use firmware::types::{Duration, UsbSerial};
-
-use crate::system_time::sleep;
+use firmware::time::{Duration, now, sleep};
+use firmware::types::UsbSerial;
 
 #[derive(Debug, Clone, Copy)]
 struct PrintBuf<const N: usize> {
@@ -113,7 +112,7 @@ where
 
             system_data.set_sgp4x_data(&co2_measurement, voc_index);
 
-            system_data.record_history(crate::system_time::now().await);
+            system_data.record_history(now().await);
 
             // Send data to USB serial port
             let mut buf = PrintBuf::<128>::new();

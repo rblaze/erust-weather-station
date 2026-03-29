@@ -3,4 +3,5 @@
 
 pub mod error;
 pub mod station_data;
+pub mod time;
 pub mod types;

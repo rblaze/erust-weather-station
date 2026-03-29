@@ -9,11 +9,11 @@ use rtt_target::debug_rprintln;
 
 use firmware::error::Error;
 use firmware::station_data::{SensorData, StationData};
-use firmware::types::{Backlight, Duration, OnOff};
+use firmware::time::{Duration, now, sleep};
+use firmware::types::{Backlight, OnOff};
 
 use super::state::{DisplayData, DisplayPage, DisplayState, Power};
 use crate::screen::Lcd;
-use crate::system_time::sleep;
 
 pub struct View<'a, I2cBus, DisplayPowerPin, R: SetDutyCycle, G: SetDutyCycle, B: SetDutyCycle> {
     current_state: DisplayState,
@@ -146,10 +146,7 @@ where
             None => write!(self.display, "no VOC")?,
         }
 
-        let uptime_secs = crate::system_time::now()
-            .await
-            .duration_since_epoch()
-            .to_secs();
+        let uptime_secs = now().await.duration_since_epoch().to_secs();
         write!(self.display, " up {}", uptime_secs)?;
 
         Ok(())

@@ -2,9 +2,7 @@ use core::cell::Cell;
 
 use async_scheduler::mailbox::{Error, Mailbox};
 
-use firmware::types::Duration;
-
-use crate::system_time::timeout;
+use firmware::time::{Duration, timeout};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Power {

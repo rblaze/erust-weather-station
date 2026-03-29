@@ -4,7 +4,7 @@ use async_scheduler::executor::Environment;
 use cortex_m::peripheral::{SCB, scb::VectActive};
 use rtt_target::debug_rprintln;
 
-use firmware::types::Instant;
+use firmware::time::Instant;
 
 use crate::system_time::Ticker;
 

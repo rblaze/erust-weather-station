@@ -3,7 +3,6 @@
 use core::cell::Cell;
 
 use critical_section::{CriticalSection, Mutex};
-use futures::{Future, FutureExt, select_biased};
 use once_cell::sync::OnceCell;
 use rtt_target::debug_rprintln;
 
@@ -12,7 +11,7 @@ use stm32g0_hal::rcc::Rcc;
 use stm32g0_hal::rcc::lptim::LptimClock;
 use stm32g0_hal::timer::{Enabled, LowPowerTimer, LptimCounter, LptimEvent, LptimPrescaler};
 
-use firmware::types::{Duration, Instant, TimerTicks};
+use firmware::time::{Instant, TimerTicks};
 
 #[derive(Debug)]
 pub struct Ticker {
@@ -140,33 +139,6 @@ impl Ticker {
             timer.set_cmp(0);
         }
     }
-}
-
-/// Runs provided future with timeout.
-/// Returns `Some(x)` if future completes, None if timeout occurs.
-pub async fn timeout<T, E, F>(duration: Duration, f: F) -> Result<Option<T>, E>
-where
-    F: Future<Output = Result<T, E>>,
-{
-    select_biased! {
-        ret = f.fuse() => ret.map(|v| Some(v)),
-        _ = sleep(duration).fuse() => Ok(None),
-    }
-}
-
-/// Sleeps for the specified duration.
-/// Clamps at Duration::MAX for u64->i64 conversion.
-pub async fn sleep(duration: Duration) {
-    async_scheduler::sleep(duration.ticks().try_into().map_or(
-        async_scheduler::time::Duration::MAX,
-        async_scheduler::time::Duration::new,
-    ))
-    .await;
-}
-
-/// Returns current time.
-pub async fn now() -> Instant {
-    Instant::from_ticks(async_scheduler::now().await.ticks().clamp(0, i64::MAX) as u64)
 }
 
 #[derive(Clone, Copy, Debug)]

@@ -3,15 +3,6 @@ use core::marker::PhantomData;
 
 use embedded_hal::i2c::I2c;
 use embedded_hal::pwm::SetDutyCycle;
-use fugit::{KilohertzU32, TimerDuration, TimerInstant};
-
-// TODO: check if it is possible to import LSI_FREQ from HAL
-const LSI_FREQ: KilohertzU32 = KilohertzU32::kHz(32);
-const TIMER_FREQ: u32 = LSI_FREQ.to_Hz() / 128;
-
-pub type TimerTicks = u64;
-pub type Instant = TimerInstant<TimerTicks, TIMER_FREQ>;
-pub type Duration = TimerDuration<TimerTicks, TIMER_FREQ>;
 
 pub trait EventWaiter {
     #[allow(async_fn_in_trait)]

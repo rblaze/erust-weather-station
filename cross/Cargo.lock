@@ -186,6 +186,7 @@ dependencies = [
  "bq24259",
  "embedded-hal 1.0.0",
  "fugit",
+ "futures",
  "rtt-target",
  "sensirion",
  "thiserror",
