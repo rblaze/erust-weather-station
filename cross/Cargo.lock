@@ -189,6 +189,7 @@ dependencies = [
  "futures",
  "rtt-target",
  "sensirion",
+ "sensirion-gas-index-algorithm-rs",
  "thiserror",
 ]
 
@@ -601,7 +602,6 @@ dependencies = [
  "rtt-target",
  "scopeguard",
  "sensirion",
- "sensirion-gas-index-algorithm-rs",
  "stm32g0-hal",
  "thiserror",
  "usb-device",

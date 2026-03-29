@@ -36,8 +36,6 @@ rtt-target = "0.6"
 scopeguard = { version = "1", default-features = false }
 sensirion = { git = "https://github.com/rblaze/erust-sensirion.git" }
 # sensirion = { path = "../erust-sensirion/" }
-sensirion-gas-index-algorithm-rs = { git = "https://github.com/Sensirion/gas-index-algorithm.git", default-features = false }
-# sensirion-gas-index-algorithm-rs = { path = "../gas-index-algorithm/sensirion-gas-index-algorithm-rs", default-features = false }
 stm32g0-hal = { git = "https://github.com/rblaze/erust-stm32g0-hal.git", features = [
     "stm32g0b1",
 ] }

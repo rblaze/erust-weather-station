@@ -4,7 +4,6 @@
 
 mod board;
 mod buttons;
-mod co2;
 mod screen;
 mod system_time;
 mod ui;
@@ -24,6 +23,7 @@ use sensirion::scd4x::SCD4x;
 use sensirion::sgp40::SGP40;
 
 use firmware::charger::Charger;
+use firmware::co2;
 use firmware::error::Error;
 use firmware::station_data::StationData;
 
