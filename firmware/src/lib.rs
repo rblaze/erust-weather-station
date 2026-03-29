@@ -8,3 +8,4 @@ pub mod screen;
 pub mod station_data;
 pub mod time;
 pub mod types;
+pub mod ui;

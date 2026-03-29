@@ -5,7 +5,6 @@
 mod board;
 mod buttons;
 mod system_time;
-mod ui;
 
 use core::panic::PanicInfo;
 use core::pin::pin;
@@ -24,10 +23,9 @@ use sensirion::sgp40::SGP40;
 use firmware::charger::Charger;
 use firmware::co2;
 use firmware::error::Error;
-use firmware::station_data::StationData;
 use firmware::screen::Lcd;
-
-use crate::ui::{DisplayData, Power};
+use firmware::station_data::StationData;
+use firmware::ui::{DisplayData, Power, View};
 
 #[panic_handler]
 fn panic(info: &PanicInfo) -> ! {
@@ -57,7 +55,7 @@ fn main() -> ! {
         screen_state.set_display_power(Power::On);
 
         let lcd = Lcd::new(RefCellDevice::new(&board.i2c));
-        let mut lcd_view = ui::View::new(
+        let mut lcd_view = View::new(
             lcd,
             board.backlight,
             board.display_power,

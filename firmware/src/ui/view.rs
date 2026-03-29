@@ -7,11 +7,11 @@ use futures::{FutureExt, select_biased};
 use lcd::screen::Screen;
 use rtt_target::debug_rprintln;
 
-use firmware::error::Error;
-use firmware::screen::Lcd;
-use firmware::station_data::{SensorData, StationData};
-use firmware::time::{Duration, now, sleep};
-use firmware::types::{Backlight, OnOff};
+use crate::error::Error;
+use crate::screen::Lcd;
+use crate::station_data::{SensorData, StationData};
+use crate::time::{Duration, now, sleep};
+use crate::types::{Backlight, OnOff};
 
 use super::state::{DisplayData, DisplayPage, DisplayState, Power};
 

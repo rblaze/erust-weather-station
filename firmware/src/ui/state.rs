@@ -2,7 +2,7 @@ use core::cell::Cell;
 
 use async_scheduler::mailbox::{Error, Mailbox};
 
-use firmware::time::{Duration, timeout};
+use crate::time::{Duration, timeout};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Power {
@@ -63,6 +63,12 @@ impl Default for DisplayState {
 pub struct DisplayData {
     state: Cell<DisplayState>,
     update_event: Mailbox<()>,
+}
+
+impl Default for DisplayData {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl DisplayData {
