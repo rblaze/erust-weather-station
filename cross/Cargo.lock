@@ -187,6 +187,7 @@ dependencies = [
  "embedded-hal 1.0.0",
  "fugit",
  "futures",
+ "lcd",
  "rtt-target",
  "sensirion",
  "sensirion-gas-index-algorithm-rs",

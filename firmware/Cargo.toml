@@ -11,6 +11,8 @@ fugit = "0.3"
 futures = { version = "0.3", default-features = false, features = [
     "async-await",
 ] }
+lcd = { git = "https://github.com/rblaze/erust-lcd.git" }
+# lcd = { path = "../erust-lcd/" }
 rtt-target = "0.6"
 sensirion = { git = "https://github.com/rblaze/erust-sensirion.git" }
 # sensirion = { path = "../erust-sensirion/" }

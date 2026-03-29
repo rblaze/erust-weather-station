@@ -3,7 +3,8 @@ use lcd::hd44780::*;
 use lcd::screen::Screen;
 use lcd::st7036::*;
 
-use firmware::error::{Error, I2cError};
+use crate::error::{Error, I2cError};
+use crate::time::{Duration, sleep};
 
 enum TransactionMode {
     Command = 0b0000_0000,
@@ -23,11 +24,11 @@ impl<I2cBus: I2c> Lcd<I2cBus> {
         Self { i2c }
     }
 
-    pub fn reset(&mut self) -> Result<(), Error<I2cBus::Error>> {
+    pub async fn reset(&mut self) -> Result<(), Error<I2cBus::Error>> {
         self.send_commands(INIT_SEQUENCE[0])?;
-        cortex_m::asm::delay(1000);
+        sleep(Duration::from_ticks(1)).await;
         self.send_commands(INIT_SEQUENCE[1])?;
-        cortex_m::asm::delay(1000);
+        sleep(Duration::from_ticks(1)).await;
         self.send_commands(INIT_SEQUENCE[2])?;
         Ok(())
     }

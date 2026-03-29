@@ -4,7 +4,6 @@
 
 mod board;
 mod buttons;
-mod screen;
 mod system_time;
 mod ui;
 
@@ -26,6 +25,7 @@ use firmware::charger::Charger;
 use firmware::co2;
 use firmware::error::Error;
 use firmware::station_data::StationData;
+use firmware::screen::Lcd;
 
 use crate::ui::{DisplayData, Power};
 
@@ -56,7 +56,7 @@ fn main() -> ! {
 
         screen_state.set_display_power(Power::On);
 
-        let lcd = screen::Lcd::new(RefCellDevice::new(&board.i2c));
+        let lcd = Lcd::new(RefCellDevice::new(&board.i2c));
         let mut lcd_view = ui::View::new(
             lcd,
             board.backlight,

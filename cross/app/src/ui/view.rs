@@ -8,12 +8,12 @@ use lcd::screen::Screen;
 use rtt_target::debug_rprintln;
 
 use firmware::error::Error;
+use firmware::screen::Lcd;
 use firmware::station_data::{SensorData, StationData};
 use firmware::time::{Duration, now, sleep};
 use firmware::types::{Backlight, OnOff};
 
 use super::state::{DisplayData, DisplayPage, DisplayState, Power};
-use crate::screen::Lcd;
 
 pub struct View<'a, I2cBus, DisplayPowerPin, R: SetDutyCycle, G: SetDutyCycle, B: SetDutyCycle> {
     current_state: DisplayState,
@@ -77,7 +77,7 @@ where
                 // Turn on display
                 self.power_pin.on();
                 sleep(Duration::millis(200)).await;
-                self.display.reset()?;
+                self.display.reset().await?;
                 update_display = true;
             } else {
                 // Turn off display
