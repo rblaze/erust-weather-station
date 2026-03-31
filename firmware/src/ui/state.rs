@@ -2,7 +2,10 @@ use core::cell::Cell;
 
 use async_scheduler::mailbox::{Error, Mailbox};
 
-use crate::time::{Duration, timeout};
+use crate::{
+    station_data::StationData,
+    time::{Duration, Instant, timeout},
+};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Power {
@@ -10,29 +13,32 @@ pub enum Power {
     Off,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum DisplayPage {
     AirData,
     BatteryStatus,
     ChargerStatus,
+    History(Instant),
 }
 
 impl DisplayPage {
-    pub fn next(self) -> Self {
+    pub fn next(self, time: Instant) -> Self {
         use DisplayPage::*;
         match self {
             AirData => BatteryStatus,
             BatteryStatus => ChargerStatus,
-            ChargerStatus => AirData,
+            ChargerStatus => History(time),
+            History(_) => AirData,
         }
     }
 
-    pub fn prev(self) -> Self {
+    pub fn prev(self, time: Instant) -> Self {
         use DisplayPage::*;
         match self {
-            AirData => ChargerStatus,
+            AirData => History(time),
             BatteryStatus => AirData,
             ChargerStatus => BatteryStatus,
+            History(_) => ChargerStatus,
         }
     }
 }
@@ -122,22 +128,60 @@ impl DisplayData {
         self.update_event.post(());
     }
 
-    pub fn show_next_page(&self) {
+    pub fn show_next_page(&self, time: Instant) {
         self.state.update(|state| DisplayState {
-            page: state.page.next(),
+            page: state.page.next(time),
             ..state
         });
 
         self.update_event.post(());
     }
 
-    pub fn show_prev_page(&self) {
+    pub fn show_prev_page(&self, time: Instant) {
         self.state.update(|state| DisplayState {
-            page: state.page.prev(),
+            page: state.page.prev(time),
             ..state
         });
 
         self.update_event.post(());
+    }
+
+    pub fn scroll_page_up(&self) {
+        self.state.update(|state| {
+            if let DisplayPage::History(timestamp) = state.page {
+                self.update_event.post(());
+
+                let new_time = timestamp
+                    .checked_add_duration(StationData::HISTORY_INTERVAL)
+                    .unwrap_or(Instant::from_ticks(0));
+                DisplayState {
+                    page: DisplayPage::History(new_time),
+                    ..state
+                }
+            } else {
+                // Do nothing
+                state
+            }
+        })
+    }
+
+    pub fn scroll_page_down(&self) {
+        self.state.update(|state| {
+            if let DisplayPage::History(timestamp) = state.page {
+                self.update_event.post(());
+
+                let new_time = timestamp
+                    .checked_sub_duration(StationData::HISTORY_INTERVAL)
+                    .unwrap_or(Instant::from_ticks(0));
+                DisplayState {
+                    page: DisplayPage::History(new_time),
+                    ..state
+                }
+            } else {
+                // Do nothing
+                state
+            }
+        })
     }
 
     pub fn set_next_backlight_mode(&self) {

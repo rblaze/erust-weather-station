@@ -87,7 +87,7 @@ impl Default for StationData {
 }
 
 impl StationData {
-    const HISTORY_INTERVAL: Duration = Duration::secs(300);
+    pub const HISTORY_INTERVAL: Duration = Duration::secs(300);
 
     pub fn new() -> Self {
         Self {
@@ -106,13 +106,13 @@ impl StationData {
     }
 
     /// Waits for change in sensor data and returns the new data.
-    pub async fn wait_for_update(&self) -> Result<SensorData, Error> {
+    pub async fn wait_for_update(&self) -> Result<(), Error> {
         self.update_event.read().await?;
-        Ok(self.sensor_data.get())
+        Ok(())
     }
 
     /// Returns current data.
-    pub fn get(&self) -> SensorData {
+    pub fn sensor_data(&self) -> SensorData {
         self.sensor_data.get()
     }
 
@@ -126,7 +126,7 @@ impl StationData {
             return;
         }
 
-        let data = self.get();
+        let data = self.sensor_data();
         let entry = HistoryEntry {
             timestamp,
             co2_ppm: data.co2_ppm,

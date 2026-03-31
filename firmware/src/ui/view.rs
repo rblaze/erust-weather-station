@@ -10,7 +10,7 @@ use rtt_target::debug_rprintln;
 use crate::error::Error;
 use crate::screen::Lcd;
 use crate::station_data::{SensorData, StationData};
-use crate::time::{Duration, now, sleep};
+use crate::time::{Duration, Instant, now, sleep};
 use crate::types::{Backlight, OnOff};
 
 use super::state::{DisplayData, DisplayPage, DisplayState, Power};
@@ -61,10 +61,13 @@ where
                 v = state_waiter.fuse() => {
                     match v? {
                         Some(new_state) => self.update_state(&new_state).await?,
-                        None => self.update_display(&self.data.get()).await?,
+                        None => self.update_display(self.data).await?,
                     }
                 },
-                v = data_waiter.fuse() => self.update_display(&v?).await?,
+                v = data_waiter.fuse() => {
+                    v?;
+                    self.update_display(self.data).await?;
+                },
             }
         }
     }
@@ -110,13 +113,13 @@ where
         self.current_state = *state;
 
         if update_display {
-            self.update_display(&self.data.get()).await?;
+            self.update_display(self.data).await?;
         }
 
         Ok(())
     }
 
-    async fn update_display(&mut self, data: &SensorData) -> Result<(), Error<I2cBus::Error>> {
+    async fn update_display(&mut self, data: &StationData) -> Result<(), Error<I2cBus::Error>> {
         if self.current_state.power == Power::Off {
             // No update needed
             return Ok(());
@@ -126,9 +129,10 @@ where
         sleep(Duration::millis(5)).await;
 
         match self.current_state.page {
-            DisplayPage::AirData => self.show_air_data(data).await,
-            DisplayPage::BatteryStatus => self.show_battery_status(data).await,
-            DisplayPage::ChargerStatus => self.show_charger_status(data).await,
+            DisplayPage::AirData => self.show_air_data(&data.sensor_data()).await,
+            DisplayPage::BatteryStatus => self.show_battery_status(&data.sensor_data()).await,
+            DisplayPage::ChargerStatus => self.show_charger_status(&data.sensor_data()).await,
+            DisplayPage::History(timestamp) => self.show_history(data, timestamp).await,
         }
     }
 
@@ -176,6 +180,39 @@ where
             write!(self.display, "no faults")?;
         } else {
             write!(self.display, "faults {:08b}", fault_bits)?;
+        }
+
+        Ok(())
+    }
+
+    async fn show_history(
+        &mut self,
+        data: &StationData,
+        timestamp: Instant,
+    ) -> Result<(), Error<I2cBus::Error>> {
+        self.display.set_output_line(0)?;
+        match data.get_history_at(timestamp) {
+            Some(entry) => {
+                let age = now().await.checked_duration_since(entry.timestamp);
+                write!(
+                    self.display,
+                    "@{} m: {}vbat {}.{:02}V",
+                    age.map_or(999999, |age| age.to_minutes()),
+                    if entry.charger_status.pg() { "+" } else { "" },
+                    entry.battery_millivolts / 1000,
+                    entry.battery_millivolts % 1000 / 10
+                )?;
+
+                self.display.set_output_line(1)?;
+                write!(
+                    self.display,
+                    "{} ppm {:.0}\u{df}C {:.0}% RH",
+                    entry.co2_ppm, entry.temp_celsius, entry.humidity_percent
+                )?;
+            }
+            None => {
+                write!(self.display, "end of history")?;
+            }
         }
 
         Ok(())
