@@ -5,7 +5,7 @@ use rtt_target::debug_rprintln;
 
 use crate::error::{Error, I2cError};
 use crate::station_data::StationData;
-use crate::time::{Duration, timeout};
+use crate::time::{Duration, now, timeout};
 use crate::types::{EventWaiter, OnOff, VoltageReader, Watchdog};
 
 pub struct Charger<'a, I2cBus, ChargerEvent, VBat, UsbPower, Wd> {
@@ -79,6 +79,8 @@ where
                     self.report_power_state();
                 }
             }
+
+            self.system_data.maybe_record_history(now().await);
         }
     }
 

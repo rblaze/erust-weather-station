@@ -5,6 +5,9 @@ use rtt_target::debug_rprintln;
 
 use crate::time::{Duration, Instant};
 
+pub const HISTORY_SIZE: usize = 120;
+pub const HISTORY_INTERVAL: Duration = Duration::secs(300);
+
 #[derive(Debug, Clone, Copy)]
 pub struct SensorData {
     pub co2_ppm: u16,
@@ -16,29 +19,39 @@ pub struct SensorData {
     pub charger_faults: bq24259::registers::NewFault,
 }
 
-pub const HISTORY_SIZE: usize = 120;
-
-#[derive(Debug, Clone, Copy)]
-pub struct HistoryEntry {
-    pub timestamp: Instant,
-    pub co2_ppm: u16,
-    pub temp_celsius: f32,
-    pub humidity_percent: f32,
-    pub voc_index: Option<i32>,
-    pub battery_millivolts: u16,
-    pub charger_status: bq24259::registers::SystemStatus,
-}
-
-impl Default for HistoryEntry {
+impl Default for SensorData {
     fn default() -> Self {
         Self {
-            timestamp: Instant::from_ticks(0),
             co2_ppm: 0,
             temp_celsius: 0.0,
             humidity_percent: 0.0,
             voc_index: None,
             battery_millivolts: 0,
             charger_status: bq24259::registers::SystemStatus::from(0),
+            charger_faults: bq24259::registers::NewFault::from(0),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct HistoryEntry {
+    pub timestamp: Instant,
+    pub snapshot: SensorData,
+}
+
+const _: () = {
+    // Verify that HistoryEntry doesn't increase in size if more data
+    // is added to SensorData. One way to save 4 bytes is to use
+    // Option<NonZero<i32>> for voc_index: it is never less than 1 anyway.
+    // It doesn't help now because HistoryEntry is aligned to 8 bytes.
+    assert!(core::mem::size_of::<HistoryEntry>() == 32);
+};
+
+impl Default for HistoryEntry {
+    fn default() -> Self {
+        Self {
+            timestamp: Instant::from_ticks(0),
+            snapshot: SensorData::default(),
         }
     }
 }
@@ -47,7 +60,7 @@ impl Default for HistoryEntry {
 struct HistoryBuffer {
     entries: [HistoryEntry; HISTORY_SIZE],
     head: usize,
-    last_recorded: Option<Instant>,
+    last_recorded: Instant,
 }
 
 impl HistoryBuffer {
@@ -55,14 +68,14 @@ impl HistoryBuffer {
         Self {
             entries: [HistoryEntry::default(); HISTORY_SIZE],
             head: 0,
-            last_recorded: None,
+            last_recorded: Instant::from_ticks(0),
         }
     }
 
     fn push(&mut self, entry: HistoryEntry) {
         self.entries[self.head] = entry;
         self.head = (self.head + 1) % HISTORY_SIZE;
-        self.last_recorded = Some(entry.timestamp);
+        self.last_recorded = entry.timestamp;
     }
 
     fn get_at(&self, timestamp: Instant) -> Option<HistoryEntry> {
@@ -87,19 +100,9 @@ impl Default for StationData {
 }
 
 impl StationData {
-    pub const HISTORY_INTERVAL: Duration = Duration::secs(300);
-
     pub fn new() -> Self {
         Self {
-            sensor_data: Cell::new(SensorData {
-                co2_ppm: 0,
-                temp_celsius: 0.0,
-                humidity_percent: 0.0,
-                voc_index: None,
-                battery_millivolts: 0,
-                charger_status: bq24259::registers::SystemStatus::from(0),
-                charger_faults: bq24259::registers::NewFault::from(0),
-            }),
+            sensor_data: Cell::default(),
             update_event: Mailbox::new(),
             history: RefCell::new(HistoryBuffer::new()),
         }
@@ -116,25 +119,16 @@ impl StationData {
         self.sensor_data.get()
     }
 
-    pub fn record_history(&self, timestamp: Instant) {
+    pub fn maybe_record_history(&self, timestamp: Instant) {
         let mut history = self.history.borrow_mut();
 
-        // No more often than every 5 minutes (300 seconds).
-        if let Some(last) = history.last_recorded
-            && timestamp - last < Self::HISTORY_INTERVAL
-        {
+        if timestamp - history.last_recorded < HISTORY_INTERVAL {
             return;
         }
 
-        let data = self.sensor_data();
         let entry = HistoryEntry {
             timestamp,
-            co2_ppm: data.co2_ppm,
-            temp_celsius: data.temp_celsius,
-            humidity_percent: data.humidity_percent,
-            voc_index: data.voc_index,
-            battery_millivolts: data.battery_millivolts,
-            charger_status: data.charger_status,
+            snapshot: self.sensor_data(),
         };
 
         history.push(entry);

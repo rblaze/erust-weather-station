@@ -112,7 +112,7 @@ where
 
             system_data.set_sgp4x_data(&co2_measurement, voc_index);
 
-            system_data.record_history(now().await);
+            system_data.maybe_record_history(now().await);
 
             // Send data to USB serial port
             let mut buf = PrintBuf::<128>::new();

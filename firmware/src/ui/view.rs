@@ -195,29 +195,31 @@ where
         match data.get_history_at(timestamp) {
             Some(entry) => {
                 let age = now().await.checked_duration_since(entry.timestamp);
-                let status = if entry.charger_status.pg()
-                    && entry.charger_status.chrg() == Chrg::ChargeTermination
-                {
-                    "="
-                } else if entry.charger_status.pg() {
-                    "\u{17}"
-                } else {
-                    ""
-                };
+                let power_symbol =
+                    if entry.snapshot.charger_status.chrg() == Chrg::ChargeTermination {
+                        "="
+                    } else if entry.snapshot.charger_status.pg() {
+                        "\u{17}"
+                    } else {
+                        ""
+                    };
+
                 write!(
                     self.display,
                     "{}m: {}vbat {}.{:02}V",
                     age.map_or(999999, |age| age.to_minutes()),
-                    status,
-                    entry.battery_millivolts / 1000,
-                    entry.battery_millivolts % 1000 / 10
+                    power_symbol,
+                    entry.snapshot.battery_millivolts / 1000,
+                    entry.snapshot.battery_millivolts % 1000 / 10
                 )?;
 
                 self.display.set_output_line(1)?;
                 write!(
                     self.display,
                     "{} ppm {:.0}\u{df}C {:.0}% RH",
-                    entry.co2_ppm, entry.temp_celsius, entry.humidity_percent
+                    entry.snapshot.co2_ppm,
+                    entry.snapshot.temp_celsius,
+                    entry.snapshot.humidity_percent
                 )?;
             }
             None => {

@@ -2,10 +2,8 @@ use core::cell::Cell;
 
 use async_scheduler::mailbox::{Error, Mailbox};
 
-use crate::{
-    station_data::StationData,
-    time::{Duration, Instant, timeout},
-};
+use crate::station_data::HISTORY_INTERVAL;
+use crate::time::{Duration, Instant, timeout};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Power {
@@ -128,32 +126,33 @@ impl DisplayData {
         self.update_event.post(());
     }
 
-    pub fn show_next_page(&self, time: Instant) {
+    pub fn show_next_page(&self, now: Instant) {
         self.state.update(|state| DisplayState {
-            page: state.page.next(time),
+            page: state.page.next(now),
             ..state
         });
 
         self.update_event.post(());
     }
 
-    pub fn show_prev_page(&self, time: Instant) {
+    pub fn show_prev_page(&self, now: Instant) {
         self.state.update(|state| DisplayState {
-            page: state.page.prev(time),
+            page: state.page.prev(now),
             ..state
         });
 
         self.update_event.post(());
     }
 
-    pub fn scroll_page_up(&self) {
+    pub fn scroll_page_up(&self, now: Instant) {
         self.state.update(|state| {
             if let DisplayPage::History(timestamp) = state.page {
                 self.update_event.post(());
 
                 let new_time = timestamp
-                    .checked_add_duration(StationData::HISTORY_INTERVAL)
-                    .unwrap_or(Instant::from_ticks(0));
+                    .checked_add_duration(HISTORY_INTERVAL)
+                    .unwrap_or(Instant::from_ticks(0))
+                    .min(now);
                 DisplayState {
                     page: DisplayPage::History(new_time),
                     ..state
@@ -165,14 +164,15 @@ impl DisplayData {
         })
     }
 
-    pub fn scroll_page_down(&self) {
+    pub fn scroll_page_down(&self, now: Instant) {
         self.state.update(|state| {
             if let DisplayPage::History(timestamp) = state.page {
                 self.update_event.post(());
 
                 let new_time = timestamp
-                    .checked_sub_duration(StationData::HISTORY_INTERVAL)
-                    .unwrap_or(Instant::from_ticks(0));
+                    .checked_sub_duration(HISTORY_INTERVAL)
+                    .unwrap_or(Instant::from_ticks(0))
+                    .min(now);
                 DisplayState {
                     page: DisplayPage::History(new_time),
                     ..state

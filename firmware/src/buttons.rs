@@ -13,9 +13,9 @@ pub async fn task<J: Joystick + EventWaiter>(mut joystick: J, state: &DisplayDat
         } else if joystick.left() {
             state.show_prev_page(now().await);
         } else if joystick.up() {
-            state.scroll_page_up();
+            state.scroll_page_up(now().await);
         } else if joystick.down() {
-            state.scroll_page_down();
+            state.scroll_page_down(now().await);
         } else if joystick.select() {
             state.set_next_backlight_mode();
         }
