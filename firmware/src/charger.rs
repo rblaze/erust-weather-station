@@ -49,17 +49,16 @@ where
     pub async fn task(&mut self) -> Result<(), Error<I2cBus::Error>> {
         self.watchdog.feed();
         self.charger.reset_watchdog().map_err(I2cError)?;
-        self.charger
-            .set_watchdog_timeout(bq24259::registers::Watchdog::Sec160)
-            .map_err(I2cError)?;
 
         self.update_battery_state();
         self.power_good = self.update_charger_state()?;
         self.report_power_state();
 
         loop {
+            // Default charger watchdog timeout is 40 seconds.
+            // IWDG timeout is 32.7 seconds.
             let power_event = timeout(
-                Duration::secs(155),
+                Duration::secs(31),
                 self.charger_event
                     .wait()
                     .map(Ok::<(), Error<I2cBus::Error>>),
