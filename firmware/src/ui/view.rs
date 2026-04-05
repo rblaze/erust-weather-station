@@ -1,6 +1,7 @@
 use core::fmt::Write;
 use core::pin::pin;
 
+use bq24259::registers::Chrg;
 use embedded_hal::i2c::I2c;
 use embedded_hal::pwm::SetDutyCycle;
 use futures::{FutureExt, select_biased};
@@ -194,11 +195,20 @@ where
         match data.get_history_at(timestamp) {
             Some(entry) => {
                 let age = now().await.checked_duration_since(entry.timestamp);
+                let status = if entry.charger_status.pg()
+                    && entry.charger_status.chrg() == Chrg::ChargeTermination
+                {
+                    "="
+                } else if entry.charger_status.pg() {
+                    "\u{17}"
+                } else {
+                    ""
+                };
                 write!(
                     self.display,
-                    "@{} m: {}vbat {}.{:02}V",
+                    "{}m: {}vbat {}.{:02}V",
                     age.map_or(999999, |age| age.to_minutes()),
-                    if entry.charger_status.pg() { "+" } else { "" },
+                    status,
                     entry.battery_millivolts / 1000,
                     entry.battery_millivolts % 1000 / 10
                 )?;
