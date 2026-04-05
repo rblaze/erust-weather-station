@@ -80,7 +80,7 @@ dependencies = [
 [[package]]
 name = "bq24259"
 version = "0.1.0"
-source = "git+https://github.com/rblaze/erust-bq24259.git#00410e5213b547b149b667acb6a2192852b12855"
+source = "git+https://github.com/rblaze/erust-bq24259.git#b66345106845835302fa37ae5689456b997c8111"
 dependencies = [
  "bilge",
  "embedded-hal 1.0.0",
