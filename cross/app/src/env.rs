@@ -1,7 +1,6 @@
-use portable_atomic::{AtomicBool, Ordering};
-
 use async_scheduler::executor::Environment;
 use cortex_m::peripheral::{SCB, scb::VectActive};
+use portable_atomic::{AtomicBool, Ordering};
 use rtt_target::debug_rprintln;
 
 use firmware::time::Instant;

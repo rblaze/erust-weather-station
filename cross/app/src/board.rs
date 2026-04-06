@@ -1,5 +1,4 @@
 #![allow(unsafe_code)]
-
 use core::cell::RefCell;
 use core::marker::PhantomData;
 
@@ -20,9 +19,9 @@ use stm32g0_hal::usb::UsbExt;
 
 use firmware::error::Error;
 
-use super::statics::SafelyInitializedStatic;
-use super::usb::{UsbPowerControl, UsbSerialPort};
+use crate::statics::SafelyInitializedStatic;
 use crate::system_time::Ticker;
+use crate::usb::{UsbPowerControl, UsbSerialPort};
 
 pub type I2cBus = I2c<I2C3>;
 pub type I2cError = <I2cBus as embedded_hal::i2c::ErrorType>::Error;

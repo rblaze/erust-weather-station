@@ -1,5 +1,4 @@
 #![allow(unsafe_code)]
-
 use core::cell::{Cell, RefCell};
 
 use async_scheduler::sync::mailbox::Mailbox;
@@ -15,8 +14,8 @@ use usb_device::device::{
 
 use firmware::error::Error;
 
-use super::hardware::I2cError;
-use super::statics::SafelyInitializedStatic;
+use crate::board::I2cError;
+use crate::statics::SafelyInitializedStatic;
 
 pub type UsbBus = stm32g0_hal::usb::Bus<stm32g0_hal::pac::USB>;
 pub type CdcAcm = usbd_serial::CdcAcmClass<'static, UsbBus>;

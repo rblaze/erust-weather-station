@@ -3,7 +3,10 @@
 #![deny(unsafe_code)]
 
 mod board;
+mod env;
+mod statics;
 mod system_time;
+mod usb;
 
 use core::panic::PanicInfo;
 use core::pin::pin;
