@@ -5,7 +5,7 @@ use rtt_target::debug_rprintln;
 
 use crate::time::{Duration, Instant};
 
-pub const HISTORY_SIZE: usize = 120;
+pub const HISTORY_SIZE: usize = 1200;
 pub const HISTORY_INTERVAL: Duration = Duration::secs(300);
 
 #[derive(Debug, Clone, Copy)]
