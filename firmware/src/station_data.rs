@@ -279,11 +279,11 @@ mod tests {
         // Latest
         assert_eq!(
             buffer
-                .get_at(Instant::from_ticks(20000))
+                .get_at(Instant::from_ticks(150000))
                 .unwrap()
                 .timestamp
                 .ticks(),
-            13000
+            121000
         );
         // Oldest still in buffer
         assert_eq!(
