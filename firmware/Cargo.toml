@@ -7,7 +7,7 @@ edition = "2024"
 async-scheduler = { git = "https://github.com/rblaze/rust-async-scheduler.git" }
 bq24259 = { git = "https://github.com/rblaze/erust-bq24259.git" }
 embedded-hal = "1"
-fugit = "0.3"
+fugit = "0.4"
 futures = { version = "0.3", default-features = false, features = [
     "async-await",
 ] }
