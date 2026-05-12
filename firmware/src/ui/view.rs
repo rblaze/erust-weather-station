@@ -80,7 +80,7 @@ where
             if state.power == Power::On {
                 // Turn on display
                 self.power_pin.on();
-                sleep(Duration::millis(200)).await;
+                sleep(Duration::from_millis(200)).await;
                 self.display.reset().await?;
                 update_display = true;
             } else {
@@ -127,7 +127,7 @@ where
         }
 
         self.display.cls()?;
-        sleep(Duration::millis(5)).await;
+        sleep(Duration::from_millis(5)).await;
 
         match self.current_state.page {
             DisplayPage::AirData => self.show_air_data(&data.sensor_data()).await,
@@ -151,7 +151,7 @@ where
             None => write!(self.display, "no VOC")?,
         }
 
-        let uptime_secs = now().await.duration_since_epoch().to_secs();
+        let uptime_secs = now().await.duration_since_epoch().as_secs();
         write!(self.display, " up {}", uptime_secs)?;
 
         Ok(())
@@ -207,7 +207,7 @@ where
                 write!(
                     self.display,
                     "{}m: {}vbat {}.{:02}V",
-                    age.map_or(999999, |age| age.to_minutes()),
+                    age.map_or(999999, |age| age.as_minutes()),
                     power_symbol,
                     entry.snapshot.battery_millivolts / 1000,
                     entry.snapshot.battery_millivolts % 1000 / 10

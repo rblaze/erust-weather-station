@@ -58,7 +58,7 @@ where
             // Default charger watchdog timeout is 40 seconds.
             // IWDG timeout is 32.7 seconds.
             let power_event = timeout(
-                Duration::secs(31),
+                Duration::from_secs(31),
                 self.charger_event
                     .wait()
                     .map(Ok::<(), Error<I2cBus::Error>>),

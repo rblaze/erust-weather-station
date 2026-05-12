@@ -43,7 +43,7 @@ impl<const N: usize> Write for PrintBuf<N> {
     }
 }
 
-const SAMPLING_INTERVAL: Duration = Duration::secs(30);
+const SAMPLING_INTERVAL: Duration = Duration::from_secs(30);
 
 pub async fn task<I2cBus, UsbSerialPort>(
     mut co2_sensor: SCD4x<I2cBus>,
@@ -57,7 +57,7 @@ where
 {
     // Reset sensor.
     co2_sensor.stop_periodic_measurement()?;
-    sleep(Duration::secs(1)).await;
+    sleep(Duration::from_secs(1)).await;
 
     debug_rprintln!("SCD4x serial {}", co2_sensor.get_serial_number()?);
     debug_rprintln!("SCD4x type {}", co2_sensor.get_sensor_variant()?);
@@ -66,7 +66,7 @@ where
     voc_sensor.start_self_test()?;
     co2_sensor.start_self_test()?;
 
-    sleep(Duration::millis(350)).await;
+    sleep(Duration::from_millis(350)).await;
     let voc_self_test_result = voc_sensor.read_self_test_result()?;
     debug_rprintln!(
         "SGP40 self test {}",
@@ -77,7 +77,7 @@ where
         }
     );
 
-    sleep(Duration::secs(10)).await;
+    sleep(Duration::from_secs(10)).await;
     let co2_self_test_result = co2_sensor.read_self_test_result()?;
     debug_rprintln!(
         "SCD4x self test {}",
@@ -92,7 +92,7 @@ where
 
     let mut voc_alg = GasIndexAlgorithm::with_sampling_interval(
         AlgorithmType::Voc,
-        SAMPLING_INTERVAL.to_secs() as f32,
+        SAMPLING_INTERVAL.as_secs() as f32,
     );
 
     loop {
@@ -105,7 +105,7 @@ where
                 co2_measurement.humidity_raw,
                 co2_measurement.temp_raw,
             )?;
-            sleep(Duration::millis(30)).await;
+            sleep(Duration::from_millis(30)).await;
             let voc_measurement = voc_sensor.read_measure_raw_signal_result()?;
             let voc_index = voc_alg.process(voc_measurement);
             debug_rprintln!("VOC index: {:?}, raw {}", voc_index, voc_measurement);

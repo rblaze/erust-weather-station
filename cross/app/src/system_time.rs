@@ -91,7 +91,7 @@ impl Ticker {
             // If timer rolls over while in this function, interrupt is pending and will wakeup
             // CPU immediatelly upon entering WFI. Next call to sleep_until() will calculate
             // correct tick.
-            let target_tick = tick.ticks();
+            let target_tick = tick.as_ticks();
             let target_cycle = target_tick / Self::CYCLE_LENGTH;
             let current_cycle = TICKS.borrow(cs).get().num_full_cycles;
             match target_cycle.cmp(&current_cycle.into()) {

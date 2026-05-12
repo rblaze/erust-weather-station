@@ -91,7 +91,7 @@ impl DisplayData {
 
         if state.power == Power::On && state.page == DisplayPage::AirData {
             // AirData page has uptime information
-            Ok(timeout(Duration::secs(1), self.update_event.read())
+            Ok(timeout(Duration::from_secs(1), self.update_event.read())
                 .await
                 .map(|opt| opt.map(|()| self.state.get()))?)
         } else {

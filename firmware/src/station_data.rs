@@ -6,7 +6,7 @@ use rtt_target::debug_rprintln;
 use crate::time::{Duration, Instant};
 
 pub const HISTORY_SIZE: usize = 1200;
-pub const HISTORY_INTERVAL: Duration = Duration::secs(300);
+pub const HISTORY_INTERVAL: Duration = Duration::from_secs(300);
 
 #[derive(Debug, Clone, Copy)]
 pub struct SensorData {
@@ -81,7 +81,7 @@ impl HistoryBuffer {
     fn get_at(&self, timestamp: Instant) -> Option<HistoryEntry> {
         (0..HISTORY_SIZE)
             .map(|i| self.entries[(self.head + HISTORY_SIZE - 1 - i) % HISTORY_SIZE])
-            .take_while(|entry| entry.timestamp.ticks() != 0)
+            .take_while(|entry| entry.timestamp.as_ticks() != 0)
             .find(|entry| entry.timestamp <= timestamp)
     }
 }
@@ -227,7 +227,7 @@ mod tests {
         buffer.push(entry);
 
         let retrieved = buffer.get_at(Instant::from_ticks(100)).unwrap();
-        assert_eq!(retrieved.timestamp.ticks(), 100);
+        assert_eq!(retrieved.timestamp.as_ticks(), 100);
     }
 
     #[test]
@@ -243,7 +243,7 @@ mod tests {
                 .get_at(Instant::from_ticks(200))
                 .unwrap()
                 .timestamp
-                .ticks(),
+                .as_ticks(),
             200
         );
         // Between 200 and 300
@@ -252,7 +252,7 @@ mod tests {
                 .get_at(Instant::from_ticks(250))
                 .unwrap()
                 .timestamp
-                .ticks(),
+                .as_ticks(),
             200
         );
         // Before 100
@@ -263,7 +263,7 @@ mod tests {
                 .get_at(Instant::from_ticks(400))
                 .unwrap()
                 .timestamp
-                .ticks(),
+                .as_ticks(),
             300
         );
     }
@@ -282,7 +282,7 @@ mod tests {
                 .get_at(Instant::from_ticks(150000))
                 .unwrap()
                 .timestamp
-                .ticks(),
+                .as_ticks(),
             121000
         );
         // Oldest still in buffer
@@ -291,7 +291,7 @@ mod tests {
                 .get_at(Instant::from_ticks(1100))
                 .unwrap()
                 .timestamp
-                .ticks(),
+                .as_ticks(),
             1100
         );
         // Just before the oldest

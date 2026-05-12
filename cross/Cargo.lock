@@ -176,7 +176,7 @@ dependencies = [
  "async-scheduler",
  "bq24259",
  "embedded-hal 1.0.0",
- "fugit",
+ "fugit 0.4.0",
  "futures",
  "lcd",
  "rtt-target",
@@ -190,6 +190,15 @@ name = "fugit"
 version = "0.3.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4e639847d312d9a82d2e75b0edcc1e934efcc64e6cb7aa94f0b1fbec0bc231d6"
+dependencies = [
+ "gcd",
+]
+
+[[package]]
+name = "fugit"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "04ae150b98ef345142101da0a0b4ccfcc577bc8f5b9778b852e9427c667654d3"
 dependencies = [
  "gcd",
 ]
@@ -477,7 +486,7 @@ dependencies = [
  "cortex-m",
  "critical-section",
  "embedded-hal 1.0.0",
- "fugit",
+ "fugit 0.3.9",
  "paste",
  "rtt-target",
  "scopeguard",
